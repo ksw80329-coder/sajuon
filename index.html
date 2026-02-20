@@ -23,6 +23,8 @@
     window._googleProvider = new firebase.auth.GoogleAuthProvider();
     console.log('✅ Firebase 초기화 완료');
   </script>
+  <!-- 포트원(아임포트) SDK -->
+  <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
   <!-- 카카오 로그인 SDK -->
   <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
   <script>
@@ -396,7 +398,8 @@ function analyzeSaju(year, month, day, hour, minute, isLunar, isLeapMonth) {
 
 // ========== SDK 초기화 ==========
 const KAKAO_APP_KEY = 'f68dda02192f5417b547eb2db8368d3d';
-const BANK_INFO = { bank: '토스뱅크', account: '1000-7553-8936', holder: '고승우(사주ON)' };
+const IMP_CODE    = 'imp60556156';      // 포트원 가맹점 식별코드
+const CHANNEL_KEY = '3633766028181283'; // 카카오페이 채널키
 
 // 카카오 SDK는 <head>에서 이미 초기화됨 (중복 방지)
 console.log('Kakao 초기화 상태:', window.Kakao?.isInitialized());
@@ -1481,49 +1484,31 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     setShowPayment(true);
   };
 
-  // ===== 카카오페이 결제 요청 (Kakao.Pay API) =====
-  const requestKakaoPay = async () => {
-    if (!paymentProduct) return;
-    if (!window.Kakao || !window.Kakao.isInitialized()) {
-      alert('카카오 SDK가 초기화되지 않았습니다. 페이지를 새로고침 해주세요.');
+  // ===== 포트원 카카오페이 결제 요청 =====
+  const requestKakaoPay = (product, onSuccess) => {
+    if (!window.IMP) {
+      alert('포트원 SDK가 로딩되지 않았습니다. 페이지를 새로고침 해주세요.');
       return;
     }
-    try {
-      const orderId = `SAJUON_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-      sessionStorage.setItem('sajuon_pending_payment', JSON.stringify({
-        product: paymentProduct,
-        orderId,
-        currentInput,
-        currentResult,
-      }));
-      window.Kakao.Pay.ready({
-        cid: 'TC0ONETIME',  // 테스트용 CID (실서비스: 카카오페이 가맹점 CID)
-        partner_order_id: orderId,
-        partner_user_id: userEmail || 'sajuon_user',
-        item_name: paymentProduct.name,
-        quantity: 1,
-        total_amount: paymentProduct.price,
-        vat_amount: Math.round(paymentProduct.price / 11),
-        tax_free_amount: 0,
-        approval_url: `${window.location.origin}${window.location.pathname}?kakaopay=success`,
-        fail_url: `${window.location.origin}${window.location.pathname}?kakaopay=fail`,
-        cancel_url: `${window.location.origin}${window.location.pathname}?kakaopay=cancel`,
-        success: (res) => {
-          sessionStorage.removeItem('sajuon_pending_payment');
-          handlePaymentComplete();
-          setShowPayment(false);
-        },
-        fail: (err) => {
-          sessionStorage.removeItem('sajuon_pending_payment');
-          console.error('카카오페이 실패:', err);
-          alert('결제에 실패했습니다. 다시 시도해주세요.');
+    window.IMP.init(IMP_CODE);
+    const orderId = `SAJUON_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+    window.IMP.request_pay({
+      channelKey: CHANNEL_KEY,
+      pay_method: 'kakaopay',
+      merchant_uid: orderId,
+      name: product.name,
+      amount: product.price,
+      buyer_email: userEmail || '',
+      buyer_name: userName || '사주ON 회원',
+    }, (rsp) => {
+      if (rsp.success) {
+        onSuccess(rsp);
+      } else {
+        if (rsp.error_code !== 'F0000') { // 사용자 취소가 아닌 경우만 알림
+          alert(`결제 실패: ${rsp.error_msg}`);
         }
-      });
-    } catch(err) {
-      sessionStorage.removeItem('sajuon_pending_payment');
-      console.error('카카오페이 오류:', err);
-      alert('결제 처리 중 오류가 발생했습니다.');
-    }
+      }
+    });
   };
 
   const handlePaymentComplete = () => {
@@ -4751,7 +4736,10 @@ ${isSangsaeng
         ),
         // 카카오페이
         React.createElement('button', {
-          onClick: () => requestKakaoPay(),
+          onClick: () => requestKakaoPay(paymentProduct, (rsp) => {
+            handlePaymentComplete();
+            setShowPayment(false);
+          }),
           className: 'w-full flex items-center gap-4 p-4 bg-[#FEE500] text-black rounded-2xl font-bold hover:brightness-95 active:scale-[0.98] transition-all'
         },
           React.createElement('div', { className: 'w-10 h-10 rounded-xl bg-black/10 flex items-center justify-center' },
@@ -4810,32 +4798,16 @@ ${isSangsaeng
     const [selectedPkg, setSelectedPkg] = React.useState(null);
 
     const handleKakaoCharge = (pkg) => {
-      if (!window.Kakao || !window.Kakao.isInitialized()) {
-        alert('카카오 SDK가 초기화되지 않았습니다.');
-        return;
-      }
-      const orderId = `CHARGE_${Date.now()}`;
-      window.Kakao.Pay.ready({
-        cid: 'TC0ONETIME',
-        partner_order_id: orderId,
-        partner_user_id: userEmail || 'sajuon_user',
-        item_name: `사주ON 별 ${pkg.stars}개 충전`,
-        quantity: 1,
-        total_amount: pkg.price,
-        vat_amount: Math.round(pkg.price / 11),
-        tax_free_amount: 0,
-        approval_url: `${window.location.origin}${window.location.pathname}?kakaopay=charge&stars=${pkg.stars}&moons=${pkg.moons}`,
-        fail_url: `${window.location.origin}${window.location.pathname}?kakaopay=fail`,
-        cancel_url: `${window.location.origin}${window.location.pathname}?kakaopay=cancel`,
-        success: () => {
-          setStars(p => { const n = p + pkg.stars; if (userKey) saveUserData(userKey,'stars',n); return n; });
-          if (pkg.moons > 0) setMoons(p => { const n = p + pkg.moons; if (userKey) saveUserData(userKey,'moons',n); return n; });
+      requestKakaoPay(
+        { name: `사주ON 별 ${pkg.stars}개 충전`, price: pkg.price },
+        (rsp) => {
+          setStars(p => { const n = p + pkg.stars; if (userKey) saveUserData(userKey, 'stars', n); return n; });
+          if (pkg.moons > 0) setMoons(p => { const n = p + pkg.moons; if (userKey) saveUserData(userKey, 'moons', n); return n; });
           setShowChargeModal(false);
           alert(`✅ 충전 완료!
 ⭐ ${pkg.stars}별${pkg.moons > 0 ? ` + 🌙 ${pkg.moons}달` : ''} 지급되었습니다.`);
-        },
-        fail: () => alert('결제에 실패했습니다.')
-      });
+        }
+      );
     };
     
     const [chargeTransferName, setChargeTransferName] = React.useState('');
