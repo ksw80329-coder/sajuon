@@ -7,6 +7,23 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- 토스페이먼츠 SDK -->
   <script src="https://js.tosspayments.com/v1/payment"></script>
+  <!-- Firebase SDK (Compat 버전 - 전역 객체 방식) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAlSPiSJuZGP_rvMCL9uhpzpWhBYjETs3g",
+      authDomain: "sajuon-2b7ba.firebaseapp.com",
+      projectId: "sajuon-2b7ba",
+      storageBucket: "sajuon-2b7ba.firebasestorage.app",
+      messagingSenderId: "928917378459",
+      appId: "1:928917378459:web:af2b3d8866a95822067d3e"
+    };
+    firebase.initializeApp(firebaseConfig);
+    window._firebaseAuth = firebase.auth();
+    window._googleProvider = new firebase.auth.GoogleAuthProvider();
+    console.log('✅ Firebase 초기화 완료');
+  </script>
   <!-- 카카오 로그인 SDK -->
   <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
   <script>
@@ -4586,24 +4603,53 @@ ${isSangsaeng
             ),
             React.createElement('span', { className: 'text-black/40 text-sm' }, '→')
           ),
-          // 네이버 (백엔드 필요 - 준비 중 안내)
+          // 네이버 로그인 (OAuth 리다이렉트 방식)
           React.createElement('button', {
-            onClick: () => alert('네이버 로그인은 서버 연동 후 제공됩니다.\n현재 카카오 로그인을 이용해주세요.'),
-            className: 'w-full flex items-center justify-between px-5 py-4 bg-[#03A94D]/50 text-white/60 rounded-2xl font-semibold cursor-not-allowed transition-all'
+            onClick: () => {
+              const NAVER_CLIENT_ID = 'YOUR_NAVER_CLIENT_ID'; // 네이버 Client ID 입력 필요
+              if (NAVER_CLIENT_ID === 'YOUR_NAVER_CLIENT_ID') {
+                alert('네이버 로그인 준비 중입니다.\n카카오 또는 구글 로그인을 이용해주세요.');
+                return;
+              }
+              const state = Math.random().toString(36).slice(2);
+              sessionStorage.setItem('naver_state', state);
+              const redirectUri = encodeURIComponent('https://ksw80329-coder.github.io/-ON/');
+              const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${redirectUri}&state=${state}`;
+              window.location.href = naverAuthUrl;
+            },
+            className: 'w-full flex items-center justify-between px-5 py-4 bg-[#03A94D] text-white rounded-2xl font-semibold hover:brightness-95 transition-all active:scale-[0.98]'
           },
             React.createElement('div', { className: 'flex items-center gap-3' },
               React.createElement('span', { className: 'text-lg font-black w-[22px] text-center' }, 'N'),
               React.createElement('span', { className: 'text-base' }, '네이버로 시작하기')
             ),
-            React.createElement('span', { className: 'text-xs text-white/40 bg-white/10 px-2 py-0.5 rounded-full' }, '준비 중')
+            React.createElement('span', { className: 'text-white/40 text-sm' }, '→')
           ),
-          // 구글 (준비 중)
+          // 구글 (Firebase 실제 연동)
           React.createElement('button', {
-            onClick: () => alert('구글 로그인은 Firebase 연동 후 제공됩니다.\n현재 카카오 로그인을 이용해주세요.'),
-            className: 'w-full flex items-center justify-between px-5 py-4 bg-white/30 text-white/50 rounded-2xl font-semibold cursor-not-allowed transition-all'
+            onClick: async () => {
+              const auth = window._firebaseAuth;
+              const provider = window._googleProvider;
+              if (!auth || !provider) {
+                alert('구글 로그인 준비 중입니다. 잠시 후 다시 시도해주세요.');
+                return;
+              }
+              try {
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                const email = user.email || `google_${user.uid}@google.user`;
+                handleLogin('google', email, user.displayName || '구글 회원');
+              } catch(err) {
+                if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+                  console.error('구글 로그인 오류:', err);
+                  alert('구글 로그인에 실패했습니다. 다시 시도해주세요.');
+                }
+              }
+            },
+            className: 'w-full flex items-center justify-between px-5 py-4 bg-white text-black rounded-2xl font-semibold hover:brightness-95 transition-all active:scale-[0.98] border border-gray-200'
           },
             React.createElement('div', { className: 'flex items-center gap-3' },
-              React.createElement('svg', { width: '22', height: '22', viewBox: '0 0 48 48', opacity: '0.5' },
+              React.createElement('svg', { width: '22', height: '22', viewBox: '0 0 48 48' },
                 React.createElement('path', { fill: '#FFC107', d: 'M43.6 20H24v8h11.3c-1.6 4.7-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 8 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-4z' }),
                 React.createElement('path', { fill: '#FF3D00', d: 'M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3 0 5.8 1.1 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z' }),
                 React.createElement('path', { fill: '#4CAF50', d: 'M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z' }),
@@ -4611,7 +4657,7 @@ ${isSangsaeng
               ),
               React.createElement('span', { className: 'text-base' }, '구글로 시작하기')
             ),
-            React.createElement('span', { className: 'text-xs text-white/30 bg-white/10 px-2 py-0.5 rounded-full' }, '준비 중')
+            React.createElement('span', { className: 'text-black/30 text-sm' }, '→')
           )
         ),
         // 안내 문구
