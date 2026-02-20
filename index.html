@@ -25,6 +25,7 @@
   </script>
   <!-- 포트원(아임포트) SDK -->
   <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+  <script>window.addEventListener("load", function(){ if(window.IMP){ window.IMP.init("imp60556156"); console.log("✅ 포트원 초기화 완료"); } else { console.error("❌ 포트원 SDK 로드 실패"); } });</script>
   <!-- 카카오 로그인 SDK -->
   <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
   <script>
@@ -399,7 +400,7 @@ function analyzeSaju(year, month, day, hour, minute, isLunar, isLeapMonth) {
 // ========== SDK 초기화 ==========
 const KAKAO_APP_KEY = 'f68dda02192f5417b547eb2db8368d3d';
 const IMP_CODE    = 'imp60556156';      // 포트원 가맹점 식별코드
-const CHANNEL_KEY = '3633766028181283'; // 카카오페이 채널키
+const CHANNEL_KEY = 'channel-key-75ce192f-2096-4d4b-af96-a53da4e69b13'; // 카카오페이 채널키
 
 // 카카오 SDK는 <head>에서 이미 초기화됨 (중복 방지)
 console.log('Kakao 초기화 상태:', window.Kakao?.isInitialized());
@@ -1487,10 +1488,9 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   // ===== 포트원 카카오페이 결제 요청 =====
   const requestKakaoPay = (product, onSuccess) => {
     if (!window.IMP) {
-      alert('포트원 SDK가 로딩되지 않았습니다. 페이지를 새로고침 해주세요.');
+      alert('결제 모듈 로딩 중입니다. 2~3초 후 다시 시도해주세요.');
       return;
     }
-    window.IMP.init(IMP_CODE);
     const orderId = `SAJUON_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
     window.IMP.request_pay({
       channelKey: CHANNEL_KEY,
@@ -1504,7 +1504,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       if (rsp.success) {
         onSuccess(rsp);
       } else {
-        if (rsp.error_code !== 'F0000') { // 사용자 취소가 아닌 경우만 알림
+        const cancelled = rsp.error_code === 'F0000' || rsp.error_msg?.includes('취소');
+        if (!cancelled) {
           alert(`결제 실패: ${rsp.error_msg}`);
         }
       }
