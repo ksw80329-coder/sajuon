@@ -558,6 +558,23 @@ function App() {
                 if (userKey) saveUserData(userKey, 'purchases', updated);
                 return updated;
               });
+              // 충전 타입 처리
+              if (pending.product.type === 'charge') {
+                setStars(prev => {
+                  const next = prev + pending.product.stars;
+                  if (userKey) saveUserData(userKey, 'stars', next);
+                  return next;
+                });
+                if (pending.product.moons > 0) {
+                  setMoons(prev => {
+                    const next = prev + pending.product.moons;
+                    if (userKey) saveUserData(userKey, 'moons', next);
+                    return next;
+                  });
+                }
+                alert(`✅ 충전 완료!\n⭐ ${pending.product.stars}별${pending.product.moons > 0 ? ` + 🌙 ${pending.product.moons}달` : ''} 지급되었습니다.`);
+                return;
+              }
               // 구매 콘텐츠 저장 및 화면 이동
               if (pending.product.name === '상세 사주 분석' && pending.currentInput && pending.currentResult) {
                 setCurrentInput(pending.currentInput);
@@ -1381,14 +1398,14 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   };
 
   // 실제 로그인 처리 (SDK 콜백에서 호출)
-  const handleLogin = (method, email = '') => {
+  const handleLogin = (method, email = '', nickname = '') => {
     const resolvedEmail = email || `user@${method}.com`;
     const emailHash = resolvedEmail.split('').reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) & 0xffffffff, 0).toString(36);
     const resolvedKey = `${method}_${emailHash}`;
 
     // 세션 저장 (자동 로그인용)
     try {
-      localStorage.setItem('sajuon::session', JSON.stringify({ key: resolvedKey, email: resolvedEmail, method }));
+      localStorage.setItem('sajuon::session', JSON.stringify({ key: resolvedKey, email: resolvedEmail, method, nickname }));
     } catch(e) {}
 
     // 해당 계정의 저장 데이터 로드
@@ -1479,15 +1496,26 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       };
       sessionStorage.setItem('sajuon_pending_payment', JSON.stringify(pendingData));
 
-      const methodMap = { '카카오페이': '카카오페이', '카드': '카드' };
-      await tossPayments.requestPayment(methodMap[method] || '카드', {
-        amount: paymentProduct.price,
-        orderId,
-        orderName: paymentProduct.name,
-        customerName: userEmail || '사주ON 이용자',
-        successUrl,
-        failUrl,
-      });
+      if (method === '카카오페이') {
+        await tossPayments.requestPayment('카카오페이', {
+          amount: paymentProduct.price,
+          orderId,
+          orderName: paymentProduct.name,
+          customerName: userEmail || '사주ON 이용자',
+          successUrl,
+          failUrl,
+        });
+      } else {
+        await tossPayments.requestPayment('카드', {
+          amount: paymentProduct.price,
+          orderId,
+          orderName: paymentProduct.name,
+          customerName: userEmail || '사주ON 이용자',
+          successUrl,
+          failUrl,
+          cardInstallmentPlan: true,
+        });
+      }
     } catch (err) {
       sessionStorage.removeItem('sajuon_pending_payment');
       if (err.code !== 'USER_CANCEL') {
@@ -4545,7 +4573,7 @@ ${isSangsaeng
               // SDK 2.x: authorize() 방식 (팝업 → 리다이렉트)
               window.Kakao.Auth.authorize({
                 redirectUri: 'https://ksw80329-coder.github.io/-ON/',
-                scope: 'account_email,profile_nickname',
+                scope: 'profile_nickname',
               });
             },
             className: 'w-full flex items-center justify-between px-5 py-4 bg-[#FEE500] text-black rounded-2xl font-semibold hover:brightness-95 transition-all active:scale-[0.98]'
@@ -4672,11 +4700,56 @@ ${isSangsaeng
       { stars: 200, moons: 40, price: 19000, label: '최고 가성비' }
     ];
     
-    const handleCharge = (pkg) => {
-      setStars(prev => prev + pkg.stars);
-      setMoons(prev => prev + pkg.moons);
-      setShowChargeModal(false);
-      alert(`⭐ ${pkg.stars}별${pkg.moons > 0 ? ` + 🌙 ${pkg.moons}달` : ''} 충전 완료!`);
+    const handleCharge = async (pkg, method) => {
+      // 실제 토스페이먼츠 결제 요청
+      try {
+        const tossPayments = window.TossPayments(TOSS_CLIENT_KEY);
+        const orderId = `CHARGE_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+        const baseUrl = window.location.origin + window.location.pathname;
+        
+        // 충전 정보를 sessionStorage에 저장 (결제 후 복원용)
+        sessionStorage.setItem('sajuon_pending_payment', JSON.stringify({
+          product: { 
+            name: `별 ${pkg.stars}개 충전`, 
+            price: pkg.price,
+            type: 'charge',
+            stars: pkg.stars,
+            moons: pkg.moons
+          },
+          orderId
+        }));
+
+        setShowChargeModal(false);
+
+        if (method === '카카오페이') {
+          // 카카오페이 전용 결제창
+          await tossPayments.requestPayment('카카오페이', {
+            amount: pkg.price,
+            orderId,
+            orderName: `사주ON 별 ${pkg.stars}개 충전`,
+            customerName: userEmail || '사주ON 회원',
+            successUrl: baseUrl + '?payment=success',
+            failUrl: baseUrl + '?payment=fail',
+          });
+        } else {
+          // 카드/계좌이체 전용 결제창
+          await tossPayments.requestPayment('카드', {
+            amount: pkg.price,
+            orderId,
+            orderName: `사주ON 별 ${pkg.stars}개 충전`,
+            customerName: userEmail || '사주ON 회원',
+            successUrl: baseUrl + '?payment=success',
+            failUrl: baseUrl + '?payment=fail',
+            cardInstallmentPlan: true,
+          });
+        }
+      } catch(err) {
+        sessionStorage.removeItem('sajuon_pending_payment');
+        if (err.code !== 'USER_CANCEL') {
+          alert(`결제 오류: ${err.message || '잠시 후 다시 시도해주세요.'}`);
+        }
+        setShowChargeModal(true);
+      }
     };
     
     return React.createElement('div', { className: 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4' },
@@ -4705,20 +4778,30 @@ ${isSangsaeng
         // 충전 패키지
         React.createElement('div', { className: 'space-y-2' },
           packages.map((pkg, i) => 
-            React.createElement('button', { 
-              key: i, 
-              onClick: () => handleCharge(pkg),
-              className: `w-full p-4 rounded-xl flex items-center justify-between transition-all ${pkg.highlight ? 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 border-2 border-purple-400' : 'glass hover:bg-white/10'}`
-            },
-              React.createElement('div', { className: 'flex items-center gap-2' },
-                React.createElement('span', { className: 'text-lg' }, '⭐'),
-                React.createElement('span', { className: 'font-bold' }, `${pkg.stars}별`),
-                pkg.moons > 0 && React.createElement('span', { className: 'text-sm text-blue-300' }, `+ 🌙${pkg.moons}`),
-                pkg.label && React.createElement('span', { 
-                  className: `text-xs px-2 py-0.5 rounded-full ${pkg.highlight ? 'bg-purple-500 text-white' : 'bg-amber-500/20 text-amber-400'}`
-                }, pkg.label)
+            React.createElement('div', { key: i, className: `rounded-xl overflow-hidden ${pkg.highlight ? 'border-2 border-purple-400' : 'border border-white/10'}` },
+              // 패키지 정보
+              React.createElement('div', { className: `w-full p-4 flex items-center justify-between ${pkg.highlight ? 'bg-gradient-to-r from-purple-500/30 to-pink-500/30' : 'glass'}` },
+                React.createElement('div', { className: 'flex items-center gap-2' },
+                  React.createElement('span', { className: 'text-lg' }, '⭐'),
+                  React.createElement('span', { className: 'font-bold' }, `${pkg.stars}별`),
+                  pkg.moons > 0 && React.createElement('span', { className: 'text-sm text-blue-300' }, `+ 🌙${pkg.moons}`),
+                  pkg.label && React.createElement('span', {
+                    className: `text-xs px-2 py-0.5 rounded-full ${pkg.highlight ? 'bg-purple-500 text-white' : 'bg-amber-500/20 text-amber-400'}`
+                  }, pkg.label)
+                ),
+                React.createElement('span', { className: 'font-bold text-purple-400' }, `₩${pkg.price.toLocaleString()}`)
               ),
-              React.createElement('span', { className: 'font-bold text-purple-400' }, `₩${pkg.price.toLocaleString()}`)
+              // 결제 버튼
+              React.createElement('div', { className: 'grid grid-cols-2 border-t border-white/10' },
+                React.createElement('button', {
+                  onClick: () => handleCharge(pkg, '카카오페이'),
+                  className: 'py-2.5 text-xs font-bold bg-[#FEE500] text-black hover:brightness-95 transition-all'
+                }, '💛 카카오페이'),
+                React.createElement('button', {
+                  onClick: () => handleCharge(pkg, '카드'),
+                  className: 'py-2.5 text-xs font-bold bg-[#0064FF] text-white hover:brightness-95 transition-all'
+                }, '💳 카드결제')
+              )
             )
           )
         )
