@@ -1499,7 +1499,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       name: product.name,
       amount: product.price,
       buyer_email: userEmail || '',
-      buyer_name: userName || '사주ON 회원',
+      buyer_name: session?.nickname || userEmail || '사주ON 회원',
     }, (rsp) => {
       if (rsp.success) {
         onSuccess(rsp);
