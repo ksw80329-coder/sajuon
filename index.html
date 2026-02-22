@@ -525,7 +525,7 @@ function App() {
       fetch(`${PAYMENT_WORKER}/kakao-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, redirect_uri: 'https://ksw80329-coder.github.io/-ON/' }),
+        body: JSON.stringify({ code, redirect_uri: 'https://ksw80329-coder.github.io/sajuon/' }),
       })
       .then(r => r.json())
       .then(data => {
@@ -4588,7 +4588,7 @@ ${isSangsaeng
               }
               // SDK 2.x: authorize() 방식 (팝업 → 리다이렉트)
               window.Kakao.Auth.authorize({
-                redirectUri: 'https://ksw80329-coder.github.io/-ON/',
+                redirectUri: 'https://ksw80329-coder.github.io/sajuon/',
                 scope: 'profile_nickname',
               });
             },
@@ -4612,7 +4612,7 @@ ${isSangsaeng
               }
               const state = Math.random().toString(36).slice(2);
               sessionStorage.setItem('naver_state', state);
-              const redirectUri = encodeURIComponent('https://ksw80329-coder.github.io/-ON/');
+              const redirectUri = encodeURIComponent('https://ksw80329-coder.github.io/sajuon/');
               const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${redirectUri}&state=${state}`;
               window.location.href = naverAuthUrl;
             },
