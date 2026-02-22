@@ -401,7 +401,7 @@ function analyzeSaju(year, month, day, hour, minute, isLunar, isLeapMonth) {
 const KAKAO_APP_KEY = 'f68dda02192f5417b547eb2db8368d3d';
 const IMP_CODE        = 'imp60556156';                                   // 포트원 가맹점 식별코드
 const CHANNEL_KAKAO   = 'channel-key-75ce192f-2096-4d4b-af96-a53da4e69b13'; // 카카오페이 채널키
-const CHANNEL_TOSS    = 'channel-key-dec6be89-c601-4872-803d-ee5d9001f470';  // 토스페이먼츠 채널키
+const CHANNEL_TOSS    = 'channel-key-30262341-2209-4aab-93f3-805737438ec0';  // 토스페이 채널키
 
 // 카카오 SDK는 <head>에서 이미 초기화됨 (중복 방지)
 console.log('Kakao 초기화 상태:', window.Kakao?.isInitialized());
@@ -1503,7 +1503,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const orderId = `SAJUON_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
     const payConfig = method === 'kakao'
       ? { channelKey: CHANNEL_KAKAO, pay_method: 'kakaopay' }
-      : { channelKey: CHANNEL_TOSS, pay_method: 'card' };
+      : { channelKey: CHANNEL_TOSS, pay_method: 'tosspay' };
 
     window.IMP.request_pay({
       ...payConfig,
@@ -5091,7 +5091,7 @@ ${isSangsaeng
                     onClick: () => doCharge(pkg, 'toss'),
                     disabled: processing,
                     className: 'py-3.5 text-sm font-bold bg-[#0064FF] text-white hover:brightness-95 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5'
-                  }, processing ? '처리중...' : '💳 카드결제')
+                  }, processing ? '처리중...' : '💙 토스페이')
                 )
               )
             )
