@@ -1496,7 +1496,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   };
 
   // ===== 포트원 결제 요청 (카카오페이 / 토스페이먼츠) =====
-  const requestPortonePayment = (product, method, onSuccess) => {
+  const requestPortonePayment = (product, method, onSuccess, onCancel) => {
     if (!window.IMP) {
       alert('결제 모듈 로딩 중입니다. 2~3초 후 다시 시도해주세요.');
       return;
@@ -1516,7 +1516,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     }, async (rsp) => {
       if (rsp.success) {
         try {
-          // Worker URL이 설정된 경우 서버 검증
           if (PAYMENT_WORKER && !PAYMENT_WORKER.includes('YOUR_ID')) {
             const verifyRes = await fetch(`${PAYMENT_WORKER}/verify`, {
               method: 'POST',
@@ -1529,18 +1528,19 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             });
             const verifyData = await verifyRes.json();
             if (!verifyData.success) {
+              if (onCancel) onCancel();
               alert(`결제 검증 실패: ${verifyData.message}\n고객센터에 문의해주세요.`);
               return;
             }
           }
-          // 검증 완료 (또는 Worker 미설정 시 바로 성공 처리)
           onSuccess(rsp);
         } catch (err) {
           console.error('검증 오류:', err);
-          // 네트워크 오류 시에도 결제는 완료된 것으로 처리 (추후 수동 확인)
           onSuccess(rsp);
         }
       } else {
+        // 취소 또는 실패 → processing 해제
+        if (onCancel) onCancel();
         const cancelled = rsp.error_code === 'F0000' || rsp.error_msg?.includes('취소') || rsp.error_msg?.includes('cancel');
         if (!cancelled) {
           alert(`결제 실패: ${rsp.error_msg}`);
@@ -5019,7 +5019,6 @@ ${isSangsaeng
           setProcessing(false);
 
           if (pendingProduct && newStars >= pendingStars) {
-            // 충전 후 바로 서비스 이용 가능
             setStars(newStars - pendingStars);
             if (userKey) saveUserData(userKey, 'stars', newStars - pendingStars);
             handlePaymentComplete();
@@ -5027,9 +5026,10 @@ ${isSangsaeng
             alert(`✅ 충전 완료!\n⭐ ${pkg.stars}별${pkg.moons > 0 ? ` + 🌙 ${pkg.moons}달` : ''} 지급되었습니다.`);
             if (!pendingProduct) setScreen('home');
           }
-        }
+        },
+        () => setProcessing(false) // 취소 시 버튼 복구
       );
-      setTimeout(() => setProcessing(false), 30000);
+      // processing은 onCancel 콜백 또는 성공 후 해제됨
     };
 
     return React.createElement('div', { className: 'min-h-screen pb-24' },
