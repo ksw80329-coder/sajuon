@@ -2284,33 +2284,35 @@ ${pillarDesc}
 7. [일과 재물] 어떤 분야에서 능력이 빛나는지, 재물이 흘러드는 구조와 주의할 점
 8. [성장 전략] ${inp.name}님의 사주가 가리키는 삶의 방향과 지금 당장 실천할 수 있는 구체적 조언`;
 
-      fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 8000,
-          messages: [{ role: 'user', content: prompt }]
+      // 테스트용 15초 지연
+      setTimeout(() => {
+        fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 8000,
+            messages: [{ role: 'user', content: prompt }]
+          })
         })
-      })
-      .then(r => r.json())
-      .then(data => {
-        const text = data.content?.[0]?.text || '';
-        const clean = text.replace(/```json|```/g, '').trim();
-        const parsed = JSON.parse(clean);
-        if (parsed.sections) {
-          setAiSections(parsed.sections);
-          try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
-        } else {
+        .then(r => r.json())
+        .then(data => {
+          const text = data.content?.[0]?.text || '';
+          const clean = text.replace(/```json|```/g, '').trim();
+          const parsed = JSON.parse(clean);
+          if (parsed.sections) {
+            setAiSections(parsed.sections);
+            try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
+          } else {
+            setAiError(true);
+          }
+        })
+        .catch(err => {
+          console.error('AI 해설 오류:', err);
           setAiError(true);
-        }
-      })
-      .catch(err => {
-        console.error('AI 해설 오류:', err);
-        setAiError(true);
-      })
-      .finally(() => setAiLoading(false));
-      })();
+        })
+        .finally(() => setAiLoading(false));
+      }, 15000);
     }, []);
 
     const displaySections = aiSections || (aiError ? generateSajuInterpretation(r, inp) : null);
