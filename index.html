@@ -1699,7 +1699,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           }]);
         }
       }
-      setIsReviewMode(false);
       setScreen('paid-result');
     } else if (prod.name === '궁합 분석') {
       // 궁합 결과 저장
@@ -1722,7 +1721,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           }]);
         }
       }
-      setIsReviewMode(false);
       setScreen('compatibility-result');
     } else if (prod.name === '2026 신년운세') {
       // 신년운세 결과 저장
@@ -1738,7 +1736,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           }]);
         }
       }
-      setIsReviewMode(false);
       setScreen('yearly-result');
     }
   };
@@ -1850,7 +1847,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             if (alreadyPaidHome) {
               const paidHome = savedPaidSaju.find(p => p.name === currentInput.name && p.year === currentInput.year && p.month === currentInput.month && p.day === currentInput.day);
               if (paidHome) { setCurrentResult(paidHome.result); setCurrentInput({ name: paidHome.name, gender: paidHome.gender, year: paidHome.year, month: paidHome.month, day: paidHome.day, hour: paidHome.hour, minute: paidHome.minute, calendar: paidHome.calendar }); }
-              setIsReviewMode(true);
               setScreen('paid-result');
             } else { openPayment({ name: '상세 사주 분석', price: 2900, stars: 29 }); }
           }, 
@@ -2203,7 +2199,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                 setCurrentResult(paidData.result);
                 setCurrentInput({ name: paidData.name, gender: paidData.gender, year: paidData.year, month: paidData.month, day: paidData.day, hour: paidData.hour, minute: paidData.minute, calendar: paidData.calendar });
               }
-              setIsReviewMode(true);
               setScreen('paid-result');
             },
             className: 'mt-6 w-full p-5 bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl'
@@ -2248,7 +2243,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 
     // ===== AI 해설 생성 =====
     const [aiSections, setAiSections] = React.useState(null);
-    const [aiLoading, setAiLoading] = React.useState(!isReviewMode);
+    const [aiLoading, setAiLoading] = React.useState(true);
     const [aiError, setAiError] = React.useState(false);
 
     React.useEffect(() => {
@@ -2592,7 +2587,6 @@ ${pillarDesc}
               setCompatPerson1(compat.person1Id);
               setCompatPerson2(compat.person2Id);
               setCompatRelation(compat.relation || 'couple');
-              setIsReviewMode(true);
               setScreen('compatibility-result');
             },
             className: 'flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all' 
@@ -2634,17 +2628,12 @@ ${pillarDesc}
 
     // ===== AI 궁합 해설 =====
     const [aiCompatSections, setAiCompatSections] = React.useState(null);
-    const [aiCompatLoading, setAiCompatLoading] = React.useState(!isReviewMode);
+    const [aiCompatLoading, setAiCompatLoading] = React.useState(true);
     const [aiCompatError, setAiCompatError] = React.useState(false);
 
     React.useEffect(() => {
       const cacheKey = `ai_compat_${person1.id}_${person2.id}_${compatRelation}`;
       // DEV: 캐시 무시
-      if (isReviewMode) {
-        try { const cached = localStorage.getItem(cacheKey); if (cached) { setAiCompatSections(JSON.parse(cached)); setAiCompatLoading(false); return; } } catch(e) {}
-        setAiCompatLoading(false); return;
-      }
-
       setAiCompatLoading(true);
       (() => {
         const p1Desc = `이름: ${person1.name}, 성별: ${person1.gender}, 생년월일: ${person1.year}년 ${person1.month}월 ${person1.day}일, 일간: ${STEMS.names[r1.dsi]}(${STEMS.korean[r1.dsi]}), 오행: ${STEMS.elements[r1.dsi]}, 신살: ${[...r1.pillarSinsal.year,...r1.pillarSinsal.month,...r1.pillarSinsal.day,...r1.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'없음'}`;
@@ -4611,7 +4600,6 @@ ${isSangsaeng
           if (!isLoggedIn) { setShowLogin(true); return; }
           const alreadyYearlyPaid = savedYearly.some(y => String(y.personId) === String(yearlyPerson));
           if (alreadyYearlyPaid) {
-            setIsReviewMode(true);
             setScreen('yearly-result');
           } else {
             openPayment({ name: '2026 신년운세', price: 1900, stars: 19 });
@@ -4638,7 +4626,6 @@ ${isSangsaeng
             key: i, 
             onClick: () => {
               setYearlyPerson(yearly.personId);
-              setIsReviewMode(true);
               setScreen('yearly-result');
             },
             className: 'flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all' 
@@ -4681,7 +4668,7 @@ ${isSangsaeng
 
     // ===== AI 신년운세 해설 =====
     const [aiYearlySections, setAiYearlySections] = React.useState(null);
-    const [aiYearlyLoading, setAiYearlyLoading] = React.useState(!isReviewMode);
+    const [aiYearlyLoading, setAiYearlyLoading] = React.useState(true);
     const [aiYearlyError, setAiYearlyError] = React.useState(false);
 
     React.useEffect(() => {
@@ -4938,7 +4925,6 @@ ${pillarDesc2}
               calendar: saju.calendar
             });
             setCurrentResult(saju.result);
-            setIsReviewMode(true);
             setScreen('paid-result');
           },
           className: 'flex items-center justify-between p-3 bg-white/5 rounded-xl mb-2 cursor-pointer hover:bg-white/10' 
@@ -4966,7 +4952,6 @@ ${pillarDesc2}
             setCompatPerson1(compat.person1Id);
             setCompatPerson2(compat.person2Id);
             setCompatRelation(compat.relation || 'couple');
-            setIsReviewMode(true);
             setScreen('compatibility-result');
           },
           className: 'flex items-center justify-between p-3 bg-white/5 rounded-xl mb-2 cursor-pointer hover:bg-white/10' 
@@ -4990,7 +4975,6 @@ ${pillarDesc2}
           key: i, 
           onClick: () => {
             setYearlyPerson(yearly.personId);
-            setIsReviewMode(true);
             setScreen('yearly-result');
           },
           className: 'flex items-center justify-between p-3 bg-white/5 rounded-xl mb-2 cursor-pointer hover:bg-white/10' 
@@ -5920,7 +5904,6 @@ ${pillarDesc2}
                         calendar: saju.calendar
                       });
                       setCurrentResult(saju.result);
-                      setIsReviewMode(true);
                       setScreen('paid-result');
                     },
                     className: 'flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all' 
@@ -5955,7 +5938,6 @@ ${pillarDesc2}
                       setCompatPerson1(compat.person1Id);
                       setCompatPerson2(compat.person2Id);
                       setCompatRelation(compat.relation || 'couple');
-                      setIsReviewMode(true);
                       setScreen('compatibility-result');
                     },
                     className: 'flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all' 
@@ -5986,7 +5968,6 @@ ${pillarDesc2}
                     key: i, 
                     onClick: () => {
                       setYearlyPerson(yearly.personId);
-                      setIsReviewMode(true);
                       setScreen('yearly-result');
                     },
                     className: 'flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all' 
