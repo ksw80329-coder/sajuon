@@ -2226,7 +2226,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const [aiError, setAiError] = React.useState(false);
 
     React.useEffect(() => {
-      (async () => {
       const cacheKey = `ai_saju_${inp.name}_${inp.year}_${inp.month}_${inp.day}_${inp.hour}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
@@ -2235,8 +2234,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 
       setAiLoading(true);
       setAiError(false);
-
-      await new Promise(resolve => setTimeout(resolve, 15000));
 
       const pillarDesc = ['year','month','day','hour'].map(k => {
         const p = r.pillars[k];
@@ -2249,50 +2246,43 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       const strongEl = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1])[0];
       const weakEl = Object.entries(r.fe.pct).sort((a,b)=>a[1]-b[1])[0];
 
-      const prompt = `아래 만세력 데이터를 바탕으로 사주 분석 리포트를 생성하세요.
-
-[사용자 정보]
-이름: ${inp.name}
-성별: ${inp.gender}
-생년월일: ${inp.year}년 ${inp.month}월 ${inp.day}일 ${inp.hour !== 'unknown' ? inp.hour+'시' : '시간 모름'}
-음양력: ${inp.calendar}
+      const prompt = `당신은 30년 경력의 명리학 전문가입니다. 아래 만세력 데이터를 보고 ${inp.name}님의 사주를 깊이 있고 생동감 있게 분석해주세요.
 
 [만세력 원국]
 ${pillarDesc}
 
-[오행 분포]
-${feDesc}
+[사용자 정보]
+이름: ${inp.name}(${inp.gender}), 생년월일: ${inp.year}년 ${inp.month}월 ${inp.day}일 ${inp.hour !== 'unknown' ? inp.hour+'시' : '(시간 미입력)'}
+음양력: ${inp.calendar}
+일간: ${STEMS.names[r.dsi]}(${STEMS.korean[r.dsi]}) - ${STEMS.elements[r.dsi]}오행의 본질
 강한 오행: ${strongEl[0]}(${strongEl[1]}%), 약한 오행: ${weakEl[0]}(${weakEl[1]}%)
+보유 신살: ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
 
-[전체 신살 목록]
-${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
-
-[출력 규칙]
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
-각 섹션은 600~800자 내외로 깊이 있게 서술하세요.
-섹션 제목은 이 사주에만 해당하는 고유하고 인상적인 제목으로 작성하세요.
-신살의 영향을 각 섹션 해설에 반드시 반영하세요.
+[작성 규칙]
+- 반드시 JSON 형식으로만 응답 (다른 텍스트 절대 금지)
+- 각 섹션 800~1000자로 풍성하고 깊이 있게 서술
+- 섹션 제목: ${inp.name}님의 사주가 가진 고유한 이야기를 담은 제목 (예: "갑목이 경금을 만난 운명 — 칼날 위에 선 나무의 생존 전략" 처럼 구체적이고 인상적으로)
+- "내면을 다잡는", "뿌리를 내리는", "내실을 다지는" 같은 진부하고 반복적인 표현 절대 금지
+- ${inp.name}님을 자연스럽게 언급하며 1인칭으로 대화하듯 서술
+- 천간·지지·오행·십성·신살의 구체적 근거를 반드시 언급
+- 각 섹션이 확연히 다른 주제와 관점을 가지도록 구성
+- 분석이 추상적이지 않고, 실제 삶과 연결되는 구체적 상황과 행동 조언 포함
 
 {
   "sections": [
-    {
-      "icon": "이모지",
-      "color": "text-pink-400 또는 text-purple-400 또는 text-yellow-400 등 tailwind 색상",
-      "title": "섹션 제목",
-      "content": "800자 내외 해설 내용"
-    }
+    { "icon": "이모지", "color": "text-pink-400 등 tailwind 색상", "title": "이 사람만의 고유한 제목", "content": "800~1000자 해설" }
   ]
 }
 
-8개 섹션 주제 (순서대로):
-1. 정체성과 중심축 (일간의 본질, 타고난 기질)
-2. 성장 환경과 내적 패턴 (월주/연주 분석)
-3. 핵심 힘과 약점 (오행 강약, 용신)
-4. 갈등과 전환 구조 (충·합·신살의 역학)
-5. 사고와 판단 메커니즘 (식신·상관·인성 흐름)
-6. 인간관계와 사회적 위치 (관계 패턴, 대인운)
-7. 일·성과 전략 (직업운, 재물운)
-8. 현실적 조언과 성장 전략 (구체적 실천 방향)`;
+8개 섹션 (순서대로):
+1. [정체성] ${STEMS.korean[r.dsi]}(${STEMS.elements[r.dsi]}) 일간의 본질 — ${inp.name}님이라는 사람의 핵심 기질과 삶의 방향성
+2. [성장 패턴] 월주·연주가 만든 성장 환경과 내면에 깊이 새겨진 심리 패턴
+3. [오행의 힘] 강한 ${strongEl[0]}(${strongEl[1]}%)와 약한 ${weakEl[0]}(${weakEl[1]}%)가 만드는 강점과 함정 — 용신 분석
+4. [갈등 구조] 사주 내 충·합이 만드는 갈등 패턴과 인생의 전환점이 오는 구조
+5. [사고방식] ${inp.name}님이 세상을 인식하고 결정을 내리는 고유한 메커니즘
+6. [인간관계] 사람을 끌어당기는 방식과 관계에서 반복되는 패턴 — 대인 관계의 강점과 약점
+7. [일과 재물] 어떤 분야에서 능력이 빛나는지, 재물이 흘러드는 구조와 주의할 점
+8. [성장 전략] ${inp.name}님의 사주가 가리키는 삶의 방향과 지금 당장 실천할 수 있는 구체적 조언`;
 
       fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -2592,7 +2582,18 @@ ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
                 React.createElement('p', { className: 'text-xs text-gray-500' }, `${relationLabels[compat.relation] || '관계'} · ${compat.date}`)
               )
             ),
-            React.createElement('span', { className: 'text-gray-400 text-sm' }, '다시보기 →')
+            React.createElement('div', { className: 'flex items-center gap-2' },
+              React.createElement('span', { className: 'text-gray-400 text-sm' }, '다시보기'),
+              React.createElement('button', {
+                onClick: (e) => {
+                  e.stopPropagation();
+                  if (!confirm('이 궁합 결과를 삭제하시겠습니까?')) return;
+                  const next = savedCompatibility.filter((_, idx) => idx !== i);
+                  setSavedCompatibility(next);
+                },
+                className: 'text-red-400 text-xs px-2 py-1 rounded-lg bg-red-400/10 hover:bg-red-400/20 transition-all'
+              }, '삭제')
+            )
           );
         })
       )
@@ -2625,32 +2626,59 @@ ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
         const p2Desc = `이름: ${person2.name}, 성별: ${person2.gender}, 생년월일: ${person2.year}년 ${person2.month}월 ${person2.day}일, 일간: ${STEMS.names[r2.dsi]}(${STEMS.korean[r2.dsi]}), 오행: ${STEMS.elements[r2.dsi]}, 신살: ${[...r2.pillarSinsal.year,...r2.pillarSinsal.month,...r2.pillarSinsal.day,...r2.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'없음'}`;
         const relationLabel = { couple:'연인/부부', friend:'친구', business:'비즈니스', parent:'부모자식', sibling:'형제자매', etc:'기타' }[compatRelation] || '기타';
 
-        const prompt = `아래 두 사람의 사주 데이터를 바탕으로 궁합 분석 리포트를 생성하세요.
+        const p1Sinsal = [...r1.pillarSinsal.year,...r1.pillarSinsal.month,...r1.pillarSinsal.day,...r1.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
+        const p2Sinsal = [...r2.pillarSinsal.year,...r2.pillarSinsal.month,...r2.pillarSinsal.day,...r2.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
+        const el1Full = STEMS.elements[r1.dsi];
+        const el2Full = STEMS.elements[r2.dsi];
+        const p1PillarDesc = ['year','month','day','hour'].map(k => {
+          const p = r1.pillars[k]; if (!p) return '';
+          return `${({year:'연',month:'월',day:'일',hour:'시'})[k]}주: ${p.stem}(${STEMS.korean[p.si]},${STEMS.elements[p.si]}) / ${p.branch}`;
+        }).filter(Boolean).join(', ');
+        const p2PillarDesc = ['year','month','day','hour'].map(k => {
+          const p = r2.pillars[k]; if (!p) return '';
+          return `${({year:'연',month:'월',day:'일',hour:'시'})[k]}주: ${p.stem}(${STEMS.korean[p.si]},${STEMS.elements[p.si]}) / ${p.branch}`;
+        }).filter(Boolean).join(', ');
 
-[인물 1] ${p1Desc}
-[인물 2] ${p2Desc}
+        const prompt = `당신은 30년 경력의 명리학 전문가입니다. 아래 두 사람의 사주를 보고 궁합을 깊이 있고 생동감 있게 분석해주세요.
+
+[${person1.name}님 (${person1.gender})]
+생년월일: ${person1.year}.${person1.month}.${person1.day}
+일간: ${STEMS.names[r1.dsi]}(${STEMS.korean[r1.dsi]}) - ${el1Full}오행
+만세력: ${p1PillarDesc}
+신살: ${p1Sinsal.join(', ') || '없음'}
+오행 분포: ${Object.entries(r1.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', ')}
+
+[${person2.name}님 (${person2.gender})]
+생년월일: ${person2.year}.${person2.month}.${person2.day}
+일간: ${STEMS.names[r2.dsi]}(${STEMS.korean[r2.dsi]}) - ${el2Full}오행
+만세력: ${p2PillarDesc}
+신살: ${p2Sinsal.join(', ') || '없음'}
+오행 분포: ${Object.entries(r2.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', ')}
+
 [관계 유형] ${relationLabel}
 
-[출력 규칙]
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
-각 섹션은 500~700자 내외로 깊이 있게 서술하세요.
-섹션 제목은 두 사람에게만 해당하는 고유하고 인상적인 제목으로 작성하세요.
-신살의 영향을 각 섹션에 반드시 반영하세요.
-두 사람의 이름을 자연스럽게 언급하며 서술하세요.
+[작성 규칙]
+- 반드시 JSON 형식으로만 응답 (다른 텍스트 절대 금지)
+- 각 섹션 700~900자로 풍성하게 서술
+- 섹션 제목: 이 두 사람만의 고유한 기운과 스토리가 담긴 제목 (예: "물이 나무를 키우듯, 계수가 갑목에게 주는 선물" 처럼 구체적)
+- "뿌리를 다지는", "내실을 쌓는", "함께 성장하는" 같은 진부한 표현 절대 금지
+- ${person1.name}님, ${person2.name}님 이름을 자연스럽게 언급하며 대화하듯 서술
+- 오행 상생/상극, 신살, 천간합·지지합 등 구체적 근거 반드시 언급
+- 각 섹션이 확연히 다른 주제와 관점으로 구성
 
 {
   "sections": [
-    { "icon": "이모지", "color": "tailwind 색상 클래스", "title": "섹션 제목", "content": "해설 내용" }
+    { "icon": "이모지", "color": "text-pink-400 등 tailwind 색상", "title": "이 두 사람만의 고유한 제목", "content": "700~900자 해설" }
   ]
 }
 
-6개 섹션 주제 (순서대로):
-1. 두 사람의 기운이 만나는 방식 (오행 상생/상극, 천간합·지지합)
-2. 마음이 통하는 지점과 어긋나는 지점 (감정·소통 패턴)
-3. ${relationLabel} 관계에서의 역학 구조 (관계 유형 특화 분석)
-4. 갈등이 생기는 패턴과 해결 열쇠 (충·신살 영향)
-5. 두 사람이 함께 성장하는 방향 (시너지 전략)
-6. ${person1.name}님과 ${person2.name}님에게 드리는 맞춤 조언`;
+6개 섹션 (순서대로):
+1. [기운의 만남] ${el1Full}(${STEMS.korean[r1.dsi]})와 ${el2Full}(${STEMS.korean[r2.dsi]})가 만날 때 일어나는 일 - 상생/상극/합충 구체적 분석
+2. [마음의 언어] 두 사람이 감정과 생각을 주고받는 방식의 차이 - 소통 패턴과 오해가 생기는 지점
+3. [${relationLabel} 관계의 역학] ${relationLabel}으로서 두 사람의 역할 분담, 강점, 주의할 점
+4. [갈등의 뿌리] 부딪힐 때 왜 그런지 - 신살과 오행이 만드는 긴장 구조와 실질적 해결법
+5. [함께 빛나는 조건] 두 사람이 시너지를 내는 구체적 상황·환경·활동
+6. [${person1.name}님·${person2.name}님에게] 각자에게 드리는 개인 맞춤 조언과 이 관계를 더 좋게 만드는 실천 방법`;
 
         try {
           const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -4587,7 +4615,18 @@ ${isSangsaeng
                 React.createElement('p', { className: 'text-xs text-gray-500' }, yearly.date)
               )
             ),
-            React.createElement('span', { className: 'text-gray-400 text-sm' }, '다시보기 →')
+            React.createElement('div', { className: 'flex items-center gap-2' },
+              React.createElement('span', { className: 'text-gray-400 text-sm' }, '다시보기'),
+              React.createElement('button', {
+                onClick: (e) => {
+                  e.stopPropagation();
+                  if (!confirm('이 운세 결과를 삭제하시겠습니까?')) return;
+                  const next = savedYearly.filter((_, idx) => idx !== i);
+                  setSavedYearly(next);
+                },
+                className: 'text-red-400 text-xs px-2 py-1 rounded-lg bg-red-400/10 hover:bg-red-400/20 transition-all'
+              }, '삭제')
+            )
           )
         )
       )
@@ -4619,35 +4658,55 @@ ${isSangsaeng
       const allSinsal = [...r.pillarSinsal.year,...r.pillarSinsal.month,...r.pillarSinsal.day,...r.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
       const feDesc = Object.entries(r.fe.pct).map(([k,v])=>`${k}: ${v}%`).join(', ');
 
-      const prompt = `아래 사주 데이터를 바탕으로 2026년 병오년(丙午年) 신년운세 심층 분석을 생성하세요.
+      const strongEl = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1])[0];
+      const weakEl = Object.entries(r.fe.pct).sort((a,b)=>a[1]-b[1])[0];
+      const pillarDesc2 = ['year','month','day','hour'].map(k => {
+        const p = r.pillars[k];
+        if (!p) return '';
+        const lbl = {year:'연주',month:'월주',day:'일주',hour:'시주'}[k];
+        const sinsal = r.pillarSinsal[k]?.join(', ') || '없음';
+        return `${lbl}: 천간 ${p.stem}(${STEMS.korean[p.si]}, ${STEMS.elements[p.si]}), 지지 ${p.branch} | 신살: ${sinsal}`;
+      }).filter(Boolean).join('\n');
 
-[사용자 정보]
-이름: ${person.name}, 성별: ${person.gender}
-생년월일: ${person.year}년 ${person.month}월 ${person.day}일
-일간: ${STEMS.names[r.dsi]}(${STEMS.korean[r.dsi]}), 오행: ${dayEl}
+      const prompt = `당신은 30년 경력의 명리학 전문가입니다. 아래 데이터를 바탕으로 2026년 병오년 신년운세를 깊이 있고 개인화된 언어로 작성하세요.
+
+[만세력 원국]
+${pillarDesc2}
+
+[사용자]
+이름: ${person.name}(${person.gender}), 생년월일: ${person.year}.${person.month}.${person.day}
+일간: ${STEMS.names[r.dsi]}(${STEMS.korean[r.dsi]}) - ${STEMS.elements[r.dsi]}(${getElHanja(STEMS.elements[r.dsi])}) 오행
+강한 오행: ${strongEl[0]}(${strongEl[1]}%), 약한 오행: ${weakEl[0]}(${weakEl[1]}%)
+보유 신살: ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
 오행 분포: ${feDesc}
-신살: ${allSinsal.join(', ') || '없음'}
-2026년 총운 점수: ${yearlyData.totalScore}점
 
-[출력 규칙]
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
-각 섹션은 500~700자 내외로 깊이 있게 서술하세요.
-2026년 병오년의 기운(丙火, 午火 - 붉은 말의 해)과 이 사람의 사주를 연결해 분석하세요.
-섹션 제목은 이 사람에게만 해당하는 고유하고 인상적인 제목으로 작성하세요.
+[2026 병오년 정보]
+천간: 丙(병화) - 태양같은 강렬한 불의 기운, 표출·확장·화려함
+지지: 午(오화) - 말의 기운, 역동성·자유·질주
+전체: 화(火) 기운이 극강한 해 → 외향적 활동, 변화, 도전의 해
+
+[작성 규칙]
+- 반드시 JSON 형식으로만 응답 (다른 텍스트 절대 금지)
+- 각 섹션 700~900자 내외로 풍성하게 서술
+- 섹션 제목: "${person.name}님"의 사주와 2026년이 만드는 고유한 스토리를 담은 제목 (예: "병화가 갑목을 만나는 해, 빛나는 성장의 문이 열린다" 처럼 구체적으로)
+- 반복 표현, 진부한 문구 금지 ("내실을 다지는", "뿌리를 내리는" 같은 뻔한 표현 사용 절대 금지)
+- ${person.name}님의 이름을 자연스럽게 언급하며 1인칭 대화하듯 서술
+- 천간·지지·오행·신살 근거를 구체적으로 언급하며 해석
+- 각 섹션이 확연히 다른 주제와 톤으로 구성
 
 {
   "sections": [
-    { "icon": "이모지", "color": "tailwind 색상 클래스", "title": "섹션 제목", "content": "해설 내용" }
+    { "icon": "이모지", "color": "text-amber-400 등 tailwind 색상", "title": "고유한 섹션 제목", "content": "700~900자 해설" }
   ]
 }
 
-6개 섹션 주제 (순서대로):
-1. 2026년 병오년이 이 사람에게 갖는 의미 (일간과 병오년의 기운 관계)
-2. 올해 가장 주목해야 할 기회 (강점 오행과 병오년 시너지)
-3. 2026년 재물·직업운 심층 분석
-4. 2026년 인간관계·연애운 심층 분석
-5. 신살이 2026년에 미치는 영향
-6. ${person.name}님을 위한 2026년 월별 핵심 흐름과 전략`;
+아래 6개 섹션을 순서대로 작성:
+1. [총운] 2026년 병오년이 ${person.name}님의 일간(${STEMS.korean[r.dsi]})에 갖는 구체적 의미와 올해의 큰 흐름
+2. [기회] 올해 가장 강하게 열리는 기회의 문 - 오행과 병오년 시너지 기반 구체적 행동 전략
+3. [재물·직업] ${person.name}님의 2026년 재물운과 직업운 - 구체적 시기와 방향 포함
+4. [관계·연애] 2026년 인간관계와 ${person.gender === '여성' ? '연애운' : '연애운'} - 신살 영향 포함한 구체적 조언
+5. [신살 풀이] ${allSinsal.length > 0 ? allSinsal.join(', ') : '보유 신살 없음'} 이 2026년에 어떻게 작용하는지 구체적 해석
+6. [월별 흐름] 상반기(1~6월)와 하반기(7~12월)로 나눠 ${person.name}님만의 구체적 월별 에너지 흐름과 핵심 전략`;
 
       (async () => {
         try {
@@ -4696,21 +4755,7 @@ ${isSangsaeng
           '⚠️ 신중함이 필요한 해'
         )
       ),
-      // 총운 해설
-      React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
-        React.createElement('div', { className: 'p-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center font-bold' }, '📜 총운 해설'),
-        React.createElement('div', { className: 'p-5' },
-          yearlyData.yearSummary.split('\n\n').map((para, i) => 
-            para.startsWith('[') 
-              ? React.createElement('div', { key: i, className: 'mt-4 p-3 bg-amber-500/10 rounded-xl' },
-                  React.createElement('p', { className: 'text-sm text-amber-200 font-medium' }, para.split(']')[0] + ']'),
-                  React.createElement('p', { className: 'text-sm text-gray-300 mt-1' }, para.split(']')[1])
-                )
-              : React.createElement('p', { key: i, className: 'text-sm text-gray-300 leading-relaxed mb-3' }, para)
-          )
-        )
-      ),
-      // AI 로딩 중이면 로딩화면, 완료되면 AI, 에러시 템플릿 월별+분야별
+      // AI 로딩 중이면 로딩화면 먼저, 완료되면 AI 해설, 에러시 기존 템플릿
       aiYearlyLoading
         ? React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
             React.createElement('div', { className: 'p-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center font-bold flex items-center justify-center gap-2' },
@@ -4728,7 +4773,20 @@ ${isSangsaeng
               )
             )
           : React.createElement('div', null,
-              // 에러시 기존 템플릿 월별+분야별 표시
+              // 에러시 기존 총운 + 월별+분야별 표시
+              React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
+                React.createElement('div', { className: 'p-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center font-bold' }, '📜 총운 해설'),
+                React.createElement('div', { className: 'p-5' },
+                  yearlyData.yearSummary.split('\n\n').map((para, i) =>
+                    para.startsWith('[')
+                      ? React.createElement('div', { key: i, className: 'mt-4 p-3 bg-amber-500/10 rounded-xl' },
+                          React.createElement('p', { className: 'text-sm text-amber-200 font-medium' }, para.split(']')[0] + ']'),
+                          React.createElement('p', { className: 'text-sm text-gray-300 mt-1' }, para.split(']')[1])
+                        )
+                      : React.createElement('p', { key: i, className: 'text-sm text-gray-300 leading-relaxed mb-3' }, para)
+                  )
+                )
+              ),
               React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
                 React.createElement('div', { className: 'p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-center font-bold' }, '📅 월별 운세'),
                 React.createElement('p', { className: 'text-xs text-gray-400 text-center py-3 border-b border-white/10' }, '💡 각 월을 클릭하면 상세 운세를 확인할 수 있습니다'),
@@ -4989,28 +5047,7 @@ ${isSangsaeng
             ),
             React.createElement('span', { className: 'text-black/40 text-sm' }, '→')
           ),
-          // 네이버 로그인 (OAuth 리다이렉트 방식)
-          React.createElement('button', {
-            onClick: () => {
-              const NAVER_CLIENT_ID = 'YOUR_NAVER_CLIENT_ID'; // 네이버 Client ID 입력 필요
-              if (NAVER_CLIENT_ID === 'YOUR_NAVER_CLIENT_ID') {
-                alert('네이버 로그인 준비 중입니다.\n카카오 또는 구글 로그인을 이용해주세요.');
-                return;
-              }
-              const state = Math.random().toString(36).slice(2);
-              sessionStorage.setItem('naver_state', state);
-              const redirectUri = encodeURIComponent('https://sajuon.kr/');
-              const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${redirectUri}&state=${state}`;
-              window.location.href = naverAuthUrl;
-            },
-            className: 'w-full flex items-center justify-between px-5 py-4 bg-[#03A94D] text-white rounded-2xl font-semibold hover:brightness-95 transition-all active:scale-[0.98]'
-          },
-            React.createElement('div', { className: 'flex items-center gap-3' },
-              React.createElement('span', { className: 'text-lg font-black w-[22px] text-center' }, 'N'),
-              React.createElement('span', { className: 'text-base' }, '네이버로 시작하기')
-            ),
-            React.createElement('span', { className: 'text-white/40 text-sm' }, '→')
-          ),
+
           // 구글 (Firebase 실제 연동)
           React.createElement('button', {
             onClick: async () => {
