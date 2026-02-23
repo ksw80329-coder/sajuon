@@ -403,7 +403,7 @@ const IMP_CODE        = 'imp60556156';                                   // 포�
 const CHANNEL_KAKAO   = 'channel-key-75ce192f-2096-4d4b-af96-a53da4e69b13'; // 카카오페이 채널키
 const CHANNEL_TOSS    = 'channel-key-30262341-2209-4aab-93f3-805737438ec0';  // 토스페이 채널키
 const PAYMENT_WORKER  = 'https://sajuon-payment.godwk15.workers.dev';
-const DEV_MODE = false; // ← true로 바꾸면 결제 없이 상세 사주 결과 바로 진입        // Cloudflare Worker
+const DEV_MODE = true; // ← true로 바꾸면 결제 없이 상세 사주 결과 바로 진입        // Cloudflare Worker
 
 // 카카오 SDK는 <head>에서 이미 초기화됨 (중복 방지)
 console.log('Kakao 초기화 상태:', window.Kakao?.isInitialized());
@@ -474,7 +474,7 @@ function App() {
   const getSessionAccount = () => {
     try { return JSON.parse(localStorage.getItem('sajuon::session') || 'null'); } catch { return null; }
   };
-  const session = getSessionAccount();
+  const session = getSessionAccount() || { key: 'dev_test_user', email: 'test@sajuon.kr', nickname: '테스트유저', method: 'email' };
 
   const [showLogin, setShowLogin] = useState(false);
   const [paymentProduct, setPaymentProduct] = useState(null);
@@ -1576,26 +1576,23 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     // 개발자 테스트 모드
     if (DEV_MODE) {
       setPaymentProduct(product);
-      handlePaymentComplete();
+      handlePaymentComplete(product);
       return;
     }
     const requiredStars = product.stars || Math.ceil((product.price || 0) / 100);
     if (stars >= requiredStars) {
-      // 별 충분 → 즉시 차감
       setStars(p => { const n = p - requiredStars; if(userKey) saveUserData(userKey,'stars',n); return n; });
       setPaymentProduct(product);
-      handlePaymentComplete();
+      handlePaymentComplete(product);
     } else if (stars + moons >= requiredStars) {
-      // 별 부족하지만 달로 보충 가능 → 달 먼저 사용
       const moonNeeded = requiredStars - stars;
       const newMoons = moons - moonNeeded;
       if (userKey) { saveUserData(userKey,'stars',0); saveUserData(userKey,'moons',newMoons); }
       setStars(0);
       setMoons(newMoons);
       setPaymentProduct(product);
-      handlePaymentComplete();
+      handlePaymentComplete(product);
     } else {
-      // 별+달 합쳐도 부족 → 충전 페이지로
       setPaymentProduct(product);
       setScreen('charge');
     }
@@ -1657,18 +1654,20 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   // 하위 호환성 유지
   const requestKakaoPay = (product, onSuccess) => requestPortonePayment(product, 'kakao', onSuccess);
 
-  const handlePaymentComplete = () => {
+  const handlePaymentComplete = (productArg) => {
+    const prod = productArg || paymentProduct;
+    if (!prod) return;
     const newPurchase = { 
       id: Date.now(),
-      name: paymentProduct.name, 
-      price: paymentProduct.price, 
+      name: prod.name, 
+      price: prod.price, 
       date: new Date().toLocaleDateString('ko-KR')
     };
     const updatedPurchases = [...purchases, newPurchase];
     setPurchases(updatedPurchases);
     if (userKey) saveUserData(userKey, 'purchases', updatedPurchases);
         
-    if (paymentProduct.name === '상세 사주 분석') {
+    if (prod.name === '상세 사주 분석') {
       // 상세 사주 분석 결과 저장
       if (currentInput && currentResult) {
         const alreadySaved = savedPaidSaju.some(s => 
@@ -1694,7 +1693,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         }
       }
       setScreen('paid-result');
-    } else if (paymentProduct.name === '궁합 분석') {
+    } else if (prod.name === '궁합 분석') {
       // 궁합 결과 저장
       const person1 = savedSaju.find(s => String(s.id) === String(compatPerson1));
       const person2 = savedSaju.find(s => String(s.id) === String(compatPerson2));
@@ -1716,7 +1715,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         }
       }
       setScreen('compatibility-result');
-    } else if (paymentProduct.name === '2026 신년운세') {
+    } else if (prod.name === '2026 신년운세') {
       // 신년운세 결과 저장
       const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
       if (person) {
@@ -1794,6 +1793,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   // ========== 화면들 ==========
   const HomeScreen = () => (
     React.createElement('div', { className: 'min-h-screen pb-28' },
+      React.createElement('div', { className: 'bg-yellow-400 text-black text-center text-xs font-bold py-1.5' }, '🛠️ 테스트 모드 — 결제 없이 모든 기능 이용 가능'),
       // 히어로 섹션
       React.createElement('section', { className: 'relative text-center py-12 px-4 overflow-hidden' },
         React.createElement('div', { className: 'absolute inset-0 bg-gradient-to-b from-purple-900/30 to-transparent pointer-events-none' }),
@@ -2298,7 +2298,8 @@ ${pillarDesc}
 7. [일과 재물] 어떤 분야에서 능력이 빛나는지, 재물이 흘러드는 구조와 주의할 점
 8. [성장 전략] ${inp.name}님의 사주가 가리키는 삶의 방향과 지금 당장 실천할 수 있는 구체적 조언`;
 
-      fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
+      const minLoad = new Promise(resolve => setTimeout(resolve, 5000));
+      const aiFetch = fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2313,11 +2314,15 @@ ${pillarDesc}
         const clean = text.replace(/```json|```/g, '').trim();
         const parsed = JSON.parse(clean);
         if (parsed.sections) {
-          setAiSections(parsed.sections);
           try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
-        } else {
-          setAiError(true);
+          return parsed.sections;
         }
+        return null;
+      });
+      Promise.all([aiFetch, minLoad])
+      .then(([sections]) => {
+        if (sections) setAiSections(sections);
+        else setAiError(true);
       })
       .catch(err => {
         console.error('AI 해설 오류:', err);
@@ -2630,8 +2635,7 @@ ${pillarDesc}
 
     React.useEffect(() => {
       const cacheKey = `ai_compat_${person1.id}_${person2.id}_${compatRelation}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) { try { setAiCompatSections(JSON.parse(cached)); return; } catch(e) {} }
+      // DEV: 캐시 무시
 
       setAiCompatLoading(true);
       (async () => {
@@ -2693,21 +2697,29 @@ ${pillarDesc}
 5. [함께 빛나는 조건] 두 사람이 시너지를 내는 구체적 상황·환경·활동
 6. [${person1.name}님·${person2.name}님에게] 각자에게 드리는 개인 맞춤 조언과 이 관계를 더 좋게 만드는 실천 방법`;
 
-        try {
-          const res = await fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
-          });
-          const data = await res.json();
+        const minLoadC = new Promise(resolve => setTimeout(resolve, 5000));
+        const aiFetchC = fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
+        })
+        .then(r => r.json())
+        .then(data => {
           const text = data.content?.[0]?.text || '';
           const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
           if (parsed.sections) {
-            setAiCompatSections(parsed.sections);
             try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
-          } else { setAiCompatError(true); }
-        } catch(e) { console.error('궁합 AI 오류:', e); setAiCompatError(true); }
-        finally { setAiCompatLoading(false); }
+            return parsed.sections;
+          }
+          return null;
+        });
+        Promise.all([aiFetchC, minLoadC])
+        .then(([sections]) => {
+          if (sections) setAiCompatSections(sections);
+          else setAiCompatError(true);
+        })
+        .catch(e => { console.error('궁합 AI 오류:', e); setAiCompatError(true); })
+        .finally(() => setAiCompatLoading(false));
       })();
     }, []);
     
@@ -4664,8 +4676,7 @@ ${isSangsaeng
 
     React.useEffect(() => {
       const cacheKey = `ai_yearly_2026_${person.id}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) { try { setAiYearlySections(JSON.parse(cached)); return; } catch(e) {} }
+      // DEV: 캐시 무시
 
       setAiYearlyLoading(true);
       const allSinsal = [...r.pillarSinsal.year,...r.pillarSinsal.month,...r.pillarSinsal.day,...r.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
@@ -4719,25 +4730,31 @@ ${pillarDesc2}
 3. [재물·직업] ${person.name}님의 2026년 재물운과 직업운 - 구체적 시기와 방향 포함
 4. [관계·연애] 2026년 인간관계와 ${person.gender === '여성' ? '연애운' : '연애운'} - 신살 영향 포함한 구체적 조언
 5. [신살 풀이] ${allSinsal.length > 0 ? allSinsal.join(', ') : '보유 신살 없음'} 이 2026년에 어떻게 작용하는지 구체적 해석
-6. [월별 흐름] 상반기(1~6월)와 하반기(7~12월)로 나눠 ${person.name}님만의 구체적 월별 에너지 흐름과 핵심 전략`;
+6. [에너지 흐름] ${person.name}님의 2026년 전반부와 후반부 에너지 변화 - 언제 치고나가고 언제 지켜야 하는지, 구체적인 계절별 전략과 주의 시기`;
 
-      (async () => {
-        try {
-          const res = await fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
-          });
-          const data = await res.json();
-          const text = data.content?.[0]?.text || '';
-          const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-          if (parsed.sections) {
-            setAiYearlySections(parsed.sections);
-            try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
-          } else { setAiYearlyError(true); }
-        } catch(e) { console.error('운세 AI 오류:', e); setAiYearlyError(true); }
-        finally { setAiYearlyLoading(false); }
-      })();
+      const minLoadY = new Promise(resolve => setTimeout(resolve, 5000));
+      const aiFetchY = fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
+      })
+      .then(r => r.json())
+      .then(data => {
+        const text = data.content?.[0]?.text || '';
+        const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+        if (parsed.sections) {
+          try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
+          return parsed.sections;
+        }
+        return null;
+      });
+      Promise.all([aiFetchY, minLoadY])
+      .then(([sections]) => {
+        if (sections) setAiYearlySections(sections);
+        else setAiYearlyError(true);
+      })
+      .catch(e => { console.error('운세 AI 오류:', e); setAiYearlyError(true); })
+      .finally(() => setAiYearlyLoading(false));
     }, []);
     
     return React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
