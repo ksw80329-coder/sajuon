@@ -2312,15 +2312,22 @@ ${pillarDesc}
       .then(r => r.json())
       .then(data => {
         const text = data.content?.[0]?.text || '';
-        const clean = text.replace(/```json|```/g, '').trim();
-        const parsed = JSON.parse(clean);
-        if (parsed.sections) {
-          try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
-          return parsed.sections;
+        console.log('AI 사주 응답 길이:', text.length, '미리보기:', text.slice(0,100));
+        let sections = null;
+        try {
+          const clean = text.replace(/```json[\s\S]*?```|```/g, s => s.startsWith('```json') ? s.slice(7,-3) : '').trim();
+          const jsonMatch = clean.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (Array.isArray(parsed.sections)) sections = parsed.sections;
+          }
+        } catch(e) { console.error('사주 JSON 파싱 실패:', e.message, text.slice(0,200)); }
+        if (sections) {
+          try { localStorage.setItem(cacheKey, JSON.stringify(sections)); } catch(e) {}
         }
-        return null;
+        return sections;
       })
-      .catch(err => { console.error('AI 사주 오류:', err); return null; });
+      .catch(err => { console.error('AI 사주 fetch 오류:', err); return null; });
       Promise.all([aiFetch, minLoad])
       .then(([sections]) => {
         if (sections) setAiSections(sections);
@@ -2700,23 +2707,7 @@ ${pillarDesc}
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
         })
-        .then(r => r.json())
-        .then(data => {
-          const text = data.content?.[0]?.text || '';
-          const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-          if (parsed.sections) {
-            try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
-            return parsed.sections;
-          }
-          return null;
-        })
-        .catch(e => { console.error('궁합 AI 오류:', e); return null; });
-        Promise.all([aiFetchC, minLoadC])
-        .then(([sections]) => {
-          if (sections) setAiCompatSections(sections);
-          else setAiCompatError(true);
-        })
-        .finally(() => setAiCompatLoading(false));
+
       })();
     }, []);
     
@@ -4735,23 +4726,7 @@ ${pillarDesc2}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
       })
-      .then(r => r.json())
-      .then(data => {
-        const text = data.content?.[0]?.text || '';
-        const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-        if (parsed.sections) {
-          try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
-          return parsed.sections;
-        }
-        return null;
-      })
-      .catch(e => { console.error('운세 AI 오류:', e); return null; });
-      Promise.all([aiFetchY, minLoadY])
-      .then(([sections]) => {
-        if (sections) setAiYearlySections(sections);
-        else setAiYearlyError(true);
-      })
-      .finally(() => setAiYearlyLoading(false));
+
     }, []);
     
     return React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
