@@ -2236,6 +2236,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       setAiLoading(true);
       setAiError(false);
 
+      await new Promise(resolve => setTimeout(resolve, 15000)); // 테스트용 15초 지연
+
       const pillarDesc = ['year','month','day','hour'].map(k => {
         const p = r.pillars[k];
         if (!p) return '';
@@ -2292,7 +2294,6 @@ ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
 7. 일·성과 전략 (직업운, 재물운)
 8. 현실적 조언과 성장 전략 (구체적 실천 방향)`;
 
-      await new Promise(resolve => setTimeout(resolve, 15000)); // 테스트용 15초 지연
       fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2607,6 +2608,67 @@ ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
     
     const r1 = person1.result || analyzeSaju(person1.year, person1.month, person1.day, person1.hour, person1.minute, person1.isLunar, false);
     const r2 = person2.result || analyzeSaju(person2.year, person2.month, person2.day, person2.hour, person2.minute, person2.isLunar, false);
+
+    // ===== AI 궁합 해설 =====
+    const [aiCompatSections, setAiCompatSections] = React.useState(null);
+    const [aiCompatLoading, setAiCompatLoading] = React.useState(false);
+    const [aiCompatError, setAiCompatError] = React.useState(false);
+
+    React.useEffect(() => {
+      const cacheKey = `ai_compat_${person1.id}_${person2.id}_${compatRelation}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) { try { setAiCompatSections(JSON.parse(cached)); return; } catch(e) {} }
+
+      setAiCompatLoading(true);
+      (async () => {
+        const p1Desc = `이름: ${person1.name}, 성별: ${person1.gender}, 생년월일: ${person1.year}년 ${person1.month}월 ${person1.day}일, 일간: ${STEMS.names[r1.dsi]}(${STEMS.korean[r1.dsi]}), 오행: ${STEMS.elements[r1.dsi]}, 신살: ${[...r1.pillarSinsal.year,...r1.pillarSinsal.month,...r1.pillarSinsal.day,...r1.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'없음'}`;
+        const p2Desc = `이름: ${person2.name}, 성별: ${person2.gender}, 생년월일: ${person2.year}년 ${person2.month}월 ${person2.day}일, 일간: ${STEMS.names[r2.dsi]}(${STEMS.korean[r2.dsi]}), 오행: ${STEMS.elements[r2.dsi]}, 신살: ${[...r2.pillarSinsal.year,...r2.pillarSinsal.month,...r2.pillarSinsal.day,...r2.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'없음'}`;
+        const relationLabel = { couple:'연인/부부', friend:'친구', business:'비즈니스', parent:'부모자식', sibling:'형제자매', etc:'기타' }[compatRelation] || '기타';
+
+        const prompt = `아래 두 사람의 사주 데이터를 바탕으로 궁합 분석 리포트를 생성하세요.
+
+[인물 1] ${p1Desc}
+[인물 2] ${p2Desc}
+[관계 유형] ${relationLabel}
+
+[출력 규칙]
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
+각 섹션은 500~700자 내외로 깊이 있게 서술하세요.
+섹션 제목은 두 사람에게만 해당하는 고유하고 인상적인 제목으로 작성하세요.
+신살의 영향을 각 섹션에 반드시 반영하세요.
+두 사람의 이름을 자연스럽게 언급하며 서술하세요.
+
+{
+  "sections": [
+    { "icon": "이모지", "color": "tailwind 색상 클래스", "title": "섹션 제목", "content": "해설 내용" }
+  ]
+}
+
+6개 섹션 주제 (순서대로):
+1. 두 사람의 기운이 만나는 방식 (오행 상생/상극, 천간합·지지합)
+2. 마음이 통하는 지점과 어긋나는 지점 (감정·소통 패턴)
+3. ${relationLabel} 관계에서의 역학 구조 (관계 유형 특화 분석)
+4. 갈등이 생기는 패턴과 해결 열쇠 (충·신살 영향)
+5. 두 사람이 함께 성장하는 방향 (시너지 전략)
+6. ${person1.name}님과 ${person2.name}님에게 드리는 맞춤 조언`;
+
+        try {
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
+          });
+          const data = await res.json();
+          const text = data.content?.[0]?.text || '';
+          const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+          if (parsed.sections) {
+            setAiCompatSections(parsed.sections);
+            try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
+          } else { setAiCompatError(true); }
+        } catch(e) { console.error('궁합 AI 오류:', e); setAiCompatError(true); }
+        finally { setAiCompatLoading(false); }
+      })();
+    }, []);
     
     // 오행 궁합 점수 계산
     const el1 = STEMS.elements[r1.dsi];
@@ -4404,6 +4466,24 @@ ${isSangsaeng
             React.createElement(AccordionItem, { key: idx, icon: section.icon, color: section.color, title: section.title, content: section.content })
           )
         )
+      ),
+
+      // AI 궁합 심층 풀이
+      React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
+        React.createElement('div', { className: 'p-3 gradient-primary text-white text-center font-bold flex items-center justify-center gap-2' },
+          '✨ 궁합 심층 풀이',
+          aiCompatLoading && React.createElement('span', { className: 'text-xs bg-white/20 px-2 py-0.5 rounded-full animate-pulse' }, '천기 해독 중...')
+        ),
+        aiCompatLoading
+          ? React.createElement(SajuLoadingScreen)
+          : (aiCompatSections || aiCompatError)
+            ? [
+                React.createElement('div', { key: 'hint', className: 'p-3 text-center text-gray-400 text-xs border-b border-white/10' }, '각 제목을 클릭하면 풀이가 펼쳐져요'),
+                ...(aiCompatSections || []).map((section, i) =>
+                  React.createElement(AccordionItem, { key: i, icon: section.icon, color: section.color, title: section.title, content: section.content })
+                )
+              ]
+            : React.createElement('div', { className: 'p-6 text-center text-gray-500 text-sm' }, '풀이를 불러오는 중...')
       )
     );
   };
@@ -4525,6 +4605,69 @@ ${isSangsaeng
     
     // 운세 해설 생성
     const yearlyData = generateYearlyInterpretation(r, person, 2026);
+
+    // ===== AI 신년운세 해설 =====
+    const [aiYearlySections, setAiYearlySections] = React.useState(null);
+    const [aiYearlyLoading, setAiYearlyLoading] = React.useState(false);
+    const [aiYearlyError, setAiYearlyError] = React.useState(false);
+
+    React.useEffect(() => {
+      const cacheKey = `ai_yearly_2026_${person.id}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) { try { setAiYearlySections(JSON.parse(cached)); return; } catch(e) {} }
+
+      setAiYearlyLoading(true);
+      const allSinsal = [...r.pillarSinsal.year,...r.pillarSinsal.month,...r.pillarSinsal.day,...r.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
+      const feDesc = Object.entries(r.fe.pct).map(([k,v])=>`${k}: ${v}%`).join(', ');
+
+      const prompt = `아래 사주 데이터를 바탕으로 2026년 병오년(丙午年) 신년운세 심층 분석을 생성하세요.
+
+[사용자 정보]
+이름: ${person.name}, 성별: ${person.gender}
+생년월일: ${person.year}년 ${person.month}월 ${person.day}일
+일간: ${STEMS.names[r.dsi]}(${STEMS.korean[r.dsi]}), 오행: ${dayEl}
+오행 분포: ${feDesc}
+신살: ${allSinsal.join(', ') || '없음'}
+2026년 총운 점수: ${yearlyData.totalScore}점
+
+[출력 규칙]
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
+각 섹션은 500~700자 내외로 깊이 있게 서술하세요.
+2026년 병오년의 기운(丙火, 午火 - 붉은 말의 해)과 이 사람의 사주를 연결해 분석하세요.
+섹션 제목은 이 사람에게만 해당하는 고유하고 인상적인 제목으로 작성하세요.
+
+{
+  "sections": [
+    { "icon": "이모지", "color": "tailwind 색상 클래스", "title": "섹션 제목", "content": "해설 내용" }
+  ]
+}
+
+6개 섹션 주제 (순서대로):
+1. 2026년 병오년이 이 사람에게 갖는 의미 (일간과 병오년의 기운 관계)
+2. 올해 가장 주목해야 할 기회 (강점 오행과 병오년 시너지)
+3. 2026년 재물·직업운 심층 분석
+4. 2026년 인간관계·연애운 심층 분석
+5. 신살이 2026년에 미치는 영향
+6. ${person.name}님을 위한 2026년 월별 핵심 흐름과 전략`;
+
+      (async () => {
+        try {
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
+          });
+          const data = await res.json();
+          const text = data.content?.[0]?.text || '';
+          const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+          if (parsed.sections) {
+            setAiYearlySections(parsed.sections);
+            try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
+          } else { setAiYearlyError(true); }
+        } catch(e) { console.error('운세 AI 오류:', e); setAiYearlyError(true); }
+        finally { setAiYearlyLoading(false); }
+      })();
+    }, []);
     
     return React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
       React.createElement('header', { className: 'flex items-center gap-4 py-4' },
@@ -4599,6 +4742,24 @@ ${isSangsaeng
           });
         })
       ),
+      // AI 신년운세 심층 풀이
+      React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
+        React.createElement('div', { className: 'p-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center font-bold flex items-center justify-center gap-2' },
+          '✨ 2026년 운세 심층 풀이',
+          aiYearlyLoading && React.createElement('span', { className: 'text-xs bg-white/20 px-2 py-0.5 rounded-full animate-pulse' }, '천기 해독 중...')
+        ),
+        aiYearlyLoading
+          ? React.createElement(SajuLoadingScreen)
+          : (aiYearlySections || aiYearlyError)
+            ? [
+                React.createElement('div', { key: 'hint', className: 'p-3 text-center text-gray-400 text-xs border-b border-white/10' }, '각 제목을 클릭하면 풀이가 펼쳐져요'),
+                ...(aiYearlySections || []).map((section, i) =>
+                  React.createElement(AccordionItem, { key: i, icon: section.icon, color: section.color, title: section.title, content: section.content })
+                )
+              ]
+            : React.createElement('div', { className: 'p-6 text-center text-gray-500 text-sm' }, '풀이를 불러오는 중...')
+      ),
+
       // 행운 정보
       React.createElement('div', { className: 'glass rounded-2xl p-5 mt-4' },
         React.createElement('h3', { className: 'font-bold mb-4' }, '🍀 2026년 행운의 키워드'),
