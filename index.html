@@ -512,7 +512,7 @@ function App() {
     if (!window.Kakao) { alert('카카오 SDK 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
     if (!window.Kakao.isInitialized()) window.Kakao.init('f68dda02192f5417b547eb2db8368d3d');
     window.Kakao.Auth.authorize({
-      redirectUri: 'https://ksw80329-coder.github.io/sajuon/',
+      redirectUri: 'https://sajuon.kr/',
     });
   };
 
@@ -530,7 +530,7 @@ function App() {
       fetch(`${PAYMENT_WORKER}/kakao-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, redirect_uri: 'https://ksw80329-coder.github.io/sajuon/' }),
+        body: JSON.stringify({ code, redirect_uri: 'https://sajuon.kr/' }),
       })
       .then(r => r.json())
       .then(data => {
@@ -4623,7 +4623,7 @@ ${isSangsaeng
               }
               const state = Math.random().toString(36).slice(2);
               sessionStorage.setItem('naver_state', state);
-              const redirectUri = encodeURIComponent('https://ksw80329-coder.github.io/sajuon/');
+              const redirectUri = encodeURIComponent('https://sajuon.kr/');
               const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${redirectUri}&state=${state}`;
               window.location.href = naverAuthUrl;
             },
