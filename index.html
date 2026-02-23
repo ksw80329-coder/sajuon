@@ -2634,33 +2634,36 @@ ${pillarDesc}
     const r2 = person2.result || analyzeSaju(person2.year, person2.month, person2.day, person2.hour, person2.minute, person2.isLunar, false);
 
     // ===== AI 궁합 해설 =====
-    const [aiCompatSections, setAiCompatSections] = React.useState(null);
-    const [aiCompatLoading, setAiCompatLoading] = React.useState(true);
+    const _compatCacheKey = `ai_compat_${person1.id}_${person2.id}_${compatRelation}`;
+    const [aiCompatSections, setAiCompatSections] = React.useState(() => {
+      try { const c = localStorage.getItem(_compatCacheKey); return c ? JSON.parse(c) : null; } catch(e) { return null; }
+    });
+    const [aiCompatLoading, setAiCompatLoading] = React.useState(() => {
+      try { return !localStorage.getItem(_compatCacheKey); } catch(e) { return true; }
+    });
     const [aiCompatError, setAiCompatError] = React.useState(false);
 
     React.useEffect(() => {
-      const cacheKey = `ai_compat_${person1.id}_${person2.id}_${compatRelation}`;
-      // DEV: 캐시 무시
+      const cacheKey = _compatCacheKey;
+      if (aiCompatSections) return; // 이미 캐시에서 로드됨
+
       setAiCompatLoading(true);
-      (() => {
-        const p1Desc = `이름: ${person1.name}, 성별: ${person1.gender}, 생년월일: ${person1.year}년 ${person1.month}월 ${person1.day}일, 일간: ${STEMS.names[r1.dsi]}(${STEMS.korean[r1.dsi]}), 오행: ${STEMS.elements[r1.dsi]}, 신살: ${[...r1.pillarSinsal.year,...r1.pillarSinsal.month,...r1.pillarSinsal.day,...r1.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'없음'}`;
-        const p2Desc = `이름: ${person2.name}, 성별: ${person2.gender}, 생년월일: ${person2.year}년 ${person2.month}월 ${person2.day}일, 일간: ${STEMS.names[r2.dsi]}(${STEMS.korean[r2.dsi]}), 오행: ${STEMS.elements[r2.dsi]}, 신살: ${[...r2.pillarSinsal.year,...r2.pillarSinsal.month,...r2.pillarSinsal.day,...r2.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'없음'}`;
-        const relationLabel = { couple:'연인/부부', friend:'친구', business:'비즈니스', parent:'부모자식', sibling:'형제자매', etc:'기타' }[compatRelation] || '기타';
 
-        const p1Sinsal = [...r1.pillarSinsal.year,...r1.pillarSinsal.month,...r1.pillarSinsal.day,...r1.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
-        const p2Sinsal = [...r2.pillarSinsal.year,...r2.pillarSinsal.month,...r2.pillarSinsal.day,...r2.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
-        const el1Full = STEMS.elements[r1.dsi];
-        const el2Full = STEMS.elements[r2.dsi];
-        const p1PillarDesc = ['year','month','day','hour'].map(k => {
-          const p = r1.pillars[k]; if (!p) return '';
-          return `${({year:'연',month:'월',day:'일',hour:'시'})[k]}주: ${p.stem}(${STEMS.korean[p.si]},${STEMS.elements[p.si]}) / ${p.branch}`;
-        }).filter(Boolean).join(', ');
-        const p2PillarDesc = ['year','month','day','hour'].map(k => {
-          const p = r2.pillars[k]; if (!p) return '';
-          return `${({year:'연',month:'월',day:'일',hour:'시'})[k]}주: ${p.stem}(${STEMS.korean[p.si]},${STEMS.elements[p.si]}) / ${p.branch}`;
-        }).filter(Boolean).join(', ');
+      const relationLabel = { couple:'연인/부부', friend:'친구', business:'비즈니스', parent:'부모자식', sibling:'형제자매', etc:'기타' }[compatRelation] || '기타';
+      const p1Sinsal = [...r1.pillarSinsal.year,...r1.pillarSinsal.month,...r1.pillarSinsal.day,...r1.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
+      const p2Sinsal = [...r2.pillarSinsal.year,...r2.pillarSinsal.month,...r2.pillarSinsal.day,...r2.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
+      const el1Full = STEMS.elements[r1.dsi];
+      const el2Full = STEMS.elements[r2.dsi];
+      const p1PillarDesc = ['year','month','day','hour'].map(k => {
+        const p = r1.pillars[k]; if (!p) return '';
+        return `${({year:'연',month:'월',day:'일',hour:'시'})[k]}주: ${p.stem}(${STEMS.korean[p.si]},${STEMS.elements[p.si]}) / ${p.branch}`;
+      }).filter(Boolean).join(', ');
+      const p2PillarDesc = ['year','month','day','hour'].map(k => {
+        const p = r2.pillars[k]; if (!p) return '';
+        return `${({year:'연',month:'월',day:'일',hour:'시'})[k]}주: ${p.stem}(${STEMS.korean[p.si]},${STEMS.elements[p.si]}) / ${p.branch}`;
+      }).filter(Boolean).join(', ');
 
-        const prompt = `당신은 명리학 전문가이자 날카로운 인사이트를 가진 글쓰기 감각의 분석가입니다.
+      const prompt = `당신은 명리학 전문가이자 날카로운 인사이트를 가진 글쓰기 감각의 분석가입니다.
 아래 두 사람의 사주 데이터를 바탕으로, 두 사람이 "이게 진짜 우리 사이 얘기잖아!" 싶을 만큼 구체적이고 솔직한 궁합 분석을 써주세요.
 
 [${person1.name} (${person1.gender})]
@@ -2701,14 +2704,34 @@ ${pillarDesc}
 5. 이 두 사람이 함께 있을 때 빛나는 순간 — 시너지가 터지는 구체적 상황과 환경, 서로의 약점을 채워주는 구조, 같이 하면 좋은 것들
 6. ${person1.name}에게, 그리고 ${person2.name}에게 — 각자에게 드리는 솔직한 개인 조언, 이 관계를 더 잘 굴러가게 만드는 각자의 실천법`;
 
-        const minLoadC = new Promise(resolve => setTimeout(resolve, 10000));
-        const aiFetchC = fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
-        })
-
-      })();
+      const minLoadC = new Promise(resolve => setTimeout(resolve, 10000));
+      const aiFetchC = fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
+      })
+      .then(r => r.json())
+      .then(data => {
+        const text = data.content?.[0]?.text || '';
+        console.log('AI 궁합 응답 길이:', text.length);
+        let sections = null;
+        try {
+          const jsonMatch = text.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (Array.isArray(parsed.sections)) sections = parsed.sections;
+          }
+        } catch(e) { console.error('궁합 JSON 파싱 실패:', e.message); }
+        if (sections) { try { localStorage.setItem(cacheKey, JSON.stringify(sections)); } catch(e) {} }
+        return sections;
+      })
+      .catch(e => { console.error('궁합 AI fetch 오류:', e); return null; });
+      Promise.all([aiFetchC, minLoadC])
+      .then(([sections]) => {
+        if (sections) setAiCompatSections(sections);
+        else setAiCompatError(true);
+      })
+      .finally(() => setAiCompatLoading(false));
     }, []);
     
     // 오행 궁합 점수 계산
@@ -4658,15 +4681,18 @@ ${isSangsaeng
     const yearlyData = generateYearlyInterpretation(r, person, 2026);
 
     // ===== AI 신년운세 해설 =====
-    const [aiYearlySections, setAiYearlySections] = React.useState(null);
-    const [aiYearlyLoading, setAiYearlyLoading] = React.useState(true);
+    const _yearlyCacheKey = `ai_yearly_2026_${person.id}`;
+    const [aiYearlySections, setAiYearlySections] = React.useState(() => {
+      try { const c = localStorage.getItem(_yearlyCacheKey); return c ? JSON.parse(c) : null; } catch(e) { return null; }
+    });
+    const [aiYearlyLoading, setAiYearlyLoading] = React.useState(() => {
+      try { return !localStorage.getItem(_yearlyCacheKey); } catch(e) { return true; }
+    });
     const [aiYearlyError, setAiYearlyError] = React.useState(false);
 
     React.useEffect(() => {
-      const cacheKey = `ai_yearly_2026_${person.id}`;
-      // DEV: 캐시 무시
-
-
+      const cacheKey = _yearlyCacheKey;
+      if (aiYearlySections) return; // 이미 캐시에서 로드됨
       const allSinsal = [...r.pillarSinsal.year,...r.pillarSinsal.month,...r.pillarSinsal.day,...r.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
       const feDesc = Object.entries(r.fe.pct).map(([k,v])=>`${k}: ${v}%`).join(', ');
 
@@ -4726,7 +4752,28 @@ ${pillarDesc2}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
       })
-
+      .then(r => r.json())
+      .then(data => {
+        const text = data.content?.[0]?.text || '';
+        console.log('AI 운세 응답 길이:', text.length);
+        let sections = null;
+        try {
+          const jsonMatch = text.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (Array.isArray(parsed.sections)) sections = parsed.sections;
+          }
+        } catch(e) { console.error('운세 JSON 파싱 실패:', e.message); }
+        if (sections) { try { localStorage.setItem(cacheKey, JSON.stringify(sections)); } catch(e) {} }
+        return sections;
+      })
+      .catch(e => { console.error('운세 AI fetch 오류:', e); return null; });
+      Promise.all([aiFetchY, minLoadY])
+      .then(([sections]) => {
+        if (sections) setAiYearlySections(sections);
+        else setAiYearlyError(true);
+      })
+      .finally(() => setAiYearlyLoading(false));
     }, []);
     
     return React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
