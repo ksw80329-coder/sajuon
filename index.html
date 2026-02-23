@@ -507,51 +507,66 @@ function App() {
   // 사이드 메뉴 상태
   const [showSideMenu, setShowSideMenu] = useState(false);
 
-  // ===== 카카오 로그인 (팝업 방식 SDK 2.x) =====
+  // ===== 카카오 로그인 (Implicit Flow - 토큰 직접 반환) =====
   const loginWithKakao = () => {
     if (!window.Kakao) { alert('카카오 SDK 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
     if (!window.Kakao.isInitialized()) window.Kakao.init('f68dda02192f5417b547eb2db8368d3d');
     window.Kakao.Auth.authorize({
-      redirectUri: window.location.origin + window.location.pathname,
-      throughTalk: false,
+      redirectUri: 'https://ksw80329-coder.github.io/sajuon/',
+      responseType: 'token',
     });
   };
 
-  // ===== 카카오 인가코드 복귀 처리 =====
+  // ===== 카카오 토큰 복귀 처리 (URL hash에서 access_token 추출) =====
   React.useEffect(() => {
-    const code = urlParams.get('code');
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace('#', ''));
+    const accessToken = params.get('access_token');
     const kakaoError = urlParams.get('error');
+
     if (kakaoError) {
       window.history.replaceState({}, '', window.location.pathname);
       if (kakaoError !== 'access_denied') alert('카카오 로그인에 실패했습니다.');
       return;
     }
-    if (code) {
+
+    if (accessToken) {
       window.history.replaceState({}, '', window.location.pathname);
       if (!window.Kakao) return;
       if (!window.Kakao.isInitialized()) window.Kakao.init('f68dda02192f5417b547eb2db8368d3d');
-      // JS SDK로 직접 토큰 교환 후 사용자 정보 조회
-      window.Kakao.Auth.setAccessToken = undefined; // 초기화
-      fetch('https://kauth.kakao.com/oauth/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          client_id: 'f68dda02192f5417b547eb2db8368d3d',
-          redirect_uri: window.location.origin + window.location.pathname,
-          code,
-        })
+      // 액세스 토큰으로 사용자 정보 조회
+      fetch('https://kapi.kakao.com/v2/user/me', {
+        headers: { Authorization: `Bearer ${accessToken}` }
       })
       .then(r => r.json())
-      .then(tokenData => {
-        if (!tokenData.access_token) throw new Error('토큰 발급 실패');
-        window.Kakao.Auth.setAccessToken(tokenData.access_token);
-        return window.Kakao.API.request({ url: '/v2/user/me' });
-      })
       .then(res => {
         const email = res.kakao_account?.email || `kakao_${res.id}@kakao.user`;
         const nickname = res.kakao_account?.profile?.nickname || '';
         handleLogin('kakao', email, nickname);
+      })
+      .catch(err => {
+        console.error('카카오 사용자 정보 오류:', err);
+        alert('카카오 로그인에 실패했습니다. 다시 시도해주세요.');
+      });
+      return;
+    }
+
+    // 인가코드 방식 fallback (code가 있을 경우)
+    const code = urlParams.get('code');
+    if (code) {
+      window.history.replaceState({}, '', window.location.pathname);
+      fetch(`${PAYMENT_WORKER}/kakao-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, redirect_uri: 'https://ksw80329-coder.github.io/sajuon/' }),
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          handleLogin('kakao', data.email, data.nickname);
+        } else {
+          throw new Error(data.message);
+        }
       })
       .catch(err => {
         console.error('카카오 로그인 오류:', err);
