@@ -403,7 +403,7 @@ const IMP_CODE        = 'imp60556156';                                   // 포�
 const CHANNEL_KAKAO   = 'channel-key-75ce192f-2096-4d4b-af96-a53da4e69b13'; // 카카오페이 채널키
 const CHANNEL_TOSS    = 'channel-key-30262341-2209-4aab-93f3-805737438ec0';  // 토스페이 채널키
 const PAYMENT_WORKER  = 'https://sajuon-payment.godwk15.workers.dev';
-const DEV_MODE = false; // ← true로 바꾸면 결제 없이 상세 사주 결과 바로 진입        // Cloudflare Worker
+const DEV_MODE = true; // ← true로 바꾸면 결제 없이 상세 사주 결과 바로 진입        // Cloudflare Worker
 
 // 카카오 SDK는 <head>에서 이미 초기화됨 (중복 방지)
 console.log('Kakao 초기화 상태:', window.Kakao?.isInitialized());
