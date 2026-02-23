@@ -2298,7 +2298,7 @@ ${pillarDesc}
 7. [일과 재물] 어떤 분야에서 능력이 빛나는지, 재물이 흘러드는 구조와 주의할 점
 8. [성장 전략] ${inp.name}님의 사주가 가리키는 삶의 방향과 지금 당장 실천할 수 있는 구체적 조언`;
 
-      fetch('https://api.anthropic.com/v1/messages', {
+      fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2694,7 +2694,7 @@ ${pillarDesc}
 6. [${person1.name}님·${person2.name}님에게] 각자에게 드리는 개인 맞춤 조언과 이 관계를 더 좋게 만드는 실천 방법`;
 
         try {
-          const res = await fetch('https://api.anthropic.com/v1/messages', {
+          const res = await fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
@@ -4723,7 +4723,7 @@ ${pillarDesc2}
 
       (async () => {
         try {
-          const res = await fetch('https://api.anthropic.com/v1/messages', {
+          const res = await fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
