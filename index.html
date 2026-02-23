@@ -2226,6 +2226,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const [aiError, setAiError] = React.useState(false);
 
     React.useEffect(() => {
+      (async () => {
       const cacheKey = `ai_saju_${inp.name}_${inp.year}_${inp.month}_${inp.day}_${inp.hour}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
@@ -2291,6 +2292,7 @@ ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
 7. 일·성과 전략 (직업운, 재물운)
 8. 현실적 조언과 성장 전략 (구체적 실천 방향)`;
 
+      await new Promise(resolve => setTimeout(resolve, 15000)); // 테스트용 15초 지연
       fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2317,6 +2319,7 @@ ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
         setAiError(true);
       })
       .finally(() => setAiLoading(false));
+      })();
     }, []);
 
     const displaySections = aiSections || (aiError ? generateSajuInterpretation(r, inp) : null);
@@ -2445,8 +2448,8 @@ ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
       // AI 사주 해설
       React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
         React.createElement('div', { className: 'p-3 gradient-primary text-white text-center font-bold flex items-center justify-center gap-2' },
-          '✨ AI 사주 해설',
-          aiLoading && React.createElement('span', { className: 'text-xs bg-white/20 px-2 py-0.5 rounded-full animate-pulse' }, '생성 중...')
+          '✨ 사주 심층 풀이',
+          aiLoading && React.createElement('span', { className: 'text-xs bg-white/20 px-2 py-0.5 rounded-full animate-pulse' }, '천기 해독 중...')
         ),
         aiLoading
           ? React.createElement(SajuLoadingScreen)
@@ -2454,7 +2457,7 @@ ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
           : displaySections
             ? [
                 React.createElement('div', { key: 'hint', className: 'p-3 text-center text-gray-400 text-xs border-b border-white/10' },
-                  aiError ? '⚠️ AI 연결 실패 - 기본 해설로 표시합니다' : '각 제목을 클릭하면 해설이 펼쳐져요'
+                  '각 제목을 클릭하면 풀이가 펼쳐져요'
                 ),
                 ...displaySections.map((section, i) =>
                   React.createElement(AccordionItem, { key: i, icon: section.icon, color: section.color, title: section.title, content: section.content })
