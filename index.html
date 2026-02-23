@@ -403,7 +403,7 @@ const IMP_CODE        = 'imp60556156';                                   // 포�
 const CHANNEL_KAKAO   = 'channel-key-75ce192f-2096-4d4b-af96-a53da4e69b13'; // 카카오페이 채널키
 const CHANNEL_TOSS    = 'channel-key-30262341-2209-4aab-93f3-805737438ec0';  // 토스페이 채널키
 const PAYMENT_WORKER  = 'https://sajuon-payment.godwk15.workers.dev';
-const DEV_MODE = true; // ← true로 바꾸면 결제 없이 상세 사주 결과 바로 진입        // Cloudflare Worker
+const DEV_MODE = false; // ← true로 바꾸면 결제 없이 상세 사주 결과 바로 진입        // Cloudflare Worker
 
 // 카카오 SDK는 <head>에서 이미 초기화됨 (중복 방지)
 console.log('Kakao 초기화 상태:', window.Kakao?.isInitialized());
@@ -1921,6 +1921,21 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           ),
           React.createElement('p', { className: 'text-xs text-gray-700 mt-2' }, '사주ON · 대표 고승우 · 사업자 294-18-02476')
         )
+      ),
+
+      // 사업자 정보 푸터
+      React.createElement('div', { className: 'px-4 pb-6 mt-2' },
+        React.createElement('div', { className: 'border-t border-white/5 pt-4' },
+          React.createElement('p', { className: 'text-xs text-gray-600 font-medium mb-2' }, '사주ON'),
+          React.createElement('div', { className: 'space-y-0.5' },
+            React.createElement('p', { className: 'text-xs text-gray-600' }, '대표자: 고승우'),
+            React.createElement('p', { className: 'text-xs text-gray-600' }, '사업자등록번호: 294-18-02476'),
+            React.createElement('p', { className: 'text-xs text-gray-600' }, '사업장 주소: 경상남도 진주시 도동천로 48, 104-1504'),
+            React.createElement('p', { className: 'text-xs text-gray-600' }, '대표전화: 050-6522-1519'),
+            React.createElement('p', { className: 'text-xs text-gray-600' }, '이메일: godwk15@naver.com'),
+            React.createElement('p', { className: 'text-xs text-gray-600 mt-2' }, '© 2026 사주ON. All rights reserved.')
+          )
+        )
       )
     )
   );
@@ -2284,35 +2299,32 @@ ${pillarDesc}
 7. [일과 재물] 어떤 분야에서 능력이 빛나는지, 재물이 흘러드는 구조와 주의할 점
 8. [성장 전략] ${inp.name}님의 사주가 가리키는 삶의 방향과 지금 당장 실천할 수 있는 구체적 조언`;
 
-      // 테스트용 15초 지연
-      setTimeout(() => {
-        fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 8000,
-            messages: [{ role: 'user', content: prompt }]
-          })
+      fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 8000,
+          messages: [{ role: 'user', content: prompt }]
         })
-        .then(r => r.json())
-        .then(data => {
-          const text = data.content?.[0]?.text || '';
-          const clean = text.replace(/```json|```/g, '').trim();
-          const parsed = JSON.parse(clean);
-          if (parsed.sections) {
-            setAiSections(parsed.sections);
-            try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
-          } else {
-            setAiError(true);
-          }
-        })
-        .catch(err => {
-          console.error('AI 해설 오류:', err);
+      })
+      .then(r => r.json())
+      .then(data => {
+        const text = data.content?.[0]?.text || '';
+        const clean = text.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(clean);
+        if (parsed.sections) {
+          setAiSections(parsed.sections);
+          try { localStorage.setItem(cacheKey, JSON.stringify(parsed.sections)); } catch(e) {}
+        } else {
           setAiError(true);
-        })
-        .finally(() => setAiLoading(false));
-      }, 15000);
+        }
+      })
+      .catch(err => {
+        console.error('AI 해설 오류:', err);
+        setAiError(true);
+      })
+      .finally(() => setAiLoading(false));
     }, []);
 
     const displaySections = aiSections || (aiError ? generateSajuInterpretation(r, inp) : null);
