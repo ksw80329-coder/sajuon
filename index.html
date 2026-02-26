@@ -2242,12 +2242,19 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const allSinsal = [...r.pillarSinsal.year, ...r.pillarSinsal.month, ...r.pillarSinsal.day, ...r.pillarSinsal.hour].filter((v, i, a) => a.indexOf(v) === i);
 
     // ===== AI 해설 생성 =====
-    const [aiSections, setAiSections] = React.useState(null);
-    const [aiLoading, setAiLoading] = React.useState(true);
+    // ===== AI 해설 생성 =====
+    const _sajuCacheKey = `ai_saju_${inp.name}_${inp.year}_${inp.month}_${inp.day}_${inp.hour}`;
+    const [aiSections, setAiSections] = React.useState(() => {
+      try { const c = localStorage.getItem(_sajuCacheKey); const p = c ? JSON.parse(c) : null; return Array.isArray(p) && p.length > 0 ? p : null; } catch(e) { return null; }
+    });
+    const [aiLoading, setAiLoading] = React.useState(() => {
+      try { const c = localStorage.getItem(_sajuCacheKey); const p = c ? JSON.parse(c) : null; return !(Array.isArray(p) && p.length > 0); } catch(e) { return true; }
+    });
     const [aiError, setAiError] = React.useState(false);
 
     React.useEffect(() => {
-      const cacheKey = `ai_saju_${inp.name}_${inp.year}_${inp.month}_${inp.day}_${inp.hour}`;
+      const cacheKey = _sajuCacheKey;
+      if (aiSections) return; // 이미 캐시에서 로드됨
 
       setAiError(false);
 
@@ -2313,9 +2320,8 @@ ${pillarDesc}
       .then(data => {
         const text = data.content?.[0]?.text || '';
         console.log('===== AI 사주 응답 =====');
-        console.log('길이:', text.length);
-        console.log('에러:', data.error);
-        console.log('전체내용:', text.slice(0,500));
+        console.log('data 전체:', JSON.stringify(data).slice(0,500));
+        console.log('text 길이:', text.length, '| text:', text.slice(0,200));
         let sections = null;
         try {
           const clean = text.replace(/```json[\s\S]*?```|```/g, s => s.startsWith('```json') ? s.slice(7,-3) : '').trim();
@@ -2637,12 +2643,12 @@ ${pillarDesc}
     const r2 = person2.result || analyzeSaju(person2.year, person2.month, person2.day, person2.hour, person2.minute, person2.isLunar, false);
 
     // ===== AI 궁합 해설 =====
-    const _compatCacheKey = `ai_compat_v2_${person1.id}_${person2.id}_${compatRelation}`;
+    const _compatCacheKey = `ai_compat_${person1.id}_${person2.id}_${compatRelation}`;
     const [aiCompatSections, setAiCompatSections] = React.useState(() => {
-      try { const c = localStorage.getItem(_compatCacheKey); return c ? JSON.parse(c) : null; } catch(e) { return null; }
+      try { const c = localStorage.getItem(_compatCacheKey); const p = c ? JSON.parse(c) : null; return Array.isArray(p) && p.length > 0 ? p : null; } catch(e) { return null; }
     });
     const [aiCompatLoading, setAiCompatLoading] = React.useState(() => {
-      try { return !localStorage.getItem(_compatCacheKey); } catch(e) { return true; }
+      try { const c = localStorage.getItem(_compatCacheKey); const p = c ? JSON.parse(c) : null; return !(Array.isArray(p) && p.length > 0); } catch(e) { return true; }
     });
     const [aiCompatError, setAiCompatError] = React.useState(false);
 
@@ -4684,12 +4690,12 @@ ${isSangsaeng
     const yearlyData = generateYearlyInterpretation(r, person, 2026);
 
     // ===== AI 신년운세 해설 =====
-    const _yearlyCacheKey = `ai_yearly_2026_v2_${person.id}`;
+    const _yearlyCacheKey = `ai_yearly_2026_${person.id}`;
     const [aiYearlySections, setAiYearlySections] = React.useState(() => {
-      try { const c = localStorage.getItem(_yearlyCacheKey); return c ? JSON.parse(c) : null; } catch(e) { return null; }
+      try { const c = localStorage.getItem(_yearlyCacheKey); const p = c ? JSON.parse(c) : null; return Array.isArray(p) && p.length > 0 ? p : null; } catch(e) { return null; }
     });
     const [aiYearlyLoading, setAiYearlyLoading] = React.useState(() => {
-      try { return !localStorage.getItem(_yearlyCacheKey); } catch(e) { return true; }
+      try { const c = localStorage.getItem(_yearlyCacheKey); const p = c ? JSON.parse(c) : null; return !(Array.isArray(p) && p.length > 0); } catch(e) { return true; }
     });
     const [aiYearlyError, setAiYearlyError] = React.useState(false);
 
