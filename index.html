@@ -6415,7 +6415,7 @@ ${pillarDesc2}
           { color: 'text-red-400', text: '❌ 환불 불가: AI 사주·궁합·운세 콘텐츠를 이미 열람한 경우 (즉시 생성·제공, 전자상거래법 제17조 제2항)' },
           { color: 'text-red-400', text: '❌ 환불 불가: 충전일로부터 7일 초과한 경우' },
           { color: 'text-red-400', text: '❌ 환불 불가: 무료 지급 달(🌙) 및 이벤트 보너스 별' },
-        ].mam, i) => React.createElement('p', { key: i, className: `text-xs leading-relaxed mb-1.5 ${item.color}` }, item.text))
+        ].map((item, i) => React.createElement('p', { key: i, className: `text-xs leading-relaxed mb-1.5 ${item.color}` }, item.text))
       ),
       React.createElement('div', { className: 'glass rounded-2xl p-4' },
         React.createElement('p', { className: 'text-xs text-gray-400 mb-2 font-medium' }, '결제 정보 (주문번호 또는 결제 일시)'),
