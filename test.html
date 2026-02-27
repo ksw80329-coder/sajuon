@@ -2350,8 +2350,8 @@ ${pillarDesc}
       const minLoad = new Promise(resolve => setTimeout(resolve, 60000));
       const aiFetch = fetch('https://sajuon.kr/q', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ d: (()=>{ const s=JSON.stringify({max_tokens:8192,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })() })
+        headers: { 'Content-Type': 'text/plain' },
+        body: (()=>{ const s=JSON.stringify({max_tokens:4096,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })()
       })
       .then(r => r.json())
       .then(data => {
@@ -2758,8 +2758,8 @@ ${pillarDesc}
       const minLoadC = new Promise(resolve => setTimeout(resolve, 60000));
       const aiFetchC = fetch('https://sajuon.kr/q', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ d: (()=>{ const s=JSON.stringify({max_tokens:8192,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })() })
+        headers: { 'Content-Type': 'text/plain' },
+        body: (()=>{ const s=JSON.stringify({max_tokens:4096,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })()
       })
       .then(r => r.json())
       .then(data => {
@@ -4805,8 +4805,8 @@ ${pillarDesc2}
       const minLoadY = new Promise(resolve => setTimeout(resolve, 60000));
       const aiFetchY = fetch('https://sajuon.kr/q', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ d: (()=>{ const s=JSON.stringify({max_tokens:8192,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })() })
+        headers: { 'Content-Type': 'text/plain' },
+        body: (()=>{ const s=JSON.stringify({max_tokens:4096,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })()
       })
       .then(r => r.json())
       .then(data => {
