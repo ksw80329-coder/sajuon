@@ -402,8 +402,8 @@ const KAKAO_APP_KEY = 'f68dda02192f5417b547eb2db8368d3d';
 const IMP_CODE        = 'imp60556156';                                   // 포트원 가맹점 식별코드
 const CHANNEL_KAKAO   = 'channel-key-75ce192f-2096-4d4b-af96-a53da4e69b13'; // 카카오페이 채널키
 const CHANNEL_TOSS    = 'channel-key-30262341-2209-4aab-93f3-805737438ec0';  // 토스페이 채널키
-const PAYMENT_WORKER  = 'https://sajuon-payment.godwk15.workers.dev';
-const DEV_MODE = false; // ← true로 바꾸면 결제 없이 상세 사주 결과 바로 진입        // Cloudflare Worker
+const PAYMENT_WORKER  = 'https://api.sajuon.kr';
+const DEV_MODE = true; // ← true로 바꾸면 결제 없이 상세 사주 결과 바로 진입        // Cloudflare Worker
 
 // 카카오 SDK는 <head>에서 이미 초기화됨 (중복 방지)
 console.log('Kakao 초기화 상태:', window.Kakao?.isInitialized());
@@ -425,6 +425,7 @@ if (tossPaymentKey && tossOrderId && tossAmount) {
 // ========== React 앱 ==========
 function App() {
   const [currentScreen, setCurrentScreen] = useState(() => {
+    // URL hash로 초기 화면 복원
     const hash = window.location.hash.replace('#', '');
     return hash || 'home';
   });
@@ -473,7 +474,7 @@ function App() {
   const getSessionAccount = () => {
     try { return JSON.parse(localStorage.getItem('sajuon::session') || 'null'); } catch { return null; }
   };
-  const session = getSessionAccount();
+  const session = getSessionAccount() || { key: 'dev_test_user', email: 'test@sajuon.kr', nickname: '테스트유저', method: 'email' };
 
   const [showLogin, setShowLogin] = useState(false);
   const [paymentProduct, setPaymentProduct] = useState(null);
@@ -1297,70 +1298,34 @@ ${coreAdvice}
         : '무리하지 마세요';
       
       // 월별 사주 기반 제목 생성
-      // MZ 스타일 월별 고유 제목 (2026년 실제 천간지지 반영)
+      // 각 월의 천간지지와 일간의 관계로 완전히 고유한 제목 생성
       const monthTitleMap = {
-        0: {
-          high: '올해 첫 달부터 이미 다른 사람 — 경인(庚寅)의 기세',
-          mid:  '1월은 조용한 척 내부에서 뭔가 끓고 있는 달',
-          low:  '경인월, 버티는 게 전략이 되는 시기'
-        },
-        1: {
-          high: '신묘(辛卯)월 — 토끼처럼 조용히 치고 나가는 2월',
-          mid:  '봄 바이브 오는데 아직 타이밍 재는 2월',
-          low:  '2월은 좀 힘들지만, 이 시련이 나중에 레벨업 재료'
-        },
-        2: {
-          high: '임진(壬辰)월 — 물 만난 고기, 막힘없이 흘러가는 3월',
-          mid:  '봄기운은 올라오는데 아직 조심해야 할 3월',
-          low:  '비 맞는 달이지만 씻고 나면 오히려 개운해지는 법'
-        },
-        3: {
-          high: '계사(癸巳)월 — 드디어 황금 타이밍, 놓치면 후회하는 4월',
-          mid:  '사화(巳火) 첫 열기, 방향 잡고 차근차근 가는 4월',
-          low:  '계사월의 충돌 에너지 — 흔들리지 말고 중심 잡기'
-        },
-        4: {
-          high: '갑오(甲午)월 — 나무가 불 만난 격, 5월 에너지 폭발 주의',
-          mid:  '여름 오기 전 마지막 준비 달 — 5월 꾸준히만 가자',
-          low:  '오화 열기가 좀 세긴 한데, 체력 관리가 진짜 핵심'
-        },
-        5: {
-          high: '을미(乙未)월 — 드디어 내가 꽃피는 시즌 왔다',
-          mid:  '한여름 더위 속 묵묵히 버티며 쌓아가는 6월',
-          low:  '미토 열기에 번아웃 조심 — 쉬는 것도 전략이다'
-        },
-        6: {
-          high: '병신(丙申)월 — 결단력 MAX, 망설이면 기회 날아가는 7월',
-          mid:  '가을 초입, 신금 기운으로 쓸 것과 버릴 것 정돈하는 달',
-          low:  '7월 기싸움 예고 — 감정 소모 줄이는 게 진짜 답'
-        },
-        7: {
-          high: '정유(丁酉)월 — 갈고닦은 게 드디어 빛나는 8월',
-          mid:  '유금 서늘함 타고 차분하게 마무리하는 8월',
-          low:  '마찰이 있어도 감정 다스리면 오히려 성장하는 달'
-        },
-        8: {
-          high: '무술(戊戌)월 — 믿을 수 있는 사람과 함께 터지는 9월',
-          mid:  '술토의 깊은 창고에 결실 채우는 가을 마지막 달',
-          low:  '9월 무게가 겹치는 느낌 — 하나씩 내려놓는 연습'
-        },
-        9: {
-          high: '기해(己亥)월 — 직관이 맞는 달, 과감하게 움직여도 되는 10월',
-          mid:  '해수(亥水)가 스며드는 성찰의 계절, 내면 정리하기 좋은 달',
-          low:  '10월 기초 흔들리는 느낌 — 다시 점검하면 오히려 기회'
-        },
-        10: {
-          high: '경자(庚子)월 — 금수상생, 머리 잘 돌아가는 11월',
-          mid:  '자수(子水) 고요함 타고 전략 세우는 11월',
-          low:  '11월 찬 기운 속 체력과 의지 모아두는 달'
-        },
-        11: {
-          high: '신축(辛丑)월 — 한 해 마무리하며 이미 내년 준비 끝내는 사람',
-          mid:  '12월 축토의 갈무리, 조용하지만 알차게 닫는 달',
-          low:  '신축월 묵은 것 정리하는 시간 — 버려야 새것이 온다'
-        }
+        // 1월 경인(庚寅) - 겨울끝 목기운
+        0: { high: '경인월, 겨울을 박차고 솟아오를 준비가 된 달', mid: '인목(寅木)의 기지개, 조용히 시작을 다지는 달', low: '경금이 인목을 억누르는 긴장의 달' },
+        // 2월 신묘(辛卯) - 봄 시작
+        1: { high: '신묘월, 봄의 첫 문이 활짝 열리는 달', mid: '묘목(卯木)의 생기가 감도는 차분한 출발의 달', low: '신금의 날 아래 묘목이 버티는 인내의 달' },
+        // 3월 임진(壬辰) - 봄 성장
+        2: { high: '임진월, 물과 흙이 만나 풍요를 만드는 달', mid: '진토(辰土)가 봄기운을 머금고 숙성하는 달', low: '임수가 진토를 흐리는 혼돈을 정리하는 달' },
+        // 4월 계사(癸巳) - 초여름
+        3: { high: '계사월, 수화기제(水火旣濟)의 균형이 빛나는 달', mid: '사화(巳火)의 첫 열기 속 방향을 잡는 달', low: '계수와 사화의 충돌, 중심을 잃지 않을 달' },
+        // 5월 갑오(甲午) - 여름
+        4: { high: '갑오월, 갑목이 오화에 불을 지피는 기세의 달', mid: '오화(午火)의 열기 속 꾸준히 나아가는 달', low: '오화의 강한 열기에 체력을 비축할 달' },
+        // 6월 을미(乙未) - 한여름
+        5: { high: '을미월, 을목이 미토에 뿌리 내리며 꽃피는 달', mid: '미토(未土)가 여름 끝을 붙드는 묵직한 달', low: '을미월, 지나친 열기를 식혀가며 보수할 달' },
+        // 7월 병신(丙申) - 초가을
+        6: { high: '병신월, 불꽃과 칼이 만나 빛나는 결단의 달', mid: '신금(申金)이 제 빛을 찾아가는 차분한 달', low: '병화와 신금의 긴장, 날카로움을 조율할 달' },
+        // 8월 정유(丁酉) - 가을
+        7: { high: '정유월, 정화가 유금을 벼리는 완성의 달', mid: '유금(酉金)의 서늘한 기운이 가득한 정돈의 달', low: '정화와 유금의 마찰, 감정을 다스릴 달' },
+        // 9월 무술(戊戌) - 늦가을
+        8: { high: '무술월, 두 토가 두터운 신뢰를 쌓는 달', mid: '술토(戌土)의 깊은 창고에 결실을 채우는 달', low: '무술 복토(伏土), 겹치는 무게를 버텨낼 달' },
+        // 10월 기해(己亥) - 초겨울
+        9: { high: '기해월, 토수상충(土水相衝)을 이기는 저력의 달', mid: '해수(亥水)가 기토를 적시는 성찰의 계절', low: '기토와 해수의 충, 기초를 다시 점검할 달' },
+        // 11월 경자(庚子) - 겨울
+        10: { high: '경자월, 금수상생(金水相生)의 지혜가 빛나는 달', mid: '자수(子水)의 깊은 고요 속 전략을 세우는 달', low: '경자월, 찬 기운 속 체력과 의지를 모을 달' },
+        // 12월 신축(辛丑) - 겨울 끝
+        11: { high: '신축월, 한 해를 마무리하며 새 출발을 준비하는 달', mid: '축토(丑土)가 결실을 갈무리하는 마지막 준비의 달', low: '신축월, 묵은 것을 정리하고 새 씨앗을 품는 달' }
       };
-      const monthTitle = monthTitleMap[i]?.[level] || `${monthGans[i]} ${month}`;
+      const monthTitle = monthTitleMap[i]?.[level] || `${monthGan} ${month} 운세`;
       
       return { 
         month, 
@@ -1835,6 +1800,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   // ========== 화면들 ==========
   const HomeScreen = () => (
     React.createElement('div', { className: 'min-h-screen pb-28' },
+      React.createElement('div', { className: 'bg-yellow-400 text-black text-center text-xs font-bold py-1.5' }, '🛠️ 테스트 모드 — 결제 없이 모든 기능 이용 가능'),
       // 히어로 섹션
       React.createElement('section', { className: 'relative text-center py-12 px-4 overflow-hidden' },
         React.createElement('div', { className: 'absolute inset-0 bg-gradient-to-b from-purple-900/30 to-transparent pointer-events-none' }),
@@ -2276,6 +2242,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const allSinsal = [...r.pillarSinsal.year, ...r.pillarSinsal.month, ...r.pillarSinsal.day, ...r.pillarSinsal.hour].filter((v, i, a) => a.indexOf(v) === i);
 
     // ===== AI 해설 생성 =====
+    // ===== AI 해설 생성 =====
     const _sajuCacheKey = `ai_saju_${inp.name}_${inp.year}_${inp.month}_${inp.day}_${inp.hour}`;
     const [aiSections, setAiSections] = React.useState(() => {
       try { const c = localStorage.getItem(_sajuCacheKey); const p = c ? JSON.parse(c) : null; return Array.isArray(p) && p.length > 0 ? p : null; } catch(e) { return null; }
@@ -2339,8 +2306,8 @@ ${pillarDesc}
 7. 돈과 일에 대한 사주의 답 — 어떤 분야에서 터지는지, 재물이 들어오는 구조와 새는 구멍
 8. 지금 당장 써먹는 전략 — 이 사주가 가리키는 방향과 ${inp.name}님에게 맞는 구체적 행동 플랜`;
 
-      const minLoad = new Promise(resolve => setTimeout(resolve, 30000));
-      const aiFetch = fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
+      const minLoad = new Promise(resolve => setTimeout(resolve, 10000));
+      const aiFetch = fetch('https://api.sajuon.kr/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2746,8 +2713,8 @@ ${pillarDesc}
 5. 이 두 사람이 함께 있을 때 빛나는 순간 — 시너지가 터지는 구체적 상황과 환경, 서로의 약점을 채워주는 구조, 같이 하면 좋은 것들
 6. ${person1.name}에게, 그리고 ${person2.name}에게 — 각자에게 드리는 솔직한 개인 조언, 이 관계를 더 잘 굴러가게 만드는 각자의 실천법`;
 
-      const minLoadC = new Promise(resolve => setTimeout(resolve, 30000));
-      const aiFetchC = fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
+      const minLoadC = new Promise(resolve => setTimeout(resolve, 10000));
+      const aiFetchC = fetch('https://api.sajuon.kr/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: 'claude-3-haiku-20240307', max_tokens: 4096, messages: [{ role: 'user', content: prompt }] })
@@ -4788,8 +4755,8 @@ ${pillarDesc2}
 5. ${person.name}님이 가진 신살의 진짜 의미 — ${allSinsal.length > 0 ? allSinsal.join(', ') : '신살 없는 사람의 특징'}이 2026년에 어떻게 발현되는지
 6. 언제 치고 나가고 언제 쉬어야 하나 — 상반기/하반기 에너지 흐름, 올해의 황금 타이밍과 주의 시기`;
 
-      const minLoadY = new Promise(resolve => setTimeout(resolve, 30000));
-      const aiFetchY = fetch('https://sajuon-payment.godwk15.workers.dev/ai', {
+      const minLoadY = new Promise(resolve => setTimeout(resolve, 10000));
+      const aiFetchY = fetch('https://api.sajuon.kr/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: 'claude-3-haiku-20240307', max_tokens: 4096, messages: [{ role: 'user', content: prompt }] })
@@ -4797,9 +4764,7 @@ ${pillarDesc2}
       .then(r => r.json())
       .then(data => {
         const text = data.content?.[0]?.text || '';
-        console.log('===== AI 운세 응답 =====');
-        console.log('data 전체:', JSON.stringify(data).slice(0,500));
-        console.log('text 길이:', text.length);
+        console.log('AI 운세 응답 길이:', text.length);
         let sections = null;
         try {
           const jsonMatch = text.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
@@ -6465,7 +6430,7 @@ ${pillarDesc2}
         React.createElement('p', { className: 'text-xs text-gray-400 mb-2 font-medium' }, '결제 정보 (주문번호 또는 결제 일시)'),
         React.createElement('input', {
           className: 'w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50',
-          placeholder: '예) 2025-01-01 / 카카오페이 결제 ₩2,900',
+          placeholder: '예) 2025-01-01 / 카카오페이 결제 ₩1,900',
           value: orderId, onChange: e => setOrderId(e.target.value)
         })
       ),
