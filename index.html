@@ -2351,7 +2351,7 @@ ${pillarDesc}
       const aiFetch = fetch('https://sajuon.kr/q', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ d: (()=>{ const s=JSON.stringify({max_tokens:8192,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })() })
+        body: JSON.stringify({ d: (()=>{ const s=JSON.stringify({max_tokens:4096,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })() })
       })
       .then(r => r.json())
       .then(data => {
@@ -2759,7 +2759,7 @@ ${pillarDesc}
       const aiFetchC = fetch('https://sajuon.kr/q', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ d: (()=>{ const s=JSON.stringify({max_tokens:8192,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })() })
+        body: JSON.stringify({ d: (()=>{ const s=JSON.stringify({max_tokens:4096,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })() })
       })
       .then(r => r.json())
       .then(data => {
@@ -4806,7 +4806,7 @@ ${pillarDesc2}
       const aiFetchY = fetch('https://sajuon.kr/q', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ d: (()=>{ const s=JSON.stringify({max_tokens:8192,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })() })
+        body: JSON.stringify({ d: (()=>{ const s=JSON.stringify({max_tokens:4096,messages:[{role:'user',content:prompt}]}); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })() })
       })
       .then(r => r.json())
       .then(data => {
