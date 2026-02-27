@@ -2716,7 +2716,8 @@ ${pillarDesc}
     const r2 = person2.result || analyzeSaju(person2.year, person2.month, person2.day, person2.hour, person2.minute, person2.isLunar, false);
 
     // ===== AI 궁합 해설 =====
-    const _compatCacheKey = `ai_compat_${person1.id}_${person2.id}_${compatRelation}`;
+    const _compatRelNorm = {'couple':'1','friend':'2','business':'3','parent':'4','sibling':'5','etc':'6'}[compatRelation] || compatRelation;
+    const _compatCacheKey = `ai_compat_${person1.id}_${person2.id}_${_compatRelNorm}`;
     const [aiCompatSections, setAiCompatSections] = React.useState(() => {
       try { const c = localStorage.getItem(_compatCacheKey); const p = c ? JSON.parse(c) : null; return Array.isArray(p) && p.length > 0 ? p : null; } catch(e) { return null; }
     });
