@@ -4701,7 +4701,7 @@ ${isSangsaeng
             return;
           }
           // 이미 구매한 운세인지 확인
-          if (!isLoggedIn) { setShowLogin(true); return; }
+          if (!isLoggedIn && !DEV_MODE) { setShowLogin(true); return; }
           const alreadyYearlyPaid = savedYearly.some(y => String(y.personId) === String(yearlyPerson));
           if (alreadyYearlyPaid) {
             setScreen('yearly-result');
