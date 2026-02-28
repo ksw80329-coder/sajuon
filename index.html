@@ -2385,7 +2385,7 @@ ${pillarDesc}
       const aiFetch = fetch('https://sajuon.kr/q', {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: (()=>{ const s=JSON.stringify(sajuPayload); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return JSON.stringify({b:btoa(bin)}); })()
+        body: (()=>{ const s=JSON.stringify(sajuPayload); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })()
       })
       .then(r => r.json())
       .then(data => {
@@ -2798,8 +2798,7 @@ ${pillarDesc}
       const aiFetchC = fetch('https://sajuon.kr/q', {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: (()=>{ const s=JSON.stringify(compatPayload); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return JSON.stringify({b:btoa(bin)}); })()
-      
+        body: (()=>{ const s=JSON.stringify(compatPayload); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })()
       })
       .then(r => r.json())
       .then(data => {
@@ -4855,7 +4854,7 @@ ${pillarDesc2}
       const aiFetchY = fetch('https://sajuon.kr/q', {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: (()=>{ const s=JSON.stringify(yearlyPayload); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return JSON.stringify({b:btoa(bin)}); })()
+        body: (()=>{ const s=JSON.stringify(yearlyPayload); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return btoa(bin); })()
       })
       .then(r => r.json())
       .then(data => {
@@ -4974,8 +4973,8 @@ ${pillarDesc2}
                 )
               )
             ),
-      // 월별 운세 (항상 표시)
-      React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
+      // 월별 운세 (AI 로딩 완료 후 표시)
+      !aiYearlyLoading && React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
         React.createElement('div', { className: 'p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-center font-bold' }, '📅 월별 운세'),
         React.createElement('p', { className: 'text-xs text-gray-400 text-center py-3 border-b border-white/10' }, '💡 각 월을 클릭하면 상세 운세를 확인할 수 있습니다'),
         React.createElement('div', { className: 'divide-y divide-white/10' },
@@ -4991,8 +4990,8 @@ ${pillarDesc2}
           )
         )
       ),
-      // 분야별 운세 (항상 표시)
-      React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
+      // 분야별 운세 (AI 로딩 완료 후 표시)
+      !aiYearlyLoading && React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
         React.createElement('div', { className: 'p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center font-bold' }, '🎯 분야별 상세 운세'),
         ['wealth', 'love', 'career', 'health'].map(key => {
           const cat = yearlyData.categoryFortunes[key];
