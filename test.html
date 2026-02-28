@@ -1641,7 +1641,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   };
 
   const openPayment = (product) => {
-    if (!isLoggedIn) { setShowLogin(true); return; }
+    if (!isLoggedIn && !DEV_MODE) { setShowLogin(true); return; }
     // 개발자 테스트 모드
     if (DEV_MODE) {
       setPaymentProduct(product);
