@@ -4836,10 +4836,55 @@ ${isSangsaeng
       .then(res=>res.json())
       .then(data=>{
         const text = data.content?.[0]?.text || '';
+        console.log('운세 응답 길이:', text.length);
         try {
-          const m = text.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
-          if (m) { const p = JSON.parse(m[0]); if (p.sections) { try{localStorage.setItem(_cacheKey,JSON.stringify(p));}catch(e){} setAiData(p); } }
-        } catch(e) { console.error('파싱 실패', e, text.slice(0,200)); }
+          // 컨트롤 문자 제거
+          const clean = text.replace(/```json|```/g,'').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,' ').trim();
+          const m = clean.match(/\{[\s\S]*\}/);
+          if (!m) throw new Error('no JSON');
+          let parsed = null;
+          // 1차: 직접 파싱
+          try { parsed = JSON.parse(m[0]); }
+          catch(e1) {
+            console.warn('1차 파싱 실패:', e1.message.slice(0,60));
+            // 2차: 따옴표 이스케이프 수정 후 파싱
+            try {
+              // content/fortune/title/headline/closing 값에서 이스케이프 안된 " 수정
+              const fixed = m[0].replace(
+                /("(?:content|fortune|title|headline|closing|summary)"\s*:\s*")([\s\S]*?)("(?:\s*[,\}]|\s*$))/gm,
+                (_, pre, val, post) => pre + val.replace(/(?<!\\)"/g, '\\"') + post
+              );
+              parsed = JSON.parse(fixed);
+            } catch(e2) {
+              console.warn('2차 파싱 실패:', e2.message.slice(0,60));
+              // 3차: 섹션만 안전하게 추출
+              try {
+                const extractArr = (src, key) => {
+                  const km = src.match(new RegExp('"'+key+'"\\s*:\\s*\\['));
+                  if (!km) return [];
+                  let depth=0, lastOk=0, arr=src.slice(km.index+km[0].length-1);
+                  for(let i=0;i<arr.length;i++){
+                    if(arr[i]==='{')depth++;
+                    if(arr[i]==='}'){depth--;if(depth===0)lastOk=i+1;}
+                    if(arr[i]===']'&&depth===0){lastOk=i;break;}
+                  }
+                  try { return JSON.parse(arr.slice(0,lastOk)+(arr[lastOk-1]!==']'?']':'')); } catch(e){return [];}
+                };
+                const hl = (m[0].match(/"headline"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/)||[])[1]||'';
+                const cl = (m[0].match(/"closing"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/)||[])[1]||'';
+                const secs = extractArr(m[0],'sections');
+                const mons = extractArr(m[0],'monthly');
+                if (secs.length > 0) parsed = {headline:hl, sections:secs, monthly:mons, closing:cl};
+              } catch(e3) { console.error('3차 실패:', e3); }
+            }
+          }
+          if (parsed && parsed.sections && parsed.sections.length > 0) {
+            try{localStorage.setItem(_cacheKey,JSON.stringify(parsed));}catch(e){}
+            setAiData(parsed);
+          } else {
+            console.error('sections 없음, parsed:', JSON.stringify(parsed||{}).slice(0,200));
+          }
+        } catch(e) { console.error('파싱 최종 실패', e.message, text.slice(0,200)); }
       })
       .catch(e=>console.error('fetch 오류',e))
       .finally(()=>setLoading(false));
