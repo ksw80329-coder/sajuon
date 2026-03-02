@@ -715,6 +715,7 @@ function App() {
     const [msgIdx, setMsgIdx] = React.useState(0);
     const [tipIdx, setTipIdx] = React.useState(0);
     const [visible, setVisible] = React.useState(true);
+    const [elapsed, setElapsed] = React.useState(0);
 
     React.useEffect(() => {
       const msgTimer = setInterval(() => {
@@ -727,12 +728,14 @@ function App() {
       const tipTimer = setInterval(() => {
         setTipIdx(p => (p + 1) % tips.length);
       }, 4000);
-      return () => { clearInterval(msgTimer); clearInterval(tipTimer); };
+      const secTimer = setInterval(() => setElapsed(p => p + 1), 1000);
+      return () => { clearInterval(msgTimer); clearInterval(tipTimer); clearInterval(secTimer); };
     }, []);
 
     const msg = messages[msgIdx];
 
-    return React.createElement('div', { className: 'py-12 px-6 text-center' },
+    return React.createElement('div', { style:{padding:'48px 24px',textAlign:'center',background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)',minHeight:'100vh'} },
+
       // 중앙 애니메이션
       React.createElement('div', { className: 'relative w-24 h-24 mx-auto mb-8' },
         React.createElement('div', { 
@@ -752,7 +755,8 @@ function App() {
       React.createElement('div', {
         style: { transition: 'opacity 0.4s', opacity: visible ? 1 : 0, minHeight: '2rem' }
       },
-        React.createElement('p', { className: 'text-white font-bold text-lg mb-1' }, msg.text)
+        React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'16px',marginBottom:'6px'} }, msg.text),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'12px',fontFamily:'monospace'} }, elapsed < 5 ? '분석 시작...' : elapsed < 15 ? '분석 중 ('+elapsed+'초)' : elapsed < 30 ? '거의 다 왔어요 ('+elapsed+'초)' : '곧 완성됩니다 ('+elapsed+'초)')
       ),
 
       // 진행 바
@@ -1892,14 +1896,14 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 
   // ========== 화면들 ==========
   const HomeScreen = () => (
-    React.createElement('div', { className: 'min-h-screen pb-28' },
+    React.createElement('div', { className: 'min-h-screen pb-28', style:{background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)'} },
       // 히어로 섹션
       React.createElement('section', { className: 'relative text-center py-12 px-4 overflow-hidden' },
         React.createElement('div', { className: 'absolute inset-0 bg-gradient-to-b from-purple-900/30 to-transparent pointer-events-none' }),
         React.createElement('div', { className: 'relative z-10' },
           React.createElement('div', { className: 'text-5xl mb-4 animate-pulse' }, '🔮'),
           React.createElement('h1', { className: 'text-3xl font-bold mb-3 leading-tight' }, 
-            '내 사주, 제대로',
+            React.createElement('span', { style:{color:'rgba(255,255,255,0.9)'} }, '내 사주, 제대로'),
             React.createElement('br'),
             React.createElement('span', { className: 'text-gradient' }, '깊이 있게 풀어드립니다')
           ),
@@ -1907,7 +1911,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           React.createElement('p', { className: 'text-gray-500 mb-8 text-xs' }, '무료 사주부터 심층 분석까지'),
           React.createElement('button', { 
             onClick: () => { setForm({ name:'', gender:'여성', calendar:'양력', year:'', month:'', day:'', hour:'', minute:'' }); setScreen('input'); }, 
-            className: 'px-8 py-4 gradient-primary rounded-2xl font-bold text-lg shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all active:scale-95' 
+            style:{background:'linear-gradient(135deg,#7c3aed,#a855f7)',padding:'16px 32px',borderRadius:'20px',fontWeight:'800',fontSize:'17px',color:'white',boxShadow:'0 0 30px rgba(168,85,247,0.4)',border:'none',cursor:'pointer'}
           }, '✨ 무료로 사주 보기')
         )
       ),
@@ -2589,7 +2593,7 @@ ${pillarDesc}
     );
   };
 
-  const CompatibilityScreen = () => React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
+  const CompatibilityScreen = () => React.createElement('div', { className: 'min-h-screen p-4 pb-28', style:{background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)'} },
     React.createElement('header', { className: 'flex items-center gap-4 py-4' },
       React.createElement('button', { onClick: () => setScreen('home'), className: 'text-2xl' }, '←'),
       React.createElement('h1', { className: 'text-xl font-bold' }, '💕 궁합 분석')
@@ -2743,7 +2747,7 @@ ${pillarDesc}
     const person1 = savedSaju.find(s => String(s.id) === String(compatPerson1));
     const person2 = savedSaju.find(s => String(s.id) === String(compatPerson2));
     
-    if (!person1 || !person2) return React.createElement('div', { className: 'p-4 text-center text-gray-400' }, '데이터 없음');
+    if (!person1 || !person2) return React.createElement('div', { style:{padding:'16px',textAlign:'center',color:'rgba(255,255,255,0.4)'} }, '데이터 없음');
     
     const r1 = person1.result || analyzeSaju(person1.year, person1.month, person1.day, person1.hour, person1.minute, person1.isLunar, false);
     const r2 = person2.result || analyzeSaju(person2.year, person2.month, person2.day, person2.hour, person2.minute, person2.isLunar, false);
@@ -2990,9 +2994,9 @@ ${pillarDesc}
       return '중립적인 관계로 서로의 노력에 따라 좋은 관계가 될 수 있습니다.';
     };
     
-    return React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
+    return React.createElement('div', { className: 'min-h-screen p-4 pb-28', style:{background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)'} },
       React.createElement('header', { className: 'flex items-center gap-4 py-4' },
-        React.createElement('button', { onClick: () => setScreen('compatibility'), className: 'text-2xl' }, '←'),
+        React.createElement('button', { onClick: () => setScreen('compatibility'), style:{color:'rgba(255,255,255,0.6)',fontSize:'22px'} }, '←'),
         React.createElement('h1', { className: 'text-xl font-bold' }, '💕 궁합 분석 결과'),
         React.createElement('span', { className: 'ml-auto px-3 py-1 bg-pink-500 rounded-full text-xs' }, 'PREMIUM')
       ),
@@ -4672,7 +4676,7 @@ ${isSangsaeng
     );
   };
 
-  const YearlyScreen = () => React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
+  const YearlyScreen = () => React.createElement('div', { className: 'min-h-screen p-4 pb-28', style:{background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)'} },
     React.createElement('header', { className: 'flex items-center gap-4 py-4' },
       React.createElement('button', { onClick: () => setScreen('home'), className: 'text-2xl' }, '←'),
       React.createElement('h1', { className: 'text-xl font-bold' }, '🎊 2026 신년운세')
@@ -5009,7 +5013,7 @@ ${isSangsaeng
     );
   };
 
-  const MyPageScreen = () => React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
+  const MyPageScreen = () => React.createElement('div', { className: 'min-h-screen p-4 pb-28', style:{background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)'} },
     React.createElement('header', { className: 'py-4' },
       React.createElement('h1', { className: 'text-xl font-bold' }, '마이페이지')
     ),
