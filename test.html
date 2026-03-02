@@ -2043,45 +2043,47 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   );
 
   const InputScreen = () => (
-    React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
-      React.createElement('header', { className: 'flex items-center gap-4 py-4' },
-        React.createElement('button', { onClick: () => setScreen('home'), className: 'text-2xl' }, '←'),
-        React.createElement('h1', { className: 'text-xl font-bold' }, '사주 정보 입력')
-      ),
-      React.createElement('div', { className: 'glass rounded-2xl p-6 mt-4 space-y-6' },
+    React.createElement('div', { className: 'min-h-screen p-4 pb-28', style:{background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)'} },
+      React.createElement('header', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'16px 0'} },
+        React.createElement('button', { onClick: () => setScreen('home'), style:{color:'rgba(255,255,255,0.5)',fontSize:'22px',background:'none',border:'none',cursor:'pointer'} }, '←'),
         React.createElement('div', null,
-          React.createElement('label', { className: 'text-sm text-gray-400 block mb-2' }, '이름'),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px',letterSpacing:'2px',textTransform:'uppercase'} }, '사주 분석'),
+          React.createElement('h1', { style:{color:'white',fontWeight:'800',fontSize:'18px',letterSpacing:'-0.3px'} }, '생년월일 입력')
+        )
+      ),
+      React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'24px',padding:'24px',marginTop:'8px',border:'1px solid rgba(255,255,255,0.08)',display:'flex',flexDirection:'column',gap:'20px'} },
+        React.createElement('div', null,
+          React.createElement('label', { style:{fontSize:'11px',color:'rgba(255,255,255,0.4)',display:'block',marginBottom:'8px',letterSpacing:'1px',textTransform:'uppercase'} }, '이름'),
           React.createElement('input', { 
             type: 'text', 
             placeholder: '이름을 입력하세요', 
             defaultValue: form.name,
             onBlur: e => setForm({...form, name: e.target.value}),
             onKeyDown: e => { if (e.key === 'Enter') e.target.blur(); },
-            className: 'w-full px-4 py-3 bg-white/10 rounded-xl border border-white/20 focus:border-purple-500 outline-none' 
+            style:{width:'100%',padding:'14px 16px',background:'rgba(255,255,255,0.07)',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',color:'white',fontSize:'15px',outline:'none',boxSizing:'border-box'}
           })
         ),
         React.createElement('div', null,
-          React.createElement('label', { className: 'text-sm text-gray-400 block mb-2' }, '성별'),
+          React.createElement('label', { style:{fontSize:'11px',color:'rgba(255,255,255,0.4)',display:'block',marginBottom:'8px',letterSpacing:'1px',textTransform:'uppercase'} }, '성별'),
           React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
-            React.createElement('button', { onClick: () => setForm({...form, gender: '여성'}), className: `py-3 rounded-xl font-bold transition ${form.gender === '여성' ? 'bg-purple-500' : 'bg-white/10'}` }, '여성'),
-            React.createElement('button', { onClick: () => setForm({...form, gender: '남성'}), className: `py-3 rounded-xl font-bold transition ${form.gender === '남성' ? 'bg-purple-500' : 'bg-white/10'}` }, '남성')
+            React.createElement('button', { onClick: () => setForm({...form, gender: '여성'}), style:{padding:'12px',borderRadius:'14px',fontWeight:'700',fontSize:'14px',border:'none',cursor:'pointer',transition:'all 0.2s',background:form.gender==='여성'?'linear-gradient(135deg,#7c3aed,#a855f7)':'rgba(255,255,255,0.07)',color:form.gender==='여성'?'white':'rgba(255,255,255,0.5)'} }, '♀ 여성'),
+            React.createElement('button', { onClick: () => setForm({...form, gender: '남성'}), style:{padding:'12px',borderRadius:'14px',fontWeight:'700',fontSize:'14px',border:'none',cursor:'pointer',transition:'all 0.2s',background:form.gender==='남성'?'linear-gradient(135deg,#0ea5e9,#6366f1)':'rgba(255,255,255,0.07)',color:form.gender==='남성'?'white':'rgba(255,255,255,0.5)'} }, '♂ 남성')
           )
         ),
         React.createElement('div', null,
-          React.createElement('label', { className: 'text-sm text-gray-400 block mb-2' }, '달력'),
+          React.createElement('label', { style:{fontSize:'11px',color:'rgba(255,255,255,0.4)',display:'block',marginBottom:'8px',letterSpacing:'1px',textTransform:'uppercase'} }, '달력 종류'),
           React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
-            React.createElement('button', { onClick: () => setForm({...form, calendar: '양력'}), className: `py-3 rounded-xl font-bold transition ${form.calendar === '양력' ? 'bg-purple-500' : 'bg-white/10'}` }, '양력'),
-            React.createElement('button', { onClick: () => setForm({...form, calendar: '음력'}), className: `py-3 rounded-xl font-bold transition ${form.calendar === '음력' ? 'bg-purple-500' : 'bg-white/10'}` }, '음력')
+            React.createElement('button', { onClick: () => setForm({...form, calendar: '양력'}), style:{padding:'12px',borderRadius:'14px',fontWeight:'700',fontSize:'14px',border:'none',cursor:'pointer',transition:'all 0.2s',background:form.calendar==='양력'?'linear-gradient(135deg,#f59e0b,#ef4444)':'rgba(255,255,255,0.07)',color:form.calendar==='양력'?'white':'rgba(255,255,255,0.5)'} }, '☀ 양력'),
+            React.createElement('button', { onClick: () => setForm({...form, calendar: '음력'}), style:{padding:'12px',borderRadius:'14px',fontWeight:'700',fontSize:'14px',border:'none',cursor:'pointer',transition:'all 0.2s',background:form.calendar==='음력'?'linear-gradient(135deg,#6366f1,#8b5cf6)':'rgba(255,255,255,0.07)',color:form.calendar==='음력'?'white':'rgba(255,255,255,0.5)'} }, '☾ 음력')
           )
         ),
         React.createElement('div', null,
-          React.createElement('label', { className: 'text-sm text-gray-400 block mb-2' }, '생년월일'),
+          React.createElement('label', { style:{fontSize:'11px',color:'rgba(255,255,255,0.4)',display:'block',marginBottom:'8px',letterSpacing:'1px',textTransform:'uppercase'} }, '생년월일'),
           React.createElement('div', { className: 'grid grid-cols-3 gap-3' },
             React.createElement('select', { 
               value: form.year, 
               onChange: e => setForm({...form, year: e.target.value}), 
-              className: 'px-2 py-3 bg-[#2a2a4e] text-white rounded-xl border border-white/20 text-center appearance-none',
-              style: { colorScheme: 'dark' }
+              style:{padding:'12px 4px',background:'rgba(255,255,255,0.07)',color:'white',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',textAlign:'center',appearance:'none',colorScheme:'dark',fontSize:'14px',width:'100%'}
             },
               React.createElement('option', { value: '', className: 'bg-[#2a2a4e] text-white' }, '년도'),
               Array.from({ length: 116 }, (_, i) => 2030 - i).map(y => 
@@ -2091,8 +2093,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             React.createElement('select', { 
               value: form.month, 
               onChange: e => setForm({...form, month: e.target.value}), 
-              className: 'px-2 py-3 bg-[#2a2a4e] text-white rounded-xl border border-white/20 text-center appearance-none',
-              style: { colorScheme: 'dark' }
+              style:{padding:'12px 4px',background:'rgba(255,255,255,0.07)',color:'white',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',textAlign:'center',appearance:'none',colorScheme:'dark',fontSize:'14px',width:'100%'}
             },
               React.createElement('option', { value: '', className: 'bg-[#2a2a4e] text-white' }, '월'),
               Array.from({ length: 12 }, (_, i) => i + 1).map(m => 
@@ -2102,8 +2103,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             React.createElement('select', { 
               value: form.day, 
               onChange: e => setForm({...form, day: e.target.value}), 
-              className: 'px-2 py-3 bg-[#2a2a4e] text-white rounded-xl border border-white/20 text-center appearance-none',
-              style: { colorScheme: 'dark' }
+              style:{padding:'12px 4px',background:'rgba(255,255,255,0.07)',color:'white',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',textAlign:'center',appearance:'none',colorScheme:'dark',fontSize:'14px',width:'100%'}
             },
               React.createElement('option', { value: '', className: 'bg-[#2a2a4e] text-white' }, '일'),
               Array.from({ length: 31 }, (_, i) => i + 1).map(d => 
@@ -2113,13 +2113,12 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           )
         ),
         React.createElement('div', null,
-          React.createElement('label', { className: 'text-sm text-gray-400 block mb-2' }, '태어난 시간 (선택)'),
+          React.createElement('label', { style:{fontSize:'11px',color:'rgba(255,255,255,0.4)',display:'block',marginBottom:'8px',letterSpacing:'1px',textTransform:'uppercase'} }, '태어난 시간 (선택)'),
           React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
             React.createElement('select', { 
               value: form.hour, 
               onChange: e => setForm({...form, hour: e.target.value}), 
-              className: 'px-2 py-3 bg-[#2a2a4e] text-white rounded-xl border border-white/20 text-center appearance-none',
-              style: { colorScheme: 'dark' }
+              style:{padding:'12px 4px',background:'rgba(255,255,255,0.07)',color:'white',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',textAlign:'center',appearance:'none',colorScheme:'dark',fontSize:'14px',width:'100%'}
             },
               React.createElement('option', { value: '', className: 'bg-[#2a2a4e] text-white' }, '시 (모름)'),
               Array.from({ length: 24 }, (_, i) => i).map(h => 
@@ -2129,8 +2128,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             React.createElement('select', { 
               value: form.minute, 
               onChange: e => setForm({...form, minute: e.target.value}), 
-              className: 'px-2 py-3 bg-[#2a2a4e] text-white rounded-xl border border-white/20 text-center appearance-none',
-              style: { colorScheme: 'dark' }
+              style:{padding:'12px 4px',background:'rgba(255,255,255,0.07)',color:'white',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',textAlign:'center',appearance:'none',colorScheme:'dark',fontSize:'14px',width:'100%'}
             },
               React.createElement('option', { value: '', className: 'bg-[#2a2a4e] text-white' }, '분'),
               Array.from({ length: 60 }, (_, i) => i).map(m => 
@@ -2138,10 +2136,10 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
               )
             )
           ),
-          React.createElement('p', { className: 'text-xs text-gray-500 mt-2' }, '* 시간을 모르면 "시 (모름)"을 선택하세요')
+          React.createElement('p', { style:{fontSize:'11px',color:'rgba(255,255,255,0.25)',marginTop:'8px'} }, '시간을 모르면 "시 (모름)"을 선택하세요')
         )
       ),
-      React.createElement('button', { onClick: startAnalysis, className: 'w-full mt-6 py-4 gradient-primary rounded-2xl font-bold text-lg' }, '무료 사주 보기'),
+      React.createElement('button', { onClick: startAnalysis, style:{width:'100%',marginTop:'16px',padding:'18px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'20px',fontWeight:'800',fontSize:'16px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 0 40px rgba(168,85,247,0.35)',letterSpacing:'0.5px'} }, '✦ 무료 사주 보기'),
       // 저장된 사주 목록 (궁합 페이지처럼)
       isLoggedIn && savedSaju.length > 0 && React.createElement('div', { className: 'mt-8' },
         React.createElement('div', { className: 'flex items-center justify-between mb-4' },
@@ -6134,40 +6132,44 @@ ${isSangsaeng
 
   // 고정 헤더
   const Header = () => React.createElement('header', { 
-    className: 'fixed top-0 left-0 right-0 bg-[#1a1a2e] border-b border-white/10 z-50'
+    style:{position:'fixed',top:0,left:0,right:0,zIndex:50,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',background:'rgba(15,12,41,0.85)',borderBottom:'1px solid rgba(255,255,255,0.06)'}
   },
-    React.createElement('div', { className: 'max-w-lg mx-auto flex items-center justify-between px-4 py-3' },
-      React.createElement('h1', { 
+    React.createElement('div', { style:{maxWidth:'512px',margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px'} },
+      React.createElement('div', {
         onClick: () => setScreen('home'),
-        className: 'text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent cursor-pointer'
-      }, '사주ON'),
-      React.createElement('div', { className: 'flex items-center gap-2' },
+        style:{cursor:'pointer',display:'flex',alignItems:'center',gap:'8px'}
+      },
+        React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'8px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px'} }, '✦'),
+        React.createElement('span', { style:{fontWeight:'800',fontSize:'18px',background:'linear-gradient(135deg,#c4b5fd,#f9a8d4)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'-0.5px'} }, '사주ON')
+      ),
+      React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'8px'} },
         !isLoggedIn 
           ? React.createElement('button', { 
               onClick: () => setShowLogin(true),
-              className: 'px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-sm font-bold'
+              style:{padding:'7px 16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'10px',fontSize:'13px',fontWeight:'700',color:'white',border:'none',cursor:'pointer'}
             }, '로그인')
           : React.createElement(React.Fragment, null,
-              // 포인트 표시
               React.createElement('button', { 
                 onClick: () => { setPaymentProduct(null); setScreen('charge'); },
-                className: 'flex items-center gap-3 px-3 py-1.5 bg-white/5 rounded-lg hover:bg-white/10 transition-all'
+                style:{display:'flex',alignItems:'center',gap:'8px',padding:'6px 12px',background:'rgba(255,255,255,0.06)',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.1)',cursor:'pointer'}
               },
-                React.createElement('div', { className: 'flex items-center gap-1' },
-                  React.createElement('span', { className: 'text-yellow-400' }, '⭐'),
-                  React.createElement('span', { className: 'text-sm font-semibold' }, stars)
+                React.createElement('span', { style:{fontSize:'12px'} },
+                  React.createElement('span', { style:{color:'#fbbf24'} }, '⭐ '),
+                  React.createElement('span', { style:{color:'white',fontWeight:'600',fontSize:'13px'} }, stars)
                 ),
-                React.createElement('div', { className: 'flex items-center gap-1' },
-                  React.createElement('span', { className: 'text-blue-300' }, '🌙'),
-                  React.createElement('span', { className: 'text-sm font-semibold' }, moons)
+                React.createElement('span', { style:{color:'rgba(255,255,255,0.2)'} }, '|'),
+                React.createElement('span', { style:{fontSize:'12px'} },
+                  React.createElement('span', { style:{color:'#93c5fd'} }, '🌙 '),
+                  React.createElement('span', { style:{color:'white',fontWeight:'600',fontSize:'13px'} }, moons)
                 )
               ),
-              // 햄버거 메뉴
               React.createElement('button', { 
                 onClick: () => setShowSideMenu(true),
-                className: 'p-2 hover:bg-white/10 rounded-lg transition-all'
+                style:{width:'34px',height:'34px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'5px',background:'rgba(255,255,255,0.06)',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.1)',cursor:'pointer'}
               },
-                React.createElement('span', { className: 'text-xl' }, '☰')
+                React.createElement('span', { style:{width:'14px',height:'1.5px',background:'rgba(255,255,255,0.7)',borderRadius:'2px'} }),
+                React.createElement('span', { style:{width:'14px',height:'1.5px',background:'rgba(255,255,255,0.7)',borderRadius:'2px'} }),
+                React.createElement('span', { style:{width:'14px',height:'1.5px',background:'rgba(255,255,255,0.7)',borderRadius:'2px'} })
               )
             )
       )
@@ -6773,16 +6775,26 @@ ${isSangsaeng
   return React.createElement('div', { className: 'max-w-lg mx-auto relative' },
     React.createElement(Header),
     React.createElement('div', { className: 'pt-14' }, renderScreen()),
-    React.createElement('nav', { className: 'fixed bottom-0 left-0 right-0 bg-[#1a1a2e] border-t border-white/10 z-40' },
-      React.createElement('div', { className: 'max-w-lg mx-auto flex' },
-        [...baseNavItems, ...(isLoggedIn ? [{ id: 'mypage', icon: '👤', label: 'MY' }] : [{ id: '__login__', icon: '🔑', label: '로그인' }])].map(item => React.createElement('button', { key: item.id, onClick: () => { 
-          if (item.id === '__login__') { setShowLogin(true); return; }
-          if (item.id === 'input') { setForm({ name:'', gender:'여성', calendar:'양력', year:'', month:'', day:'', hour:'', minute:'' }); setScreen('input'); window.scrollTo(0,0); return; }
-          setScreen(item.id); 
-        }, className: `flex-1 py-3 flex flex-col items-center ${currentScreen === item.id ? 'text-purple-400' : 'text-gray-500'}` },
-          React.createElement('span', { className: 'text-lg' }, item.icon),
-          React.createElement('span', { className: 'text-xs mt-1' }, item.label)
-        ))
+    React.createElement('nav', { style:{position:'fixed',bottom:0,left:0,right:0,zIndex:40,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',background:'rgba(10,8,30,0.92)',borderTop:'1px solid rgba(255,255,255,0.06)',paddingBottom:'env(safe-area-inset-bottom)'} },
+      React.createElement('div', { style:{maxWidth:'512px',margin:'0 auto',display:'flex',padding:'8px 8px 4px'} },
+        [...baseNavItems, ...(isLoggedIn ? [{ id: 'mypage', icon: null, label: 'MY' }] : [{ id: '__login__', icon: null, label: '로그인' }])].map(item => {
+          const isActive = currentScreen === item.id || (item.id==='input' && ['input','free-result','paid-result'].includes(currentScreen));
+          const navIcons = { home:'⌂', input:'◈', compatibility:'◇', yearly:'☽', mypage:'◉', '__login__':'◎' };
+          return React.createElement('button', { 
+            key: item.id, 
+            onClick: () => { 
+              if (item.id === '__login__') { setShowLogin(true); return; }
+              if (item.id === 'input') { setForm({ name:'', gender:'여성', calendar:'양력', year:'', month:'', day:'', hour:'', minute:'' }); setScreen('input'); window.scrollTo(0,0); return; }
+              setScreen(item.id); 
+            }, 
+            style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:'3px',padding:'6px 4px 8px',borderRadius:'12px',border:'none',cursor:'pointer',background:isActive?'rgba(168,85,247,0.12)':'transparent',transition:'all 0.2s'}
+          },
+            React.createElement('div', { 
+              style:{width:'32px',height:'32px',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',background:isActive?'linear-gradient(135deg,#7c3aed,#a855f7)':'transparent',transition:'all 0.2s',color:isActive?'white':'rgba(255,255,255,0.3)'}
+            }, item.icon || navIcons[item.id] || '○'),
+            React.createElement('span', { style:{fontSize:'10px',fontWeight:isActive?'700':'400',color:isActive?'#c4b5fd':'rgba(255,255,255,0.3)',letterSpacing:'0.3px'} }, item.label)
+          );
+        })
       )
     ),
     showLogin && React.createElement(LoginModal),
