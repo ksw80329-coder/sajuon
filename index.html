@@ -2825,8 +2825,8 @@ ${pillarDesc}
       const compatPayload = {
         t: '2',
         relation: {'couple':'1','friend':'2','business':'3','parent_child':'4','sibling':'5','etc':'6','grandparent':'7','relative':'8','mentor':'9','rival':'10'}[compatRelation]||'1',
-        p1: { name: person1.name, gender: person1.gender, ilgan: STEMS.names[r1.dsi], ilganKr: STEMS.korean[r1.dsi], pillars: p1PillarDesc, sinsal: p1Sinsal.join(', '), fe: Object.entries(r1.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', ') },
-        p2: { name: person2.name, gender: person2.gender, ilgan: STEMS.names[r2.dsi], ilganKr: STEMS.korean[r2.dsi], pillars: p2PillarDesc, sinsal: p2Sinsal.join(', '), fe: Object.entries(r2.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', ') }
+        p1: { name: person1.name, gender: person1.gender, ilgan: STEMS.names[r1.dsi], ilganKr: STEMS.korean[r1.dsi], pillars: p1PillarDesc, sinsal: p1Sinsal.join(', '), fe: Object.entries(r1.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', '), birth: `${person1.year}.${person1.month}.${person1.day}` },
+        p2: { name: person2.name, gender: person2.gender, ilgan: STEMS.names[r2.dsi], ilganKr: STEMS.korean[r2.dsi], pillars: p2PillarDesc, sinsal: p2Sinsal.join(', '), fe: Object.entries(r2.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', '), birth: `${person2.year}.${person2.month}.${person2.day}` }
       };
       const aiFetchC = fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
         method: 'POST',
@@ -4944,7 +4944,7 @@ ${pillarDesc2}
       ),
       // 만세력 표 (사주와 동일 스타일)
       React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
-        React.createElement('div', { className: 'p-3 gradient-primary text-white text-center font-bold' }, '🗓️ 원국 만세력'),
+        React.createElement('div', { className: 'p-3 gradient-primary text-white text-center font-bold' }, '🗓️ 만세력'),
         React.createElement('div', { className: 'p-4' },
           React.createElement('div', { className: 'grid grid-cols-4 gap-2 text-center mb-2' },
             ['연주','월주','일주','시주'].map(lbl => React.createElement('div', { key: lbl, className: 'text-xs text-gray-400' }, lbl))
