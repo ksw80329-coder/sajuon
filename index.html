@@ -782,20 +782,23 @@ function App() {
     );
   };
 
-  const robustParseAI = (text) => {
+  const robustParseAI = (text, full = false) => {
         if (!text) return null;
         const clean = text.replace(/```json|```/g, '').trim().replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ');
         // 1. 정상 파싱 시도
         try {
           const m = clean.match(/\{[\s\S]*\}/);
-          if (m) { const p = JSON.parse(m[0]); if (Array.isArray(p.sections)) return p.sections; }
+          if (m) {
+            const p = JSON.parse(m[0]);
+            if (full) return p; // 전체 객체 반환 (운세용)
+            if (Array.isArray(p.sections)) return p.sections;
+          }
         } catch(e) {}
         // 2. sections 배열만 추출 시도
         try {
           const m = clean.match(/"sections"\s*:\s*(\[[\s\S]*)/);
           if (m) {
             let arr = m[1];
-            // 마지막 완성된 객체까지만 잘라서 파싱
             let depth = 0, lastComplete = 0;
             for (let i = 0; i < arr.length; i++) {
               if (arr[i] === '{') depth++;
@@ -804,7 +807,7 @@ function App() {
             }
             const fixed = arr.slice(0, lastComplete) + (arr[lastComplete-1] !== ']' ? ']' : '');
             const parsed = JSON.parse(fixed);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            if (Array.isArray(parsed) && parsed.length > 0) return full ? { sections: parsed } : parsed;
           }
         } catch(e) {}
         return null;
@@ -4807,10 +4810,10 @@ ${isSangsaeng
     // ===== AI 신년운세 해설 =====
     const _yearlyCacheKey = `ai_yearly_v21_${person.id}`;
     const [aiYearlySections, setAiYearlySections] = React.useState(() => {
-      try { const c = localStorage.getItem(_yearlyCacheKey); const p = c ? JSON.parse(c) : null; return Array.isArray(p) && p.length > 0 ? p : null; } catch(e) { return null; }
+      try { const c = localStorage.getItem(_yearlyCacheKey); const p = c ? JSON.parse(c) : null; if (p && p.sections && p.sections.length > 0) return p; if (Array.isArray(p) && p.length > 0) return p; return null; } catch(e) { return null; }
     });
     const [aiYearlyLoading, setAiYearlyLoading] = React.useState(() => {
-      try { const c = localStorage.getItem(_yearlyCacheKey); const p = c ? JSON.parse(c) : null; return !(Array.isArray(p) && p.length > 0); } catch(e) { return true; }
+      try { const c = localStorage.getItem(_yearlyCacheKey); const p = c ? JSON.parse(c) : null; if (p && p.sections && p.sections.length > 0) return false; if (Array.isArray(p) && p.length > 0) return false; return true; } catch(e) { return true; }
     });
     const [aiYearlyError, setAiYearlyError] = React.useState(false);
 
@@ -4894,9 +4897,9 @@ ${pillarDesc2}
         console.log('text 길이:', text.length);
         let sections = null;
         try {
-          sections = robustParseAI(text);
+          sections = robustParseAI(text, true); // full 파싱
         } catch(e) { console.error('운세 JSON 파싱 실패:', e.message); }
-        if (sections && sections.length > 0) {
+        if (sections && sections.sections && sections.sections.length > 0) {
           try { localStorage.setItem(cacheKey, JSON.stringify(sections)); } catch(e) {}
           return sections;
         }
@@ -4905,7 +4908,7 @@ ${pillarDesc2}
       .catch(e => { console.error('운세 AI fetch 오류:', e); return null; });
       Promise.all([aiFetchY, minLoadY])
       .then(([sections]) => {
-        if (sections && sections.length > 0) setAiYearlySections(sections);
+        if (sections && sections.sections && sections.sections.length > 0) setAiYearlySections(sections);
         else setAiYearlyError(true);
       })
       .finally(() => setAiYearlyLoading(false));
@@ -4939,39 +4942,37 @@ ${pillarDesc2}
           '⚠️ 신중함이 필요한 해'
         )
       ),
-      // 만세력 표
+      // 만세력 표 (사주와 동일 스타일)
       React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
-        React.createElement('div', { className: 'p-3 gradient-primary text-white text-center font-bold' }, '📊 원국 만세력'),
-        React.createElement('div', { className: 'p-3' },
-          React.createElement('div', { className: 'grid grid-cols-5 gap-1 text-center text-xs mb-1' },
-            React.createElement('div', { className: 'text-gray-400' }, ''),
-            React.createElement('div', { className: 'text-gray-400' }, '연주'),
-            React.createElement('div', { className: 'text-gray-400' }, '월주'),
-            React.createElement('div', { className: 'text-gray-400' }, '일주'),
-            React.createElement('div', { className: 'text-gray-400' }, '시주')
+        React.createElement('div', { className: 'p-3 gradient-primary text-white text-center font-bold' }, '🗓️ 원국 만세력'),
+        React.createElement('div', { className: 'p-4' },
+          React.createElement('div', { className: 'grid grid-cols-4 gap-2 text-center mb-2' },
+            ['연주','월주','일주','시주'].map(lbl => React.createElement('div', { key: lbl, className: 'text-xs text-gray-400' }, lbl))
           ),
-          React.createElement('div', { className: 'grid grid-cols-5 gap-1 text-center text-xs mb-1' },
-            React.createElement('div', { className: 'text-gray-400 py-1' }, '천간'),
-            ...['year','month','day','hour'].map(k => {
+          React.createElement('div', { className: 'grid grid-cols-4 gap-2 text-center mb-2' },
+            ['year','month','day','hour'].map(k => {
               const pl = r.pillars[k];
-              if (!pl) return React.createElement('div', { key: 'sy'+k, className: 'py-1 text-gray-500' }, '-');
-              const ec = {'목':'text-green-400','화':'text-red-400','토':'text-yellow-400','금':'text-gray-300','수':'text-blue-400'}[STEMS.elements[pl.si]]||'text-white';
-              return React.createElement('div', { key: 'sy'+k, className: `py-1 font-bold text-lg ${ec}` }, pl.stem);
+              if (!pl) return React.createElement('div', { key: 'sy'+k, className: 'py-3 bg-gray-700/50 rounded-lg text-gray-500' }, '-');
+              const el = STEMS.elements[pl.si];
+              return React.createElement('div', { key: 'sy'+k, className: 'py-2 rounded-lg text-white font-bold flex flex-col items-center', style: { backgroundColor: COLORS[el] } },
+                React.createElement('span', { className: 'text-xl' }, pl.stem),
+                React.createElement('span', { className: 'text-xs opacity-80' }, STEMS.korean[pl.si])
+              );
             })
           ),
-          React.createElement('div', { className: 'grid grid-cols-5 gap-1 text-center text-xs' },
-            React.createElement('div', { className: 'text-gray-400 py-1' }, '지지'),
-            ...['year','month','day','hour'].map(k => {
+          React.createElement('div', { className: 'grid grid-cols-4 gap-2 text-center' },
+            ['year','month','day','hour'].map(k => {
               const pl = r.pillars[k];
-              if (!pl) return React.createElement('div', { key: 'bry'+k, className: 'py-1 text-gray-500' }, '-');
-              const ec = {'목':'text-green-400','화':'text-red-400','토':'text-yellow-400','금':'text-gray-300','수':'text-blue-400'}[BRANCHES.elements[pl.bi]]||'text-white';
-              return React.createElement('div', { key: 'bry'+k, className: `py-1 font-bold text-lg ${ec}` }, pl.branch);
+              if (!pl) return React.createElement('div', { key: 'bry'+k, className: 'py-3 bg-gray-700/50 rounded-lg text-gray-500' }, '-');
+              const el = BRANCHES.elements[pl.bi];
+              return React.createElement('div', { key: 'bry'+k, className: 'py-2 rounded-lg text-white font-bold flex flex-col items-center', style: { backgroundColor: COLORS[el] } },
+                React.createElement('span', { className: 'text-xl' }, pl.branch),
+                React.createElement('span', { className: 'text-xs opacity-80' }, BRANCHES.korean[pl.bi])
+              );
             })
-          ),
-          React.createElement('p', { className: 'text-center text-xs text-amber-400 mt-2 pt-2 border-t border-white/10' },
-            `🔥 2026 병오년(丙午年) · 일간 ${STEMS.korean[r.dsi]}(${STEMS.elements[r.dsi]}) 기운`
           )
-        )
+        ),
+        React.createElement('div', { className: 'px-4 py-2 bg-white/5 text-center text-xs text-amber-400' }, `🔥 2026 병오년(丙午年) · 일간 ${STEMS.korean[r.dsi]}(${STEMS.elements[r.dsi]}) 기운`)
       ),
       // AI 심층 풀이
       aiYearlyLoading
@@ -4982,11 +4983,11 @@ ${pillarDesc2}
             ),
             React.createElement(SajuLoadingScreen)
           )
-        : aiYearlySections
+        : aiYearlySections?.sections || aiYearlySections
           ? React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
               React.createElement('div', { className: 'p-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center font-bold' }, '✨ 2026년 운세 심층 풀이'),
               React.createElement('div', { className: 'p-3 text-center text-gray-400 text-xs border-b border-white/10' }, '각 제목을 클릭하면 풀이가 펼쳐져요'),
-              aiYearlySections.map((section, i) =>
+              (aiYearlySections?.sections || (Array.isArray(aiYearlySections) ? aiYearlySections : [])).map((section, i) =>
                 React.createElement(AccordionItem, { key: i, icon: section.icon, color: section.color, title: section.title, content: section.content })
               )
             )
@@ -5008,14 +5009,14 @@ ${pillarDesc2}
         React.createElement('div', { className: 'p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-center font-bold' }, '📅 월별 운세'),
         React.createElement('p', { className: 'text-xs text-gray-400 text-center py-3 border-b border-white/10' }, '💡 각 월을 클릭하면 상세 운세를 확인할 수 있습니다'),
         React.createElement('div', { className: 'divide-y divide-white/10' },
-          yearlyData.monthlyFortunes.map((m, i) =>
+          (aiYearlySections?.monthly || yearlyData.monthlyFortunes).map((m, i) =>
             React.createElement(AccordionItem, {
               key: i,
               icon: m.score >= 70 ? '🌟' : m.score >= 50 ? '💪' : '🛡️',
               color: m.score >= 70 ? 'text-green-400' : m.score >= 50 ? 'text-yellow-400' : 'text-red-400',
-              subtitle: m.month,
-              title: m.monthTitle || m.keyword,
-              content: m.fullDetail || m.advice
+              subtitle: m.month ? m.month + '월' : m.label,
+              title: m.monthTitle || m.keyword || m.fortune?.slice(0,20),
+              content: m.fullDetail || m.advice || m.fortune
             })
           )
         )
