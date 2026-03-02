@@ -1903,23 +1903,33 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   // ========== 화면들 ==========
   const HomeScreen = () => (
     React.createElement('div', { className: 'min-h-screen pb-28', style:{background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)'} },
-      // 히어로 섹션
-      React.createElement('section', { style:{position:'relative',textAlign:'center',padding:'48px 16px 32px',overflow:'hidden'} },
-        React.createElement('div', { style:{position:'absolute',inset:0,background:'radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.25) 0%, transparent 70%)',pointerEvents:'none'} }),
-        React.createElement('div', { style:{position:'absolute',top:'20px',left:'50%',transform:'translateX(-50%)',width:'200px',height:'200px',background:'rgba(168,85,247,0.05)',borderRadius:'50%',filter:'blur(40px)',pointerEvents:'none'} }),
-        React.createElement('div', { className: 'relative z-10' },
-          React.createElement('div', { className: 'text-5xl mb-4 animate-pulse' }, '🔮'),
-          React.createElement('h1', { className: 'text-3xl font-bold mb-3 leading-tight' }, 
-            React.createElement('span', { style:{color:'rgba(255,255,255,0.9)'} }, '내 사주, 제대로'),
-            React.createElement('br'),
-            React.createElement('span', { className: 'text-gradient' }, '깊이 있게 풀어드립니다')
-          ),
-          React.createElement('p', { className: 'text-gray-400 mb-2 text-sm' }, '전통 명리학 기반 · 만세력 정밀 계산'),
-          React.createElement('p', { className: 'text-gray-500 mb-8 text-xs' }, '무료 사주부터 심층 분석까지'),
-          React.createElement('button', { 
-            onClick: () => { setForm({ name:'', gender:'여성', calendar:'양력', year:'', month:'', day:'', hour:'', minute:'' }); setScreen('input'); }, 
-            style:{background:'linear-gradient(135deg,#7c3aed,#a855f7)',padding:'16px 32px',borderRadius:'20px',fontWeight:'800',fontSize:'17px',color:'white',boxShadow:'0 0 30px rgba(168,85,247,0.4)',border:'none',cursor:'pointer'}
-          }, '✨ 무료로 사주 보기')
+      // 히어로 섹션 - 프리미엄 미니멀
+      React.createElement('section', { style:{padding:'44px 20px 36px',position:'relative',overflow:'hidden'} },
+        React.createElement('div', { style:{position:'absolute',top:0,right:0,width:'300px',height:'300px',background:'radial-gradient(circle at 80% 20%,rgba(139,92,246,0.12),transparent 65%)',pointerEvents:'none'} }),
+        // 상단 크레덴셜 뱃지
+        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'6px',marginBottom:'22px'} },
+          React.createElement('div', { style:{width:'5px',height:'5px',borderRadius:'50%',background:'linear-gradient(135deg,#c4b5fd,#f9a8d4)'} }),
+          React.createElement('span', { style:{color:'rgba(255,255,255,0.38)',fontSize:'11px',fontWeight:'500',letterSpacing:'0.5px'} }, '전통 명리학 기반  ·  절기 정밀 계산  ·  신살 포함')
+        ),
+        // 헤드라인 - 왼쪽 정렬, 강하고 심플
+        React.createElement('h1', { style:{fontSize:'32px',fontWeight:'900',lineHeight:'1.2',letterSpacing:'-1.5px',marginBottom:'18px',color:'white'} },
+          '내 사주,',
+          React.createElement('br'),
+          React.createElement('span', { style:{background:'linear-gradient(135deg,#c4b5fd 0%,#f9a8d4 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'} }, '제대로 풀어드립니다')
+        ),
+        // 서브 카피 - 간결
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.32)',fontSize:'13px',lineHeight:'1.6',marginBottom:'32px',letterSpacing:'0.1px'} },
+          '사주팔자 원국부터 심층 AI 해설까지.',
+          React.createElement('br'),
+          '무료로 시작, 필요한 분석만 골라보세요.'
+        ),
+        // CTA
+        React.createElement('button', { 
+          onClick: () => { setForm({ name:'', gender:'여성', calendar:'양력', year:'', month:'', day:'', hour:'', minute:'' }); setScreen('input'); }, 
+          style:{display:'inline-flex',alignItems:'center',gap:'10px',padding:'16px 30px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',fontWeight:'800',fontSize:'15px',color:'white',boxShadow:'0 0 40px rgba(139,92,246,0.4)',border:'none',cursor:'pointer',letterSpacing:'-0.3px'}
+        },
+          React.createElement('span', { style:{fontSize:'13px',opacity:0.8} }, '✦'),
+          '무료로 사주 보기'
         )
       ),
       // 서비스 카드
@@ -1960,7 +1970,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             React.createElement('div', null, 
               React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'12px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',marginBottom:'10px'} }, '💎'),
               React.createElement('h3', { style:{color:'white',fontWeight:'700',fontSize:'15px',marginBottom:'4px'} }, '상세 사주 분석'),
-              React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, '8섹션 심층 해설 · 성격/직업/재물/연애')
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, '심층 AI 해설 · 성격/직업/재물/연애')
             ),
             React.createElement('span', { style:{color:'#c4b5fd',fontWeight:'800',fontSize:'18px',marginTop:'8px'} }, '₩2,900')
           )
@@ -2008,7 +2018,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             ),
             React.createElement('div', { style:{background:'rgba(236,72,153,0.08)',borderRadius:'16px',padding:'16px 8px'} },
               React.createElement('p', { style:{fontWeight:'900',fontSize:'18px',background:'linear-gradient(135deg,#f9a8d4,#ec4899)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:'4px'} }, '심층'),
-              React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '8섹션 분석')
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, 'AI 심층 분석')
             ),
             React.createElement('div', { style:{background:'rgba(245,158,11,0.08)',borderRadius:'16px',padding:'16px 8px'} },
               React.createElement('p', { style:{fontWeight:'900',fontSize:'18px',background:'linear-gradient(135deg,#fcd34d,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:'4px'} }, '신살'),
@@ -2166,7 +2176,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
               }
             },
               React.createElement('div', { className: 'flex items-center gap-3' },
-                React.createElement('span', { style:{color:'rgba(255,255,255,0.4)',fontSize:'22px',background:'none',border:'none',cursor:'pointer'} }, s.gender === '여성' ? '👩' : '👨'),
+                React.createElement('div', { style:{width:'36px',height:'36px',borderRadius:'50%',background:s.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'15px',fontWeight:'900',color:'white',flexShrink:0} }, s.gender === '여성' ? '♀' : '♂'),
                 React.createElement('div', null,
                   React.createElement('p', { className: 'font-bold' }, s.name),
                   React.createElement('p', { className: 'text-xs text-gray-400' }, `${s.year}.${s.month}.${s.day} (${s.calendar})`)
@@ -2223,7 +2233,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       ),
       React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'12px',marginBottom:'16px',textAlign:'center'} }, '정밀 만세력 계산 결과 · 신살 포함'),
       React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'18px',display:'flex',alignItems:'center',gap:'14px',marginBottom:'12px'} },
-        React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px',flexShrink:0} }, inp.gender === '여성' ? '👩' : '👨'),
+        React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'50%',background:inp.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',fontWeight:'900',flexShrink:0,color:'white',letterSpacing:'-1px'} }, inp.gender === '여성' ? '♀' : '♂'),
         React.createElement('div', null,
           React.createElement('h2', { style:{color:'white',fontWeight:'800',fontSize:'17px',marginBottom:'3px'} }, inp.name+'님'),
           React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, inp.year+'.'+inp.month+'.'+inp.day+(inp.hour?(' '+inp.hour+'시'):'')+'  ('+inp.calendar+')'),
@@ -2304,7 +2314,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           React.createElement('div', { className: 'flex justify-between items-center' },
             React.createElement('div', null,
               React.createElement('h3', { className: 'font-bold text-lg' }, '💎 더 깊은 분석이 궁금하다면?'),
-              React.createElement('p', { className: 'text-sm text-white/80 mt-1' }, '8개 섹션 심층 해설 + 신살 분석')
+              React.createElement('p', { style:{fontSize:'12px',color:'rgba(255,255,255,0.75)',marginTop:'4px'} }, 'AI 심층 해설 + 신살 분석')
             ),
             React.createElement('div', { className: 'text-right' },
               React.createElement('span', { className: 'text-2xl font-bold' }, '₩2,900')
@@ -2453,7 +2463,7 @@ ${pillarDesc}
       ),
 
       React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'18px',display:'flex',alignItems:'center',gap:'14px',marginBottom:'12px'} },
-        React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0} }, inp.gender === '여성' ? '👩' : '👨'),
+        React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'50%',background:inp.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',fontWeight:'900',flexShrink:0,color:'white'} }, inp.gender === '여성' ? '♀' : '♂'),
         React.createElement('div', { style:{flex:1} },
           React.createElement('h2', { style:{color:'white',fontWeight:'800',fontSize:'17px',marginBottom:'3px'} }, inp.name+'님'),
           React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, inp.year+'.'+inp.month+'.'+inp.day+(inp.hour?(' '+inp.hour+'시'):'')+'  ('+inp.calendar+')'),
@@ -2971,143 +2981,155 @@ ${pillarDesc}
     };
     
     return React.createElement('div', { className: 'min-h-screen p-4 pb-28', style:{background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)'} },
-      React.createElement('header', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 12px'} },
-        React.createElement('button', { onClick: () => setScreen('compatibility'), style:{color:'rgba(255,255,255,0.6)',fontSize:'22px'} }, '←'),
+      // 헤더
+      React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 16px 16px'} },
+        React.createElement('button', { onClick: () => setScreen('compatibility'), style:{color:'rgba(255,255,255,0.5)',fontSize:'22px',background:'none',border:'none',cursor:'pointer'} }, '←'),
         React.createElement('div', { style:{flex:1} },
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'2px'} }, '궁합 분석 결과'),
-          React.createElement('h1', { style:{color:'white',fontWeight:'800',fontSize:'17px'} }, '💕 궁합 풀이')
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase'} }, '궁합 분석 결과'),
+          React.createElement('h1', { style:{color:'white',fontWeight:'800',fontSize:'17px',letterSpacing:'-0.3px'} }, '궁합 풀이')
         ),
-        React.createElement('span', { style:{padding:'4px 12px',background:'linear-gradient(135deg,#ec4899,#f43f5e)',borderRadius:'20px',fontSize:'11px',fontWeight:'700',color:'white'} }, '✦ PREMIUM')
+        React.createElement('span', { style:{fontSize:'10px',fontWeight:'800',letterSpacing:'1px',color:'#f9a8d4',background:'rgba(236,72,153,0.15)',padding:'4px 10px',borderRadius:'20px',border:'1px solid rgba(236,72,153,0.25)'} }, 'PREMIUM')
       ),
-      // 두 사람 정보
-      React.createElement('div', { className: 'flex items-center justify-center gap-4 mt-4' },
-        React.createElement('div', { className: 'text-center' },
-          React.createElement('div', { className: 'w-16 h-16 bg-purple-500/30 rounded-full flex items-center justify-center text-2xl mx-auto' }, person1.gender === '여성' ? '👩' : '👨'),
-          React.createElement('p', { className: 'font-bold mt-2' }, person1.name),
-          React.createElement('p', { className: 'text-xs text-gray-400' }, `${STEMS.names[r1.dsi]}${STEMS.elements[r1.dsi].toUpperCase()} (${STEMS.korean[r1.dsi]}${el1})`)
-        ),
-        React.createElement('div', { className: 'text-4xl' }, '💕'),
-        React.createElement('div', { className: 'text-center' },
-          React.createElement('div', { className: 'w-16 h-16 bg-cyan-500/30 rounded-full flex items-center justify-center text-2xl mx-auto' }, person2.gender === '여성' ? '👩' : '👨'),
-          React.createElement('p', { className: 'font-bold mt-2' }, person2.name),
-          React.createElement('p', { className: 'text-xs text-gray-400' }, `${STEMS.names[r2.dsi]}${STEMS.elements[r2.dsi].toUpperCase()} (${STEMS.korean[r2.dsi]}${el2})`)
-        )
-      ),
-      // 총점
-      React.createElement('div', { className: 'glass rounded-2xl p-6 mt-6 text-center' },
-        React.createElement('h3', { className: 'text-gray-400 mb-2' }, '종합 궁합 점수'),
-        React.createElement('div', { className: 'text-6xl font-bold text-gradient' }, `${totalScore}점`),
-        React.createElement('p', { className: 'text-gray-400 mt-2' }, 
-          totalScore >= 85 ? '천생연분! 최고의 궁합입니다 💖' :
-          totalScore >= 70 ? '좋은 궁합입니다. 서로 잘 맞아요 💕' :
-          totalScore >= 55 ? '무난한 궁합입니다. 노력하면 좋아져요 💛' :
-          '서로 다른 점이 많아요. 이해가 필요합니다 🤝'
-        )
-      ),
-      // 분야별 궁합
-      React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'20px',marginTop:'12px'} },
-        React.createElement('h3', { className: 'font-bold mb-4' }, '📊 분야별 궁합'),
-        React.createElement('div', { className: 'space-y-3' },
-          [
-            { icon: '😊', name: '성격 궁합', score: categoryScores.personality, desc: categoryScores.personality >= 75 ? '성격이 잘 맞아요' : '서로 이해가 필요해요' },
-            { icon: '💬', name: '대화/소통', score: categoryScores.communication, desc: categoryScores.communication >= 75 ? '소통이 원활해요' : '대화 노력이 필요해요' },
-            { icon: '❤️', name: '연애/결혼', score: categoryScores.love, desc: categoryScores.love >= 75 ? '로맨틱한 관계에요' : '서로 맞춰가야 해요' },
-            { icon: '💰', name: '금전/재물', score: categoryScores.money, desc: categoryScores.money >= 75 ? '경제적 조화가 좋아요' : '재정 관리 협의 필요' },
-            { icon: '🎯', name: '가치관', score: categoryScores.values, desc: categoryScores.values >= 75 ? '가치관이 비슷해요' : '서로 존중이 필요해요' }
-          ].map((item, i) => 
-            React.createElement('div', { key: i, className: 'flex items-center gap-3' },
-              React.createElement('span', { className: 'text-xl w-8' }, item.icon),
-              React.createElement('div', { className: 'flex-1' },
-                React.createElement('div', { className: 'flex justify-between items-center mb-1' },
-                  React.createElement('span', { className: 'text-sm font-medium' }, item.name),
-                  React.createElement('span', { className: 'text-sm font-bold', style: { color: item.score >= 80 ? '#22c55e' : item.score >= 60 ? '#eab308' : '#ef4444' } }, `${Math.round(item.score)}점`)
-                ),
-                React.createElement('div', { className: 'h-2 bg-white/10 rounded-full overflow-hidden' },
-                  React.createElement('div', { className: 'h-full rounded-full', style: { width: `${item.score}%`, backgroundColor: item.score >= 80 ? '#22c55e' : item.score >= 60 ? '#eab308' : '#ef4444' } })
-                ),
-                React.createElement('p', { className: 'text-xs text-gray-500 mt-1' }, item.desc)
-              )
-            )
-          )
-        )
-      ),
-      // 오행 궁합
-      React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'20px',marginTop:'12px'} },
-        React.createElement('h3', { className: 'font-bold mb-4' }, '🔥 오행 관계'),
-        React.createElement('div', { className: 'flex justify-center items-center gap-4' },
-          React.createElement('div', { className: 'w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl', style: { backgroundColor: COLORS[el1] } }, el1),
-          React.createElement('div', { className: 'text-center' },
-            React.createElement('span', { className: 'text-2xl block' }, isSangsaeng ? '→' : isSanggeuk ? '⚡' : '↔'),
-            React.createElement('span', { className: 'text-xs text-gray-400' }, isSangsaeng ? '상생' : isSanggeuk ? '상극' : '비화')
+      // 두 사람 카드 - 프리미엄 디자인
+      React.createElement('div', { style:{margin:'0 16px 16px',background:'rgba(255,255,255,0.04)',borderRadius:'24px',border:'1px solid rgba(255,255,255,0.07)',padding:'24px 20px',position:'relative',overflow:'hidden'} },
+        React.createElement('div', { style:{position:'absolute',top:0,left:0,right:0,bottom:0,background:'linear-gradient(135deg,rgba(236,72,153,0.04),rgba(168,85,247,0.04))',pointerEvents:'none'} }),
+        // 두 사람 좌우 배치
+        React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr auto 1fr',alignItems:'center',gap:'12px',marginBottom:'20px'} },
+          // 인물 1
+          React.createElement('div', { style:{textAlign:'center'} },
+            React.createElement('div', { style:{width:'60px',height:'60px',borderRadius:'50%',background:person1.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',fontWeight:'900',color:'white',margin:'0 auto 8px'} }, person1.gender==='여성'?'♀':'♂'),
+            React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'14px',marginBottom:'2px'} }, person1.name),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px'} }, STEMS.korean[r1.dsi]+el1)
           ),
-          React.createElement('div', { className: 'w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl', style: { backgroundColor: COLORS[el2] } }, el2)
-        ),
-        React.createElement('p', { className: 'text-center text-gray-300 text-sm mt-4 leading-relaxed' }, 
-          isSangsaeng 
-            ? `${el1}이 ${el2}를 생(生)하는 관계로, ${person1.name}님이 ${person2.name}님에게 도움과 지지를 줄 수 있습니다.`
-            : isSanggeuk
-            ? `${el1}과 ${el2}는 극(克)하는 관계로 갈등이 있을 수 있지만, 서로 보완하면 강한 시너지를 냅니다.`
-            : `같은 오행으로 서로를 잘 이해하며, 비슷한 성향을 공유합니다.`
-        )
-      ),
-      // 지지/천간 관계
-      React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'20px',marginTop:'12px'} },
-        React.createElement('h3', { className: 'font-bold mb-4' }, '🔮 특별한 인연'),
-        React.createElement('div', { className: 'flex flex-wrap gap-2 justify-center mb-4' },
-          hasStemHap && React.createElement('span', { className: 'px-3 py-1 bg-pink-500/30 text-pink-300 rounded-full text-sm' }, '천간합 ❤️'),
-          hasYukhap && React.createElement('span', { className: 'px-3 py-1 bg-purple-500/30 text-purple-300 rounded-full text-sm' }, '육합 💜'),
-          hasChung && React.createElement('span', { className: 'px-3 py-1 bg-orange-500/30 text-orange-300 rounded-full text-sm' }, '충(冲) ⚡'),
-          isSangsaeng && React.createElement('span', { className: 'px-3 py-1 bg-green-500/30 text-green-300 rounded-full text-sm' }, '상생 🌱'),
-          !hasStemHap && !hasYukhap && !hasChung && React.createElement('span', { className: 'px-3 py-1 bg-gray-500/30 text-gray-300 rounded-full text-sm' }, '중립적 관계')
-        ),
-        React.createElement('p', { className: 'text-center text-gray-300 text-sm leading-relaxed' }, getRelationText())
-      ),
-      // 오행 비교 차트
-      React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'20px',marginTop:'12px'} },
-        React.createElement('h3', { className: 'font-bold mb-4' }, '📈 오행 밸런스 비교'),
-        React.createElement('div', { className: 'space-y-3' },
-          ['목','화','토','금','수'].map(el =>
-            React.createElement('div', { key: el, className: 'flex items-center gap-2' },
-              React.createElement('span', { className: 'w-8 text-sm text-center', style: { color: COLORS[el] } }, el),
-              React.createElement('div', { className: 'flex-1 flex items-center gap-1' },
-                React.createElement('div', { className: 'flex-1 h-3 bg-white/10 rounded-l-full overflow-hidden flex justify-end' },
-                  React.createElement('div', { style: { width: `${r1.fe.pct[el]}%`, backgroundColor: COLORS[el] }, className: 'h-full opacity-70' })
-                ),
-                React.createElement('div', { className: 'w-px h-4 bg-white/30' }),
-                React.createElement('div', { className: 'flex-1 h-3 bg-white/10 rounded-r-full overflow-hidden' },
-                  React.createElement('div', { style: { width: `${r2.fe.pct[el]}%`, backgroundColor: COLORS[el] }, className: 'h-full opacity-70' })
-                )
-              ),
-              React.createElement('div', { className: 'w-16 flex justify-between text-xs text-gray-400' },
-                React.createElement('span', null, `${r1.fe.pct[el]}%`),
-                React.createElement('span', null, `${r2.fe.pct[el]}%`)
-              )
+          // 중앙 관계 표시
+          React.createElement('div', { style:{textAlign:'center'} },
+            React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'50%',background:'rgba(236,72,153,0.12)',border:'1px solid rgba(236,72,153,0.25)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto'} },
+              React.createElement('span', { style:{fontSize:'16px'} }, '💕')
             )
+          ),
+          // 인물 2
+          React.createElement('div', { style:{textAlign:'center'} },
+            React.createElement('div', { style:{width:'60px',height:'60px',borderRadius:'50%',background:person2.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',fontWeight:'900',color:'white',margin:'0 auto 8px'} }, person2.gender==='여성'?'♀':'♂'),
+            React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'14px',marginBottom:'2px'} }, person2.name),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px'} }, STEMS.korean[r2.dsi]+el2)
           )
         ),
-        React.createElement('div', { className: 'flex justify-center gap-8 mt-3 text-xs text-gray-400' },
-          React.createElement('span', null, `◀ ${person1.name}`),
-          React.createElement('span', null, `${person2.name} ▶`)
+        // 총점 표시 - 카드 내부 인라인
+        React.createElement('div', { style:{borderTop:'1px solid rgba(255,255,255,0.07)',paddingTop:'18px',textAlign:'center'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'8px'} }, '종합 궁합 점수'),
+          React.createElement('div', { style:{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'4px',marginBottom:'6px'} },
+            React.createElement('span', { style:{fontSize:'52px',fontWeight:'900',letterSpacing:'-2px',background:'linear-gradient(135deg,#f9a8d4,#c4b5fd)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',lineHeight:1} }, totalScore),
+            React.createElement('span', { style:{color:'rgba(255,255,255,0.5)',fontSize:'18px',fontWeight:'700'} }, '점')
+          ),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'12px'} },
+            totalScore >= 85 ? '✦ 천생연분 · 최고의 궁합입니다' :
+            totalScore >= 70 ? '✦ 좋은 궁합 · 서로 잘 맞아요' :
+            totalScore >= 55 ? '✦ 무난한 궁합 · 노력하면 더 좋아져요' :
+            '✦ 서로 다른 점 많음 · 이해와 배려가 필요해요'
+          )
+        )
+      ),
+      // 분야별 궁합 - 리디자인
+      React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'18px'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'16px'} }, '✦ 분야별 궁합'),
+        [
+          { label: '성격', score: categoryScores.personality, color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
+          { label: '대화/소통', score: categoryScores.communication, color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
+          { label: '연애/결혼', score: categoryScores.love, color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
+          { label: '금전/재물', score: categoryScores.money, color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+          { label: '가치관', score: categoryScores.values, color: '#34d399', bg: 'rgba(52,211,153,0.12)' }
+        ].map((item, i) =>
+          React.createElement('div', { key: i, style:{marginBottom: i < 4 ? '14px' : '0'} },
+            React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'} },
+              React.createElement('span', { style:{color:'rgba(255,255,255,0.65)',fontSize:'13px',fontWeight:'500'} }, item.label),
+              React.createElement('span', { style:{color:item.color,fontSize:'13px',fontWeight:'700'} }, Math.round(item.score)+'점')
+            ),
+            React.createElement('div', { style:{height:'6px',background:'rgba(255,255,255,0.07)',borderRadius:'3px',overflow:'hidden'} },
+              React.createElement('div', { style:{height:'100%',width:item.score+'%',background:item.color,borderRadius:'3px',transition:'width 0.8s ease'} })
+            )
+          )
+        )
+      ),
+      // 오행 관계 + 특별 인연 통합 카드
+      React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'18px'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'16px'} }, '✦ 오행 관계'),
+        // 오행 시각화
+        React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'center',gap:'16px',marginBottom:'16px'} },
+          React.createElement('div', { style:{textAlign:'center'} },
+            React.createElement('div', { style:{width:'56px',height:'56px',borderRadius:'50%',background:COLORS[el1],display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:'900',fontSize:'18px',margin:'0 auto 6px'} }, el1),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'10px'} }, person1.name)
+          ),
+          React.createElement('div', { style:{display:'flex',flexDirection:'column',alignItems:'center',gap:'4px'} },
+            React.createElement('span', { style:{fontSize:'20px'} }, isSangsaeng ? '→' : isSanggeuk ? '⚡' : '↔'),
+            React.createElement('span', { style:{color:isSangsaeng?'#34d399':isSanggeuk?'#f87171':'rgba(255,255,255,0.4)',fontSize:'10px',fontWeight:'700'} }, isSangsaeng ? '상생' : isSanggeuk ? '상극' : '비화')
+          ),
+          React.createElement('div', { style:{textAlign:'center'} },
+            React.createElement('div', { style:{width:'56px',height:'56px',borderRadius:'50%',background:COLORS[el2],display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:'900',fontSize:'18px',margin:'0 auto 6px'} }, el2),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'10px'} }, person2.name)
+          )
+        ),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.55)',fontSize:'13px',lineHeight:'1.7',textAlign:'center',marginBottom: (hasStemHap||hasYukhap||hasChung||isSangsaeng) ? '14px' : '0'} }, 
+          isSangsaeng 
+            ? el1+'이 '+el2+'를 생(生)하는 관계로, '+person1.name+'님이 '+person2.name+'님에게 도움과 지지를 줄 수 있습니다.'
+            : isSanggeuk
+            ? el1+'과 '+el2+'는 극(克)하는 관계로 갈등이 있을 수 있지만, 서로 보완하면 강한 시너지를 냅니다.'
+            : '같은 오행으로 서로를 깊이 이해하며, 비슷한 성향과 감성을 공유합니다.'
+        ),
+        // 특별 인연 태그
+        (hasStemHap||hasYukhap||hasChung||isSangsaeng) && React.createElement('div', { style:{display:'flex',flexWrap:'wrap',gap:'6px',justifyContent:'center',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'14px'} },
+          hasStemHap && React.createElement('span', { style:{padding:'4px 10px',background:'rgba(244,114,182,0.12)',border:'1px solid rgba(244,114,182,0.25)',color:'#f9a8d4',borderRadius:'20px',fontSize:'11px',fontWeight:'600'} }, '천간합'),
+          hasYukhap && React.createElement('span', { style:{padding:'4px 10px',background:'rgba(167,139,250,0.12)',border:'1px solid rgba(167,139,250,0.25)',color:'#c4b5fd',borderRadius:'20px',fontSize:'11px',fontWeight:'600'} }, '육합'),
+          hasChung && React.createElement('span', { style:{padding:'4px 10px',background:'rgba(251,146,60,0.12)',border:'1px solid rgba(251,146,60,0.25)',color:'#fdba74',borderRadius:'20px',fontSize:'11px',fontWeight:'600'} }, '충(冲)'),
+          isSangsaeng && React.createElement('span', { style:{padding:'4px 10px',background:'rgba(52,211,153,0.12)',border:'1px solid rgba(52,211,153,0.25)',color:'#6ee7b7',borderRadius:'20px',fontSize:'11px',fontWeight:'600'} }, '상생')
+        )
+      ),
+      // 오행 밸런스 비교 - 리디자인
+      React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'18px'} },
+        React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'14px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase'} }, '✦ 오행 밸런스'),
+          React.createElement('div', { style:{display:'flex',gap:'12px'} },
+            React.createElement('span', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px'} }, '◀ '+person1.name),
+            React.createElement('span', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px'} }, person2.name+' ▶')
+          )
+        ),
+        ['목','화','토','금','수'].map(el =>
+          React.createElement('div', { key: el, style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'} },
+            React.createElement('span', { style:{width:'20px',fontSize:'12px',fontWeight:'700',color:COLORS[el],textAlign:'center'} }, el),
+            React.createElement('div', { style:{flex:1,display:'flex',alignItems:'center',gap:'3px'} },
+              React.createElement('div', { style:{flex:1,height:'8px',background:'rgba(255,255,255,0.06)',borderRadius:'4px 0 0 4px',overflow:'hidden',display:'flex',justifyContent:'flex-end'} },
+                React.createElement('div', { style:{width:r1.fe.pct[el]+'%',height:'100%',background:COLORS[el],opacity:0.8,borderRadius:'4px 0 0 4px'} })
+              ),
+              React.createElement('div', { style:{width:'1px',height:'14px',background:'rgba(255,255,255,0.15)'} }),
+              React.createElement('div', { style:{flex:1,height:'8px',background:'rgba(255,255,255,0.06)',borderRadius:'0 4px 4px 0',overflow:'hidden'} },
+                React.createElement('div', { style:{width:r2.fe.pct[el]+'%',height:'100%',background:COLORS[el],opacity:0.6,borderRadius:'0 4px 4px 0'} })
+              )
+            ),
+            React.createElement('div', { style:{display:'flex',gap:'4px',width:'72px',justifyContent:'flex-end'} },
+              React.createElement('span', { style:{color:'rgba(255,255,255,0.4)',fontSize:'10px',minWidth:'28px',textAlign:'right'} }, r1.fe.pct[el]+'%'),
+              React.createElement('span', { style:{color:'rgba(255,255,255,0.2)',fontSize:'10px'} }, '/'),
+              React.createElement('span', { style:{color:'rgba(255,255,255,0.4)',fontSize:'10px',minWidth:'28px'} }, r2.fe.pct[el]+'%')
+            )
+          )
         )
       ),
       // 조언
-      React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'20px',marginTop:'12px'} },
-        React.createElement('h3', { className: 'font-bold mb-3' }, '💡 궁합 조언'),
-        React.createElement('div', { className: 'space-y-3 text-sm text-gray-300' },
-          React.createElement('div', { className: 'flex gap-3' },
-            React.createElement('span', { className: 'text-green-400' }, '✓'),
-            React.createElement('p', null, totalScore >= 70 
+      React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'18px',margin:'0 16px 12px'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'} }, '✦ 궁합 조언'),
+        React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'12px'} },
+          React.createElement('div', { style:{display:'flex',gap:'10px',alignItems:'flex-start'} },
+            React.createElement('span', { style:{color:'#34d399',fontWeight:'700',flexShrink:0,marginTop:'1px'} }, '✓'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'13px',lineHeight:'1.7'} }, totalScore >= 70 
               ? '서로의 장점을 인정하고 칭찬해주세요. 작은 감사 표현이 관계를 더욱 돈독하게 합니다.'
               : '서로 다른 점을 단점이 아닌 개성으로 받아들이세요. 다양성이 관계를 풍요롭게 합니다.')
           ),
-          React.createElement('div', { className: 'flex gap-3' },
-            React.createElement('span', { className: 'text-green-400' }, '✓'),
-            React.createElement('p', null, isSanggeuk || hasChung
+          React.createElement('div', { style:{display:'flex',gap:'10px',alignItems:'flex-start'} },
+            React.createElement('span', { style:{color:'#34d399',fontWeight:'700',flexShrink:0,marginTop:'1px'} }, '✓'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'13px',lineHeight:'1.7'} }, isSanggeuk || hasChung
               ? '갈등 상황에서는 감정보다 이성적으로 대화하세요. 서로의 입장을 먼저 이해하려 노력해보세요.'
               : '좋은 관계일수록 대화를 게을리하지 마세요. 정기적으로 서로의 생각을 나누는 시간을 가지세요.')
           ),
-          React.createElement('div', { className: 'flex gap-3' },
-            React.createElement('span', { className: 'text-green-400' }, '✓'),
+          React.createElement('div', { style:{display:'flex',gap:'10px',alignItems:'flex-start'} },
+            React.createElement('span', { style:{color:'#34d399',fontWeight:'700',flexShrink:0,marginTop:'1px'} }, '✓'),
             React.createElement('p', null, `${person1.name}님의 ${r1.fe.yongshin}(용신)과 ${person2.name}님의 ${r2.fe.yongshin}(용신)을 서로 채워줄 수 있는 활동을 함께 해보세요.`)
           )
         )
@@ -3115,10 +3137,10 @@ ${pillarDesc}
       // 주의사항
       React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'20px',marginTop:'12px'} },
         React.createElement('h3', { className: 'font-bold mb-3' }, '⚠️ 주의할 점'),
-        React.createElement('div', { className: 'space-y-3 text-sm text-gray-300' },
+        React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'12px'} },
           React.createElement('div', { className: 'flex gap-3' },
             React.createElement('span', { className: 'text-amber-400' }, '△'),
-            React.createElement('p', null, el1 === el2 
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'13px',lineHeight:'1.7'} }, el1 === el2 
               ? '같은 오행이라 의견 충돌 시 양보가 어려울 수 있습니다. 서로 한 발씩 물러서는 연습이 필요합니다.'
               : `${person1.name}님(${el1})과 ${person2.name}님(${el2})의 에너지 차이를 이해하고 존중해주세요.`)
           ),
@@ -4887,12 +4909,8 @@ ${isSangsaeng
         React.createElement('span', { className:'ml-auto', style:{background:'linear-gradient(135deg,#f59e0b,#ef4444)',padding:'4px 12px',borderRadius:'20px',fontSize:'11px',fontWeight:'700',color:'white'} }, '✦ PREMIUM')
       ),
 
-      // 로딩
-      loading && React.createElement('div', { style:{margin:'40px 16px',padding:'48px 24px',background:'rgba(255,255,255,0.05)',borderRadius:'24px',textAlign:'center',border:'1px solid rgba(255,255,255,0.1)'} },
-        React.createElement('div', { style:{fontSize:'48px',marginBottom:'16px',animation:'spin 2s linear infinite'} }, '🔮'),
-        React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'16px'} }, '사주와 2026년 운세를 읽는 중...'),
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginTop:'8px'} }, '잠시만 기다려주세요')
-      ),
+      // 로딩 - SajuLoadingScreen 재사용
+      loading && React.createElement(SajuLoadingScreen),
 
       // AI 결과
       !loading && aiData && React.createElement('div', { style:{padding:'0 16px'} },
@@ -4998,7 +5016,7 @@ ${isSangsaeng
       React.createElement('h1', { style:{color:'white',fontWeight:'900',fontSize:'22px',letterSpacing:'-0.5px'} }, '마이페이지')
     ),
     React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'20px',display:'flex',alignItems:'center',gap:'14px',marginBottom:'12px'} },
-      React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0} }, '👤'),
+      React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',fontWeight:'900',color:'white',flexShrink:0} }, '✦'),
       React.createElement('div', null,
         React.createElement('h2', { style:{color:'white',fontWeight:'800',fontSize:'16px',marginBottom:'3px'} }, userEmail),
         React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'12px'} }, loginMethod+' 로그인')
@@ -5044,7 +5062,7 @@ ${isSangsaeng
           style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px',background:'rgba(255,255,255,0.04)',borderRadius:'14px',marginBottom:'8px',cursor:'pointer',border:'1px solid rgba(255,255,255,0.06)'} 
         },
           React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px'} },
-            React.createElement('span', { style:{fontSize:'22px'} }, saju.gender === '여성' ? '👩' : '👨'),
+            React.createElement('div', { style:{width:'36px',height:'36px',borderRadius:'50%',background:saju.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',fontWeight:'900',color:'white',flexShrink:0} }, saju.gender === '여성' ? '♀' : '♂'),
             React.createElement('div', null,
               React.createElement('p', { style:{color:'white',fontWeight:'600',fontSize:'13px'} }, saju.name+'님의 상세 분석'),
               React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'} }, saju.year+'.'+saju.month+'.'+saju.day+' · '+saju.date)
@@ -6015,7 +6033,7 @@ ${isSangsaeng
                     className: 'flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all' 
                   },
                     React.createElement('div', { className: 'flex items-center gap-3' },
-                      React.createElement('span', { style:{color:'rgba(255,255,255,0.4)',fontSize:'22px',background:'none',border:'none',cursor:'pointer'} }, saju.gender === '여성' ? '👩' : '👨'),
+                      React.createElement('div', { style:{width:'36px',height:'36px',borderRadius:'50%',background:saju.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',fontWeight:'900',color:'white',flexShrink:0} }, saju.gender === '여성' ? '♀' : '♂'),
                       React.createElement('div', null,
                         React.createElement('p', { className: 'font-medium' }, saju.name),
                         React.createElement('p', { className: 'text-xs text-gray-500' }, `${saju.year}.${saju.month}.${saju.day} · ${saju.date}`)
@@ -6153,7 +6171,7 @@ ${isSangsaeng
       React.createElement('div', { style:{padding:'24px 20px 16px',borderBottom:'1px solid rgba(255,255,255,0.06)'} },
         React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'} },
           React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px'} },
-            React.createElement('div', { style:{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px'} }, '👤'),
+            React.createElement('div', { style:{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',fontWeight:'900',color:'white'} }, '✦'),
             React.createElement('div', null,
               React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'14px'} }, loginMethod+'으로 로그인'),
               React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px',maxWidth:'160px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, userEmail)
