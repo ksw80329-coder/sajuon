@@ -4799,261 +4799,167 @@ ${isSangsaeng
   const YearlyResultScreen = () => {
     const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
     if (!person) return React.createElement('div', { className: 'p-4 text-center text-gray-400' }, '데이터 없음');
-    
     const r = person.result || analyzeSaju(person.year, person.month, person.day, person.hour, person.minute, person.isLunar, false);
-    const dayEl = STEMS.elements[r.dsi];
-    
-    // 운세 해설 생성
-    const yearlyData = generateYearlyInterpretation(r, person, 2026);
 
-    // ===== AI 신년운세 해설 =====
-    const _yearlyCacheKey = `ai_yearly_v21_${person.id}`;
-    const [aiYearlySections, setAiYearlySections] = React.useState(() => {
-      try { const c = localStorage.getItem(_yearlyCacheKey); const p = c ? JSON.parse(c) : null; if (p && p.sections && p.sections.length > 0) return p; if (Array.isArray(p) && p.length > 0) return p; return null; } catch(e) { return null; }
+    const _cacheKey = `ai_yearly_v40_${person.id}`;
+    const [aiData, setAiData] = React.useState(() => {
+      try { const c = localStorage.getItem(_cacheKey); return c ? JSON.parse(c) : null; } catch(e) { return null; }
     });
-    const [aiYearlyLoading, setAiYearlyLoading] = React.useState(() => {
-      try { const c = localStorage.getItem(_yearlyCacheKey); const p = c ? JSON.parse(c) : null; if (p && p.sections && p.sections.length > 0) return false; if (Array.isArray(p) && p.length > 0) return false; return true; } catch(e) { return true; }
+    const [loading, setLoading] = React.useState(() => {
+      try { return !localStorage.getItem(_cacheKey); } catch(e) { return true; }
     });
-    const [aiYearlyError, setAiYearlyError] = React.useState(false);
+    const [openIdx, setOpenIdx] = React.useState(null);
+    const [openMonth, setOpenMonth] = React.useState(null);
 
     React.useEffect(() => {
-      const cacheKey = _yearlyCacheKey;
-      if (aiYearlySections) return; // 이미 캐시에서 로드됨
+      if (aiData) return;
       const allSinsal = [...r.pillarSinsal.year,...r.pillarSinsal.month,...r.pillarSinsal.day,...r.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
-      const feDesc = Object.entries(r.fe.pct).map(([k,v])=>`${k}: ${v}%`).join(', ');
-
+      const feDesc = Object.entries(r.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', ');
       const strongEl = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1])[0];
       const weakEl = Object.entries(r.fe.pct).sort((a,b)=>a[1]-b[1])[0];
-      const pillarDesc2 = ['year','month','day','hour'].map(k => {
-        const p = r.pillars[k];
-        if (!p) return '';
-        const lbl = {year:'연주',month:'월주',day:'일주',hour:'시주'}[k];
-        const sinsal = r.pillarSinsal[k]?.join(', ') || '없음';
-        return `${lbl}: 천간 ${p.stem}(${STEMS.korean[p.si]}, ${STEMS.elements[p.si]}), 지지 ${p.branch} | 신살: ${sinsal}`;
+      const pillarDesc = ['year','month','day','hour'].map(k => {
+        const p = r.pillars[k]; if (!p) return '';
+        return `${({year:'연주',month:'월주',day:'일주',hour:'시주'})[k]}: ${p.stem}(${STEMS.korean[p.si]},${STEMS.elements[p.si]}) ${p.branch} 신살:${r.pillarSinsal[k]?.join(',') || '없음'}`;
       }).filter(Boolean).join('\n');
-
-      const prompt = `당신은 명리학 전문가이자 뛰어난 글쓰기 감각을 가진 분석가입니다.
-아래 ${person.name}님의 사주와 2026년 병오년이 만드는 운세를, 읽는 사람이 "이거 진짜 내 얘기잖아" 싶을 만큼 구체적으로 분석해주세요.
-
-[만세력 원국]
-${pillarDesc2}
-
-[사용자]
-이름: ${person.name} / 성별: ${person.gender} / 생년월일: ${person.year}.${person.month}.${person.day}
-일간: ${STEMS.names[r.dsi]}(${STEMS.korean[r.dsi]}) — ${STEMS.elements[r.dsi]}오행
-강한 오행: ${strongEl[0]} ${strongEl[1]}% / 약한 오행: ${weakEl[0]} ${weakEl[1]}%
-보유 신살: ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
-오행 분포: ${feDesc}
-
-[2026 병오년]
-丙(병화): 태양 같은 강렬한 불 — 표출, 확장, 화려함의 에너지
-午(오화): 말의 기운 — 질주, 자유, 역동성
-→ 화(火)가 극강한 해. 드러내고 움직이는 사람이 기회를 잡는다
-
-[톤 & 스타일]
-- 친한 선배가 진심으로 봐주는 느낌, MZ세대 공감 언어
-- 진부한 표현 완전 금지 ("뿌리를 내리는", "내실을 다지는", "조심하는 것이 좋습니다" 등)
-- 솔직하게, 좋은 것도 나쁜 것도 있는 그대로 말하기
-- ${person.name}님 이름 자연스럽게 여러 번 언급
-- 섹션 제목은 이 사람의 사주와 2026년이 만드는 딱 이 사람 이야기 (예: "병화가 ${STEMS.korean[r.dsi]}를 만나는 해, 숨어있던 재능이 터지는 타이밍")
-
-[출력 형식 - JSON만, 다른 텍스트 없이]
-{
-  "sections": [
-    { "icon": "이모지", "color": "tailwind 텍스트 색상 클래스", "title": "이 사람 전용 제목", "content": "700~900자 분석" }
-  ]
-}
-
-6개 섹션 작성:
-1. 2026년이 ${person.name}님에게 어떤 해인가 — 병오년 화기운이 ${STEMS.korean[r.dsi]}일간에게 구체적으로 무슨 의미인지, 올해의 전체 흐름
-2. 올해 ${person.name}님에게 열리는 기회의 문 — 오행과 병오년의 시너지에서 나오는 가장 강한 찬스, 지금 당장 해야 할 것
-3. 2026년 돈과 커리어 — 재물이 들어오는 구체적 구조, 어떤 분야/방향이 유리한지, 조심할 것
-4. 올해 사람 관계와 연애 — 신살(${allSinsal.length > 0 ? allSinsal.slice(0,3).join(', ') : '해당 없음'})이 관계에 어떻게 작용하는지, ${person.gender === '여성' ? '여성' : '남성'}으로서 올해 연애 포인트
-5. ${person.name}님이 가진 신살의 진짜 의미 — ${allSinsal.length > 0 ? allSinsal.join(', ') : '신살 없는 사람의 특징'}이 2026년에 어떻게 발현되는지
-6. 언제 치고 나가고 언제 쉬어야 하나 — 상반기/하반기 에너지 흐름, 올해의 황금 타이밍과 주의 시기`;
-
-      const minLoadY = new Promise(resolve => setTimeout(resolve, 60000));
-      const yearlyPayload = {
-        t: '3',
-        name: person.name, gender: person.gender,
-        birth: `${person.year}.${person.month}.${person.day}`,
-        ilgan: STEMS.names[r.dsi], ilganKr: STEMS.korean[r.dsi],
-        strongEl: `${strongEl[0]} ${strongEl[1]}%`, weakEl: `${weakEl[0]} ${weakEl[1]}%`,
-        sinsal: allSinsal.join(', '),
-        pillars: pillarDesc2,
-        feDesc
+      const payload = {
+        t:'3', name:person.name, gender:person.gender,
+        birth:`${person.year}.${person.month}.${person.day}`,
+        ilgan:STEMS.names[r.dsi], ilganKr:STEMS.korean[r.dsi],
+        strongEl:`${strongEl[0]} ${strongEl[1]}%`, weakEl:`${weakEl[0]} ${weakEl[1]}%`,
+        sinsal:allSinsal.join(', '), pillars:pillarDesc, feDesc
       };
-      const aiFetchY = fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: (()=>{ const s=JSON.stringify(yearlyPayload); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return JSON.stringify({b:btoa(bin)}); })()
+      const encode = o => { const s=JSON.stringify(o); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return JSON.stringify({b:btoa(bin)}); };
+      fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
+        method:'POST', headers:{'Content-Type':'text/plain'}, body:encode(payload)
       })
-      .then(r => r.json())
-      .then(data => {
+      .then(res=>res.json())
+      .then(data=>{
         const text = data.content?.[0]?.text || '';
-        console.log('===== AI 운세 응답 =====');
-        console.log('data 전체:', JSON.stringify(data).slice(0,500));
-        console.log('text 길이:', text.length);
-        let sections = null;
         try {
-          sections = robustParseAI(text, true); // full 파싱
-        } catch(e) { console.error('운세 JSON 파싱 실패:', e.message); }
-        if (sections && sections.sections && sections.sections.length > 0) {
-          try { localStorage.setItem(cacheKey, JSON.stringify(sections)); } catch(e) {}
-          return sections;
-        }
-        return null;
+          const m = text.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
+          if (m) { const p = JSON.parse(m[0]); if (p.sections) { try{localStorage.setItem(_cacheKey,JSON.stringify(p));}catch(e){} setAiData(p); } }
+        } catch(e) { console.error('파싱 실패', e, text.slice(0,200)); }
       })
-      .catch(e => { console.error('운세 AI fetch 오류:', e); return null; });
-      Promise.all([aiFetchY, minLoadY])
-      .then(([sections]) => {
-        if (sections && sections.sections && sections.sections.length > 0) setAiYearlySections(sections);
-        else setAiYearlyError(true);
-      })
-      .finally(() => setAiYearlyLoading(false));
+      .catch(e=>console.error('fetch 오류',e))
+      .finally(()=>setLoading(false));
     }, []);
-    
-    return React.createElement('div', { className: 'min-h-screen p-4 pb-28' },
-      React.createElement('header', { className: 'flex items-center gap-4 py-4' },
-        React.createElement('button', { onClick: () => setScreen('yearly'), className: 'text-2xl' }, '←'),
-        React.createElement('h1', { className: 'text-xl font-bold' }, '🎊 2026 신년운세'),
-        React.createElement('span', { className: 'ml-auto px-3 py-1 bg-amber-500 rounded-full text-xs' }, 'PREMIUM')
-      ),
-      // 사용자 정보
-      React.createElement('div', { className: 'glass rounded-2xl p-5 mt-4' },
-        React.createElement('div', { className: 'flex items-center gap-4' },
-          React.createElement('div', { className: 'w-16 h-16 gradient-primary rounded-full flex items-center justify-center text-3xl' }, person.gender === '여성' ? '👩' : '👨'),
-          React.createElement('div', null,
-            React.createElement('h2', { className: 'text-xl font-bold' }, `${person.name}님의 2026년`),
-            React.createElement('p', { className: 'text-gray-400' }, `${STEMS.names[r.dsi]}(${STEMS.korean[r.dsi]}) 일간 · ${dayEl}(${getElHanja(dayEl)}) 오행`)
-          )
-        )
-      ),
-      // 총운 점수
-      React.createElement('div', { className: 'glass rounded-2xl p-6 mt-4 text-center' },
-        React.createElement('div', { className: 'text-4xl mb-2' }, '🐴'),
-        React.createElement('h3', { className: 'text-gray-400 mb-2' }, '2026년 병오년(丙午年) 총운'),
-        React.createElement('div', { className: 'text-5xl font-bold text-gradient' }, `${yearlyData.totalScore}점`),
-        React.createElement('p', { className: 'text-lg mt-2 font-medium' }, 
-          yearlyData.totalScore >= 80 ? '🎉 대길(大吉)! 모든 일이 순조로운 한 해' :
-          yearlyData.totalScore >= 65 ? '✨ 길(吉)! 노력한 만큼 성과가 있는 해' :
-          yearlyData.totalScore >= 50 ? '🌱 평(平)! 차분하게 내실을 다지는 해' :
-          '⚠️ 신중함이 필요한 해'
-        )
-      ),
-      // 만세력 표 (사주와 동일 스타일)
-      React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
-        React.createElement('div', { className: 'p-3 gradient-primary text-white text-center font-bold' }, '🗓️ 만세력'),
-        React.createElement('div', { className: 'p-4' },
-          React.createElement('div', { className: 'grid grid-cols-4 gap-2 text-center mb-2' },
-            ['연주','월주','일주','시주'].map(lbl => React.createElement('div', { key: lbl, className: 'text-xs text-gray-400' }, lbl))
-          ),
-          React.createElement('div', { className: 'grid grid-cols-4 gap-2 text-center mb-2' },
-            ['year','month','day','hour'].map(k => {
-              const pl = r.pillars[k];
-              if (!pl) return React.createElement('div', { key: 'sy'+k, className: 'py-3 bg-gray-700/50 rounded-lg text-gray-500' }, '-');
-              const el = STEMS.elements[pl.si];
-              return React.createElement('div', { key: 'sy'+k, className: 'py-2 rounded-lg text-white font-bold flex flex-col items-center', style: { backgroundColor: COLORS[el] } },
-                React.createElement('span', { className: 'text-xl' }, pl.stem),
-                React.createElement('span', { className: 'text-xs opacity-80' }, STEMS.korean[pl.si])
-              );
-            })
-          ),
-          React.createElement('div', { className: 'grid grid-cols-4 gap-2 text-center' },
-            ['year','month','day','hour'].map(k => {
-              const pl = r.pillars[k];
-              if (!pl) return React.createElement('div', { key: 'bry'+k, className: 'py-3 bg-gray-700/50 rounded-lg text-gray-500' }, '-');
-              const el = BRANCHES.elements[pl.bi];
-              return React.createElement('div', { key: 'bry'+k, className: 'py-2 rounded-lg text-white font-bold flex flex-col items-center', style: { backgroundColor: COLORS[el] } },
-                React.createElement('span', { className: 'text-xl' }, pl.branch),
-                React.createElement('span', { className: 'text-xs opacity-80' }, BRANCHES.korean[pl.bi])
-              );
-            })
-          )
+
+    const MC = s => s>=70?'#10b981':s>=50?'#f59e0b':'#ef4444';
+    const ML = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+
+    return React.createElement('div', { className:'min-h-screen pb-28', style:{background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)'} },
+
+      // 헤더
+      React.createElement('div', { className:'flex items-center gap-3 p-4 pt-6' },
+        React.createElement('button', { onClick:()=>setScreen('yearly'), style:{color:'rgba(255,255,255,0.6)',fontSize:'22px'} }, '←'),
+        React.createElement('div', null,
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'2px',textTransform:'uppercase'} }, '2026 병오년(丙午年)'),
+          React.createElement('h1', { style:{color:'white',fontWeight:'800',fontSize:'18px'} }, person.name+'님의 신년운세')
         ),
-        React.createElement('div', { className: 'px-4 py-2 bg-white/5 text-center text-xs text-amber-400' }, `🔥 2026 병오년(丙午年) · 일간 ${STEMS.korean[r.dsi]}(${STEMS.elements[r.dsi]}) 기운`)
+        React.createElement('span', { className:'ml-auto', style:{background:'linear-gradient(135deg,#f59e0b,#ef4444)',padding:'4px 12px',borderRadius:'20px',fontSize:'11px',fontWeight:'700',color:'white'} }, '✦ PREMIUM')
       ),
-      // AI 심층 풀이
-      aiYearlyLoading
-        ? React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
-            React.createElement('div', { className: 'p-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center font-bold flex items-center justify-center gap-2' },
-              '✨ 2026년 운세 심층 풀이',
-              React.createElement('span', { className: 'text-xs bg-white/20 px-2 py-0.5 rounded-full animate-pulse' }, '천기 해독 중...')
-            ),
-            React.createElement(SajuLoadingScreen)
-          )
-        : aiYearlySections?.sections || aiYearlySections
-          ? React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
-              React.createElement('div', { className: 'p-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center font-bold' }, '✨ 2026년 운세 심층 풀이'),
-              React.createElement('div', { className: 'p-3 text-center text-gray-400 text-xs border-b border-white/10' }, '각 제목을 클릭하면 풀이가 펼쳐져요'),
-              (aiYearlySections?.sections || (Array.isArray(aiYearlySections) ? aiYearlySections : [])).map((section, i) =>
-                React.createElement(AccordionItem, { key: i, icon: section.icon, color: section.color, title: section.title, content: section.content })
-              )
-            )
-          : React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
-              React.createElement('div', { className: 'p-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center font-bold' }, '📜 총운 해설'),
-              React.createElement('div', { className: 'p-5' },
-                yearlyData.yearSummary.split('\n\n').map((para, i) =>
-                  para.startsWith('[')
-                    ? React.createElement('div', { key: i, className: 'mt-4 p-3 bg-amber-500/10 rounded-xl' },
-                        React.createElement('p', { className: 'text-sm text-amber-200 font-medium' }, para.split(']')[0] + ']'),
-                        React.createElement('p', { className: 'text-sm text-gray-300 mt-1' }, para.split(']')[1])
-                      )
-                    : React.createElement('p', { key: i, className: 'text-sm text-gray-300 leading-relaxed mb-3' }, para)
+
+      // 로딩
+      loading && React.createElement('div', { style:{margin:'40px 16px',padding:'48px 24px',background:'rgba(255,255,255,0.05)',borderRadius:'24px',textAlign:'center',border:'1px solid rgba(255,255,255,0.1)'} },
+        React.createElement('div', { style:{fontSize:'48px',marginBottom:'16px',animation:'spin 2s linear infinite'} }, '🔮'),
+        React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'16px'} }, '사주와 2026년 운세를 읽는 중...'),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginTop:'8px'} }, '잠시만 기다려주세요')
+      ),
+
+      // AI 결과
+      !loading && aiData && React.createElement('div', { style:{padding:'0 16px'} },
+
+        // 히어로 총평
+        React.createElement('div', { style:{margin:'8px 0 20px',padding:'28px 24px',background:'rgba(255,255,255,0.06)',borderRadius:'24px',border:'1px solid rgba(245,158,11,0.3)',position:'relative',overflow:'hidden'} },
+          React.createElement('div', { style:{position:'absolute',top:'-20px',right:'-20px',fontSize:'80px',opacity:'0.08'} }, '🐴'),
+          React.createElement('p', { style:{color:'#f59e0b',fontSize:'11px',fontWeight:'700',letterSpacing:'2px',marginBottom:'12px'} }, '✦ 2026년 총평'),
+          React.createElement('p', { style:{color:'white',fontSize:'15px',fontWeight:'600',lineHeight:'1.7'} }, aiData.headline || '')
+        ),
+
+        // 5대 운세 카드
+        aiData.sections && React.createElement('div', { style:{marginBottom:'20px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'2px',marginBottom:'12px'} }, '✦ 2026 심층 분석'),
+          aiData.sections.map((s, i) => {
+            const isOpen = openIdx === i;
+            const gradients = [
+              'linear-gradient(135deg,rgba(14,165,233,0.15),rgba(6,182,212,0.05))',
+              'linear-gradient(135deg,rgba(245,158,11,0.15),rgba(234,179,8,0.05))',
+              'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(244,114,182,0.05))',
+              'linear-gradient(135deg,rgba(34,197,94,0.15),rgba(74,222,128,0.05))',
+              'linear-gradient(135deg,rgba(168,85,247,0.15),rgba(192,132,252,0.05))'
+            ];
+            const borders = ['rgba(14,165,233,0.3)','rgba(245,158,11,0.3)','rgba(236,72,153,0.3)','rgba(34,197,94,0.3)','rgba(168,85,247,0.3)'];
+            return React.createElement('div', { key:i, style:{marginBottom:'10px',borderRadius:'20px',border:`1px solid ${borders[i%5]}`,background:gradients[i%5],overflow:'hidden'} },
+              React.createElement('button', {
+                onClick:()=>setOpenIdx(isOpen?null:i),
+                style:{width:'100%',padding:'18px 20px',display:'flex',alignItems:'center',gap:'12px',textAlign:'left',background:'none',border:'none',cursor:'pointer'}
+              },
+                React.createElement('span', { style:{fontSize:'24px'} }, s.icon || '✨'),
+                React.createElement('div', { style:{flex:1} },
+                  React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'14px',lineHeight:'1.4'} }, s.title),
+                ),
+                React.createElement('span', { style:{color:'rgba(255,255,255,0.4)',fontSize:'18px',transition:'transform 0.3s',transform:isOpen?'rotate(180deg)':'rotate(0deg)'} }, '▾')
+              ),
+              isOpen && React.createElement('div', { style:{padding:'0 20px 20px',color:'rgba(255,255,255,0.8)',fontSize:'14px',lineHeight:'1.9'} },
+                (s.content||'').split('\n').filter(Boolean).map((para, pi) =>
+                  React.createElement('p', { key:pi, style:{marginBottom:'12px'} }, para)
                 )
               )
-            ),
-      // 월별 운세 (AI 로딩 완료 후 표시)
-      !aiYearlyLoading && React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
-        React.createElement('div', { className: 'p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-center font-bold' }, '📅 월별 운세'),
-        React.createElement('p', { className: 'text-xs text-gray-400 text-center py-3 border-b border-white/10' }, '💡 각 월을 클릭하면 상세 운세를 확인할 수 있습니다'),
-        React.createElement('div', { className: 'divide-y divide-white/10' },
-          (aiYearlySections?.monthly || yearlyData.monthlyFortunes).map((m, i) =>
-            React.createElement(AccordionItem, {
-              key: i,
-              icon: m.score >= 70 ? '🌟' : m.score >= 50 ? '💪' : '🛡️',
-              color: m.score >= 70 ? 'text-green-400' : m.score >= 50 ? 'text-yellow-400' : 'text-red-400',
-              subtitle: m.month ? m.month + '월' : m.label,
-              title: m.monthTitle || m.keyword || m.fortune?.slice(0,20),
-              content: m.fullDetail || m.advice || m.fortune
-            })
-          )
-        )
-      ),
-      // 분야별 운세 (AI 로딩 완료 후 표시)
-      !aiYearlyLoading && React.createElement('div', { className: 'glass rounded-2xl overflow-hidden mt-4' },
-        React.createElement('div', { className: 'p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center font-bold' }, '🎯 분야별 상세 운세'),
-        ['wealth', 'love', 'career', 'health'].map(key => {
-          const cat = yearlyData.categoryFortunes[key];
-          return React.createElement(AccordionItem, {
-            key: key,
-            icon: cat.title.split(' ')[0],
-            color: key === 'wealth' ? 'text-emerald-400' : key === 'love' ? 'text-pink-400' : key === 'career' ? 'text-blue-400' : 'text-red-400',
-            title: cat.title.split(' ')[1],
-            content: `${cat.summary}\n\n${cat.detail}`
-          });
-        })
-      ),
-      // 행운 정보
-      React.createElement('div', { className: 'glass rounded-2xl p-5 mt-4' },
-        React.createElement('h3', { className: 'font-bold mb-4' }, '🍀 2026년 행운의 키워드'),
-        React.createElement('div', { className: 'grid grid-cols-3 gap-3 text-center' },
-          React.createElement('div', { className: 'p-4 bg-red-500/20 rounded-xl' },
-            React.createElement('p', { className: 'text-xs text-gray-400' }, '행운의 색'),
-            React.createElement('p', { className: 'font-bold text-red-400 text-lg' }, yearlyData.luckyInfo.color)
-          ),
-          React.createElement('div', { className: 'p-4 bg-purple-500/20 rounded-xl' },
-            React.createElement('p', { className: 'text-xs text-gray-400' }, '행운의 숫자'),
-            React.createElement('p', { className: 'font-bold text-purple-400 text-lg' }, yearlyData.luckyInfo.number)
-          ),
-          React.createElement('div', { className: 'p-4 bg-blue-500/20 rounded-xl' },
-            React.createElement('p', { className: 'text-xs text-gray-400' }, '행운의 방향'),
-            React.createElement('p', { className: 'font-bold text-blue-400 text-lg' }, yearlyData.luckyInfo.direction)
-          )
+            );
+          })
         ),
-        React.createElement('p', { className: 'text-xs text-gray-500 text-center mt-4' }, 
-          `💡 용신(用神)인 ${r.fe.yongshin}(${getElHanja(r.fe.yongshin)}) 기운을 보충하면 운이 좋아집니다`
+
+        // 월별 타이밍
+        aiData.monthly && aiData.monthly.length > 0 && React.createElement('div', { style:{marginBottom:'20px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'2px',marginBottom:'12px'} }, '✦ 월별 타이밍'),
+          React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',padding:'20px',border:'1px solid rgba(255,255,255,0.08)',marginBottom:'10px'} },
+            React.createElement('div', { style:{display:'flex',gap:'4px',alignItems:'flex-end',height:'56px',marginBottom:'8px'} },
+              aiData.monthly.map((m,i)=>{
+                const sc = m.score||50;
+                const h = Math.round((sc/100)*44)+8;
+                return React.createElement('div', { key:i, style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:'2px'} },
+                  React.createElement('div', { style:{height:h+'px',backgroundColor:MC(sc),borderRadius:'3px',width:'100%',cursor:'pointer',transition:'opacity 0.2s',opacity:openMonth===i?1:0.7}, onClick:()=>setOpenMonth(openMonth===i?null:i) }),
+                  React.createElement('span', { style:{fontSize:'9px',color:'rgba(255,255,255,0.4)'} }, ML[i])
+                );
+              })
+            ),
+            React.createElement('div', { style:{display:'flex',gap:'12px',justifyContent:'center',fontSize:'11px',color:'rgba(255,255,255,0.4)'} },
+              React.createElement('span', null, '🟢 좋음'),
+              React.createElement('span', null, '🟡 보통'),
+              React.createElement('span', null, '🔴 주의')
+            )
+          ),
+          aiData.monthly.map((m,i) => {
+            const sc = m.score||50;
+            const isOpen = openMonth === i;
+            return React.createElement('div', { key:i, style:{marginBottom:'6px',borderRadius:'16px',background:'rgba(255,255,255,0.04)',border:`1px solid ${isOpen?MC(sc):'rgba(255,255,255,0.08)'}`,overflow:'hidden',transition:'border 0.2s'} },
+              React.createElement('button', {
+                onClick:()=>setOpenMonth(isOpen?null:i),
+                style:{width:'100%',padding:'14px 16px',display:'flex',alignItems:'center',gap:'10px',background:'none',border:'none',cursor:'pointer',textAlign:'left'}
+              },
+                React.createElement('span', { style:{fontWeight:'800',fontSize:'13px',color:MC(sc),minWidth:'28px'} }, (i+1)+'월'),
+                React.createElement('span', { style:{color:'white',fontSize:'13px',flex:1,fontWeight:'500'} }, m.title || ''),
+                React.createElement('span', { style:{color:'rgba(255,255,255,0.3)',fontSize:'14px'} }, isOpen?'▴':'▾')
+              ),
+              isOpen && React.createElement('div', { style:{padding:'0 16px 14px',color:'rgba(255,255,255,0.75)',fontSize:'13px',lineHeight:'1.8'} }, m.content || m.fortune || '')
+            );
+          })
+        ),
+
+        // 올해의 한마디
+        aiData.closing && React.createElement('div', { style:{marginBottom:'20px',padding:'28px 24px',background:'linear-gradient(135deg,rgba(124,58,237,0.2),rgba(59,130,246,0.1))',borderRadius:'24px',border:'1px solid rgba(124,58,237,0.3)',textAlign:'center'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'2px',marginBottom:'12px'} }, '✦ 2026년, '+person.name+'님에게 드리는 말'),
+          React.createElement('p', { style:{color:'white',fontSize:'15px',fontWeight:'600',lineHeight:'1.8',fontStyle:'italic'} }, '"'+aiData.closing+'"')
         )
+      ),
+
+      // 에러
+      !loading && !aiData && React.createElement('div', { style:{margin:'40px 16px',padding:'32px 24px',background:'rgba(255,255,255,0.05)',borderRadius:'24px',textAlign:'center'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',marginBottom:'16px'} }, '분석을 불러오지 못했습니다'),
+        React.createElement('button', {
+          onClick:()=>{ try{localStorage.removeItem(_cacheKey);}catch(e){} setLoading(true); setAiData(null); },
+          style:{background:'linear-gradient(135deg,#7c3aed,#3b82f6)',color:'white',border:'none',padding:'12px 28px',borderRadius:'14px',fontWeight:'700',cursor:'pointer'}
+        }, '다시 시도')
       )
     );
   };
