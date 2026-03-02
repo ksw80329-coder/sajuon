@@ -698,103 +698,112 @@ function App() {
   
   // 아코디언 아이템 컴포넌트
   const SajuLoadingScreen = () => {
-    const messages = [
-      { icon: '🌌', text: '천지의 기운을 읽고 있습니다...' },
-      { icon: '☯️', text: '음양의 흐름을 살피고 있습니다...' },
-      { icon: '🔥', text: '오행의 강약을 분석하고 있습니다...' },
-      { icon: '⭐', text: '신살의 영향을 해석하고 있습니다...' },
-      { icon: '🌙', text: '달의 기운으로 내면을 살피고 있습니다...' },
-      { icon: '🪐', text: '하늘의 별자리와 대화 중입니다...' },
-      { icon: '🎋', text: '사주팔자의 비밀을 풀어내고 있습니다...' },
-      { icon: '🌊', text: '운명의 물결을 읽고 있습니다...' },
+    const stages = [
+      { label: '생년월일 해석', sub: '태어난 순간의 하늘을 읽는 중' },
+      { label: '사주팔자 배치', sub: '천간과 지지의 구조를 세우는 중' },
+      { label: '오행 흐름 분석', sub: '목·화·토·금·수의 강약을 계산 중' },
+      { label: '신살 탐색', sub: '30여 가지 신살의 영향을 해석 중' },
+      { label: '일간 심층 분석', sub: '나를 나타내는 핵심 기둥을 읽는 중' },
+      { label: '관계 패턴 파악', sub: '충·합·형·파·해의 구조를 분석 중' },
+      { label: 'AI 해설 생성', sub: '당신만의 이야기를 문장으로 풀어내는 중' },
+      { label: '최종 정리 중', sub: '곧 결과를 보여드립니다' },
     ];
-
     const tips = [
-      '💡 일간(日干)은 나 자신을 나타내는 핵심 기둥입니다',
-      '💡 용신(用神)은 사주에서 가장 필요한 오행을 말합니다',
-      '💡 신살(神殺)은 타고난 특별한 기운의 표식입니다',
-      '💡 오행이 균형 잡힌 사주는 안정적인 삶을 나타냅니다',
-      '💡 월주(月柱)는 부모와 성장 환경을 보여줍니다',
-      '💡 시주(時柱)는 자식과 말년 운을 담고 있습니다',
-      '💡 도화살은 매력과 예술적 감각을 상징합니다',
-      '💡 백호살은 강한 추진력과 결단력을 나타냅니다',
+      { title: '일간(日干)이란?', body: '사주 네 기둥 중 일간이 나 자신. 이것 하나로 성격의 뿌리가 결정됩니다.' },
+      { title: '신살(神殺)이란?', body: '타고난 특별한 기운의 표식. 도화살·백호살·역마살 등 30여 종이 있습니다.' },
+      { title: '용신(用神)이란?', body: '내 사주에서 가장 필요한 오행. 용신을 알면 어떤 환경이 나에게 맞는지 보입니다.' },
+      { title: '오행 균형', body: '목·화·토·금·수 다섯 기운의 비율이 삶의 방향을 결정합니다.' },
+      { title: '월주(月柱)', body: '성장 환경과 부모 관계, 사회적 페르소나를 담고 있습니다.' },
+      { title: '천간합(天干合)', body: '두 천간이 만나 새로운 오행으로 변화하는 신비로운 결합.' },
     ];
 
-    const [msgIdx, setMsgIdx] = React.useState(0);
-    const [tipIdx, setTipIdx] = React.useState(0);
-    const [visible, setVisible] = React.useState(true);
-    const [elapsed, setElapsed] = React.useState(0);
+    const [stageIdx, setStageIdx] = React.useState(0);
+    const [tipIdx, setTipIdx]     = React.useState(0);
+    const [elapsed, setElapsed]   = React.useState(0);
+    const [dots, setDots]         = React.useState('');
+    const [tipVisible, setTipVisible] = React.useState(true);
 
     React.useEffect(() => {
-      const msgTimer = setInterval(() => {
-        setVisible(false);
-        setTimeout(() => {
-          setMsgIdx(p => (p + 1) % messages.length);
-          setVisible(true);
-        }, 400);
-      }, 2500);
-      const tipTimer = setInterval(() => {
-        setTipIdx(p => (p + 1) % tips.length);
-      }, 4000);
-      const secTimer = setInterval(() => setElapsed(p => p + 1), 1000);
-      return () => { clearInterval(msgTimer); clearInterval(tipTimer); clearInterval(secTimer); };
+      const stageT = setInterval(() => setStageIdx(p => Math.min(p + 1, stages.length - 1)), 8000);
+      const tipT   = setInterval(() => {
+        setTipVisible(false);
+        setTimeout(() => { setTipIdx(p => (p + 1) % tips.length); setTipVisible(true); }, 400);
+      }, 5000);
+      const secT   = setInterval(() => setElapsed(p => p + 1), 1000);
+      const dotT   = setInterval(() => setDots(p => p.length >= 3 ? '' : p + '·'), 500);
+      return () => { clearInterval(stageT); clearInterval(tipT); clearInterval(secT); clearInterval(dotT); };
     }, []);
 
-    const msg = messages[msgIdx];
+    const stage = stages[stageIdx];
+    const tip   = tips[tipIdx];
+    const progress = Math.min(95, (stageIdx / (stages.length - 1)) * 90 + (elapsed % 8) * 0.5);
 
-    return React.createElement('div', { style:{padding:'48px 24px',textAlign:'center',background:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)',minHeight:'100vh'} },
+    return React.createElement('div', {
+      style:{minHeight:'100vh',background:'#070514',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px 24px',position:'relative',overflow:'hidden',textAlign:'center'}
+    },
 
-      // 중앙 애니메이션
-      React.createElement('div', { className: 'relative w-24 h-24 mx-auto mb-8' },
-        React.createElement('div', { 
-          className: 'absolute inset-0 rounded-full border-2 border-purple-500/30 animate-ping'
-        }),
-        React.createElement('div', { 
-          className: 'absolute inset-2 rounded-full border-2 border-purple-400/50 animate-spin',
-          style: { animationDuration: '3s' }
-        }),
-        React.createElement('div', { 
-          className: 'absolute inset-0 flex items-center justify-center text-4xl',
-          style: { transition: 'opacity 0.4s', opacity: visible ? 1 : 0 }
-        }, msg.icon)
-      ),
-
-      // 메시지
-      React.createElement('div', {
-        style: { transition: 'opacity 0.4s', opacity: visible ? 1 : 0, minHeight: '2rem' }
-      },
-        React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'16px',marginBottom:'6px'} }, msg.text),
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'12px',fontFamily:'monospace'} }, elapsed < 5 ? '분석 시작...' : elapsed < 15 ? '분석 중 ('+elapsed+'초)' : elapsed < 30 ? '거의 다 왔어요 ('+elapsed+'초)' : '곧 완성됩니다 ('+elapsed+'초)')
-      ),
-
-      // 진행 바
-      React.createElement('div', { className: 'mt-6 mb-8 mx-auto max-w-xs' },
-        React.createElement('div', { className: 'h-1 bg-white/10 rounded-full overflow-hidden' },
-          React.createElement('div', {
-            className: 'h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full',
-            style: { animation: 'progressBar 65s cubic-bezier(0.1, 0.3, 0.5, 1) forwards' }
-          })
+      // 배경 — 오비탈 링들
+      React.createElement('div', { style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'} },
+        // 링 1
+        React.createElement('div', { style:{position:'absolute',width:'320px',height:'320px',borderRadius:'50%',border:'1px solid rgba(139,92,246,0.08)',animation:'orbitSpin1 20s linear infinite'} }),
+        // 링 2
+        React.createElement('div', { style:{position:'absolute',width:'220px',height:'220px',borderRadius:'50%',border:'1px solid rgba(236,72,153,0.06)',animation:'orbitSpin2 14s linear infinite reverse'} }),
+        // 링 3
+        React.createElement('div', { style:{position:'absolute',width:'140px',height:'140px',borderRadius:'50%',border:'1px solid rgba(139,92,246,0.1)',animation:'orbitSpin1 9s linear infinite'} }),
+        // 중심 글로우
+        React.createElement('div', { style:{position:'absolute',width:'80px',height:'80px',borderRadius:'50%',background:'radial-gradient(circle,rgba(139,92,246,0.25),transparent 70%)',filter:'blur(12px)'} }),
+        // 궤도 도트들
+        React.createElement('div', { style:{position:'absolute',width:'320px',height:'320px',borderRadius:'50%',animation:'orbitSpin1 20s linear infinite'} },
+          React.createElement('div', { style:{position:'absolute',top:'-3px',left:'50%',width:'6px',height:'6px',borderRadius:'50%',background:'rgba(139,92,246,0.5)',transform:'translateX(-50%)'} })
+        ),
+        React.createElement('div', { style:{position:'absolute',width:'220px',height:'220px',borderRadius:'50%',animation:'orbitSpin2 14s linear infinite reverse'} },
+          React.createElement('div', { style:{position:'absolute',top:'-3px',left:'50%',width:'5px',height:'5px',borderRadius:'50%',background:'rgba(236,72,153,0.6)',transform:'translateX(-50%)'} })
         )
       ),
 
-      // 사주 상식 팁
-      React.createElement('div', { className: 'glass rounded-2xl p-4 max-w-xs mx-auto' },
-        React.createElement('p', { className: 'text-xs text-gray-500 mb-2 uppercase tracking-wide' }, '사주 상식'),
-        React.createElement('p', { 
-          className: 'text-sm text-gray-300',
-          key: tipIdx,
-          style: { animation: 'fadeIn 0.5s ease' }
-        }, tips[tipIdx])
+      // 중앙 로고 심볼
+      React.createElement('div', { style:{position:'relative',zIndex:1,marginBottom:'40px'} },
+        React.createElement('div', { style:{width:'72px',height:'72px',borderRadius:'50%',background:'linear-gradient(135deg,rgba(124,58,237,0.3),rgba(236,72,153,0.15))',border:'1px solid rgba(139,92,246,0.3)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto',backdropFilter:'blur(10px)'} },
+          React.createElement('span', { style:{fontSize:'28px',fontWeight:'900',background:'linear-gradient(135deg,#c4b5fd,#f9a8d4)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'} }, '✦')
+        )
       ),
 
+      // 현재 분석 단계
+      React.createElement('div', { style:{position:'relative',zIndex:1,marginBottom:'36px',minHeight:'56px'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase',marginBottom:'10px'} }, '분석 중'+dots),
+        React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'18px',letterSpacing:'-0.5px',marginBottom:'6px',transition:'opacity 0.3s'} }, stage.label),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'13px'} }, stage.sub)
+      ),
+
+      // 프로그레스 바
+      React.createElement('div', { style:{position:'relative',zIndex:1,width:'100%',maxWidth:'280px',marginBottom:'40px'} },
+        React.createElement('div', { style:{height:'3px',background:'rgba(255,255,255,0.06)',borderRadius:'2px',overflow:'hidden',marginBottom:'8px'} },
+          React.createElement('div', { style:{height:'100%',width:progress+'%',background:'linear-gradient(90deg,#7c3aed,#ec4899)',borderRadius:'2px',transition:'width 1s ease'} })
+        ),
+        React.createElement('div', { style:{display:'flex',justifyContent:'space-between'} },
+          React.createElement('span', { style:{color:'rgba(255,255,255,0.18)',fontSize:'10px'} }, elapsed+'초 경과'),
+          React.createElement('span', { style:{color:'rgba(255,255,255,0.18)',fontSize:'10px'} }, Math.round(progress)+'%')
+        )
+      ),
+
+      // 사주 상식 팁 카드
+      React.createElement('div', { 
+        style:{position:'relative',zIndex:1,width:'100%',maxWidth:'300px',background:'rgba(255,255,255,0.04)',borderRadius:'16px',border:'1px solid rgba(255,255,255,0.07)',padding:'16px 18px',transition:'opacity 0.4s',opacity:tipVisible?1:0}
+      },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'9px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'6px'} }, '✦  사주 상식'),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.8)',fontWeight:'700',fontSize:'13px',marginBottom:'4px'} }, tip.title),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',lineHeight:'1.6'} }, tip.body)
+      ),
+
+      // 인라인 스타일
       React.createElement('style', null, `
-        @keyframes progressBar { 0% { width: 0% } 60% { width: 70% } 85% { width: 85% } 95% { width: 90% } 100% { width: 95% } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes orbitSpin1 { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes orbitSpin2 { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
       `)
     );
   };
 
-  const robustParseAI = (text, full = false) => {
+    const robustParseAI = (text, full = false) => {
         if (!text) return null;
         const clean = text.replace(/```json|```/g, '').trim().replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ');
         // 1. 정상 파싱 시도
