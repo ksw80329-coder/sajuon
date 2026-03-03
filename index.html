@@ -5410,11 +5410,14 @@ ${isSangsaeng
                 React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'14px'} },
                   React.createElement('div', { style:{width:'42px',height:'42px',borderRadius:'14px',background:isSelected?'linear-gradient(135deg,#7c3aed,#a855f7)':'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',flexShrink:0} }, '⭐'),
                   React.createElement('div', null,
-                    React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'16px'} }, '⭐ '+pkg.stars+'별'+(pkg.moons>0?' + 🌙 '+pkg.moons+'달':'')),
-                    React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px',marginTop:'2px'} }, '별 1개 = '+Math.round(pkg.price/pkg.stars)+'원')
+                    React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'16px',letterSpacing:'-0.3px'} }, '⭐ '+pkg.stars+'별'+(pkg.moons>0?' + 🌙 '+pkg.moons+'달':'')),
+                    React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'11px',marginTop:'2px'} }, pkg.price.toLocaleString()+'원')
                   )
                 ),
-                React.createElement('p', { style:{color:isSelected?'#c4b5fd':'white',fontWeight:'900',fontSize:'18px'} }, '₩'+(pkg.price).toLocaleString())
+                React.createElement('div', { style:{textAlign:'right'} },
+                  React.createElement('p', { style:{color:isSelected?'#fbbf24':'rgba(255,255,255,0.5)',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px'} }, '⭐'+pkg.stars),
+                  pkg.moons>0 && React.createElement('p', { style:{color:isSelected?'#93c5fd':'rgba(255,255,255,0.3)',fontSize:'12px',fontWeight:'700',marginTop:'1px'} }, '+🌙'+pkg.moons)
+                )
               );
             })
           )
@@ -5442,7 +5445,8 @@ ${isSangsaeng
                   )
                 ),
                 React.createElement('div', { style:{textAlign:'right'} },
-                  React.createElement('p', { style:{fontWeight:'900',fontSize:'18px',color:'#3C1E1E',letterSpacing:'-0.5px'} }, '₩'+selPkg.price.toLocaleString())
+                  React.createElement('p', { style:{fontWeight:'900',fontSize:'20px',color:'#3C1E1E',letterSpacing:'-0.5px'} }, '⭐'+selPkg.stars+'별'),
+                  React.createElement('p', { style:{fontSize:'10px',color:'rgba(60,30,30,0.4)',marginTop:'1px'} }, selPkg.price.toLocaleString()+'원')
                 )
               ),
               // 토스페이
@@ -5458,7 +5462,8 @@ ${isSangsaeng
                   )
                 ),
                 React.createElement('div', { style:{textAlign:'right'} },
-                  React.createElement('p', { style:{fontWeight:'900',fontSize:'18px',color:'white',letterSpacing:'-0.5px'} }, '₩'+selPkg.price.toLocaleString())
+                  React.createElement('p', { style:{fontWeight:'900',fontSize:'20px',color:'white',letterSpacing:'-0.5px'} }, '⭐'+selPkg.stars+'별'),
+                  React.createElement('p', { style:{fontSize:'10px',color:'rgba(255,255,255,0.35)',marginTop:'1px'} }, selPkg.price.toLocaleString()+'원')
                 )
               )
             ),
