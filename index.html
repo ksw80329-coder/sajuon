@@ -553,6 +553,29 @@ function App() {
     });
   };
 
+  // ── 구글 로그인 ──
+  const loginWithGoogle = async () => {
+    try {
+      const auth = window._firebaseAuth;
+      const provider = window._googleProvider;
+      if (!auth || !provider) { alert('구글 로그인을 준비 중입니다. 잠시 후 다시 시도해주세요.'); return; }
+      const result = await auth.signInWithPopup(provider);
+      const user = result.user;
+      const email = user.email || '';
+      const nickname = user.displayName || email.split('@')[0] || '구글유저';
+      handleLogin('google', email, nickname);
+      setShowLogin(false);
+    } catch (err) {
+      console.error('구글 로그인 오류:', err);
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
+      if (err.code === 'auth/unauthorized-domain') {
+        alert('현재 도메인이 Firebase에 등록되지 않았습니다.\nFirebase 콘솔 → Authentication → 승인된 도메인에 추가해주세요.');
+      } else {
+        alert('구글 로그인에 실패했습니다. 다시 시도해주세요.');
+      }
+    }
+  };
+
   // ===== 카카오 인가코드 복귀 처리 =====
   React.useEffect(() => {
     const code = urlParams.get('code');
@@ -2471,7 +2494,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const allSinsal = [...r.pillarSinsal.year, ...r.pillarSinsal.month, ...r.pillarSinsal.day, ...r.pillarSinsal.hour].filter((v, i, a) => a.indexOf(v) === i);
 
     // ===== AI 해설 생성 =====
-    const _sajuCacheKey = `ai_saju_v30_${inp.name}_${inp.year}_${inp.month}_${inp.day}_${inp.hour}`;
+    const _sajuCacheKey = `ai_saju_v31_${inp.name}_${inp.year}_${inp.month}_${inp.day}_${inp.hour}`;
     const [aiSections, setAiSections] = React.useState(() => {
       try { const c = localStorage.getItem(_sajuCacheKey); const p = c ? JSON.parse(c) : null; return Array.isArray(p) && p.length > 0 ? p : null; } catch(e) { return null; }
     });
@@ -2542,14 +2565,83 @@ ${pillarDesc}
 8. 지금 당장 써먹는 전략 — 이 사주가 가리키는 방향과 ${inp.name}님에게 맞는 구체적 행동 플랜`;
 
       const minLoad = new Promise(resolve => setTimeout(resolve, 60000));
+      // ── 십성 계산 ──
+      const tenGodMap = {};
+      ['year','month','hour'].forEach(k => {
+        if (r.pillars[k]) tenGodMap[k] = getTenGod(r.dsi, r.pillars[k].si);
+      });
+      tenGodMap.day = '일간(본인)';
+
+      // ── 십이운성 계산 ──
+      const twelveStageMap = {};
+      ['year','month','day','hour'].forEach(k => {
+        if (r.pillars[k]) twelveStageMap[k] = getTwelve(STEMS.names[r.dsi], r.pillars[k].bi);
+      });
+
+      // ── 충합 관계 감지 ──
+      const CHUNG_MAP = {'子午':true,'丑未':true,'寅申':true,'卯酉':true,'辰戌':true,'巳亥':true};
+      const HAP6_MAP = {'子丑':true,'寅亥':true,'卯戌':true,'辰酉':true,'巳申':true,'午未':true};
+      const HAP3_MAP = {'寅午戌':true,'巳酉丑':true,'申子辰':true,'亥卯未':true};
+      const STEM_HAP = {'甲己':true,'乙庚':true,'丙辛':true,'丁壬':true,'戊癸':true};
+
+      const pillarKeys = ['year','month','day','hour'].filter(k => r.pillars[k]);
+      const brList = pillarKeys.map(k => r.pillars[k].branch);
+      const stList = pillarKeys.map(k => r.pillars[k].stem);
+      const chungs = [], haps = [], stemHaps = [];
+
+      for (let i=0;i<brList.length;i++) for (let j=i+1;j<brList.length;j++) {
+        const pair = [brList[i],brList[j]].sort().join('');
+        const pairRev = [brList[j],brList[i]].join('');
+        if (CHUNG_MAP[pair] || CHUNG_MAP[pairRev] || CHUNG_MAP[brList[i]+brList[j]]) {
+          const kn = {year:'연주',month:'월주',day:'일주',hour:'시주'};
+          chungs.push(`${kn[pillarKeys[i]]}${brList[i]}·${kn[pillarKeys[j]]}${brList[j]} 충`);
+        }
+        const h6 = [brList[i],brList[j]].sort().join('');
+        if (HAP6_MAP[h6] || HAP6_MAP[brList[i]+brList[j]]) {
+          const kn = {year:'연주',month:'월주',day:'일주',hour:'시주'};
+          haps.push(`${kn[pillarKeys[i]]}${brList[i]}·${kn[pillarKeys[j]]}${brList[j]} 육합`);
+        }
+      }
+      for (let i=0;i<stList.length;i++) for (let j=i+1;j<stList.length;j++) {
+        const sp = [stList[i],stList[j]].sort().join('');
+        const spRev = stList[i]+stList[j];
+        if (STEM_HAP[sp] || STEM_HAP[spRev]) {
+          const kn = {year:'연주',month:'월주',day:'일주',hour:'시주'};
+          stemHaps.push(`${stList[i]}·${stList[j]} 천간합(${kn[pillarKeys[i]]}·${kn[pillarKeys[j]]})`);
+        }
+      }
+
+      // ── 풍부한 만세력 텍스트 ──
+      const richPillars = ['year','month','day','hour'].map(k => {
+        const p = r.pillars[k]; if (!p) return '';
+        const kn = {year:'연주(年柱)',month:'월주(月柱)',day:'일주(日柱)',hour:'시주(時柱)'};
+        const tg = k==='day' ? '일간(본인)' : getTenGod(r.dsi, p.si);
+        const tw = getTwelve(STEMS.names[r.dsi], p.bi);
+        const sinsal = (r.pillarSinsal?.[k] || []).join('·') || '없음';
+        const el = STEMS.elements[p.si];
+        const brEl = BRANCHES.elements[p.bi];
+        return `${kn[k]}: ${p.stem}${p.branch}(${STEMS.korean[p.si]}${BRANCHES.korean[p.bi]}) — 오행:${el}+${brEl} / 십성:${tg} / 십이운성:${tw} / 신살:${sinsal}`;
+      }).filter(Boolean).join('\n');
+
+      const feFullDesc = Object.entries(r.fe.pct)
+        .sort((a,b)=>b[1]-a[1])
+        .map(([k,v])=>`${k}(${v}%)`)
+        .join(' > ');
+
       const sajuPayload = {
         t: '1',
         name: inp.name, gender: inp.gender,
         birth: `${inp.year}.${inp.month}.${inp.day}${inp.hour !== 'unknown' ? ' '+inp.hour+'시' : ''}`,
         ilgan: STEMS.names[r.dsi], ilganKr: STEMS.korean[r.dsi],
-        strongEl: `${strongEl[0]} ${strongEl[1]}%`, weakEl: `${weakEl[0]} ${weakEl[1]}%`,
-        sinsal: allSinsal.join(', '),
-        pillars: pillarDesc
+        strongEl: `${strongEl[0]}(${strongEl[1]}%)`, weakEl: `${weakEl[0]}(${weakEl[1]}%)`,
+        yongshin: r.fe.yongshin, gishin: r.fe.gishin,
+        feDesc: feFullDesc,
+        sinsal: allSinsal.join(', ') || '없음',
+        pillarSinsal: JSON.stringify(r.pillarSinsal || {}),
+        chungs: chungs.join(', ') || '없음',
+        haps: haps.join(', ') || '없음',
+        stemHaps: stemHaps.join(', ') || '없음',
+        pillars: richPillars
       };
       const aiFetch = fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
         method: 'POST',
@@ -2821,7 +2913,7 @@ ${pillarDesc}
 
     // ===== AI 궁합 해설 =====
     const _compatRelNorm = {'couple':'1','friend':'2','business':'3','parent_child':'4','sibling':'5','etc':'6','grandparent':'7','relative':'8','mentor':'9','rival':'10'}[compatRelation] || compatRelation;
-    const _compatCacheKey = `ai_compat_v30_${person1.id}_${person2.id}_${_compatRelNorm}`;
+    const _compatCacheKey = `ai_compat_v31_${person1.id}_${person2.id}_${_compatRelNorm}`;
     const [aiCompatSections, setAiCompatSections] = React.useState(() => {
       try { const c = localStorage.getItem(_compatCacheKey); const p = c ? JSON.parse(c) : null; return p && Array.isArray(p.sections) && p.sections.length > 0 ? p.sections : null; } catch(e) { return null; }
     });
@@ -2847,14 +2939,42 @@ ${pillarDesc}
       const p2Sinsal = [...r2.pillarSinsal.year,...r2.pillarSinsal.month,...r2.pillarSinsal.day,...r2.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
       const el1Full = STEMS.elements[r1.dsi];
       const el2Full = STEMS.elements[r2.dsi];
-      const p1PillarDesc = ['year','month','day','hour'].map(k => {
-        const p = r1.pillars[k]; if (!p) return '';
-        return `${p.stem}${p.branch}`;
-      }).filter(Boolean).join(' ');
-      const p2PillarDesc = ['year','month','day','hour'].map(k => {
-        const p = r2.pillars[k]; if (!p) return '';
-        return `${p.stem}${p.branch}`;
-      }).filter(Boolean).join(' ');
+      const CHUNG_C = {'子午':true,'丑未':true,'寅申':true,'卯酉':true,'辰戌':true,'巳亥':true};
+      const HAP6_C = {'子丑':true,'寅亥':true,'卯戌':true,'辰酉':true,'巳申':true,'午未':true};
+      const STEMHAP_C = {'甲己':true,'乙庚':true,'丙辛':true,'丁壬':true,'戊癸':true};
+
+      const buildRichPillars = (r, dsi) => ['year','month','day','hour'].map(k => {
+        const p = r.pillars[k]; if (!p) return '';
+        const kn = {year:'연주',month:'월주',day:'일주',hour:'시주'};
+        const tg = k==='day' ? '일간' : getTenGod(dsi, p.si);
+        const tw = getTwelve(STEMS.names[dsi], p.bi);
+        const ss = (r.pillarSinsal?.[k]||[]).join('·')||'없음';
+        return `${kn[k]} ${p.stem}${p.branch}(${STEMS.korean[p.si]}${BRANCHES.korean[p.bi]}) 십성:${tg} 십이운성:${tw} 신살:${ss}`;
+      }).filter(Boolean).join(' / ');
+
+      const getChungsHaps = (r1, r2) => {
+        const brs1 = ['year','month','day','hour'].filter(k=>r1.pillars[k]).map(k=>({k,b:r1.pillars[k].branch,s:r1.pillars[k].stem}));
+        const brs2 = ['year','month','day','hour'].filter(k=>r2.pillars[k]).map(k=>({k,b:r2.pillars[k].branch,s:r2.pillars[k].stem}));
+        const ch=[],ha=[],sh=[];
+        brs1.forEach(a=>brs2.forEach(b=>{
+          const p=[a.b,b.b].sort().join('');
+          if(CHUNG_C[p]||CHUNG_C[a.b+b.b]) ch.push(`${a.b}(${a.k})·${b.b}(${b.k}) 충`);
+          if(HAP6_C[p]||HAP6_C[a.b+b.b]) ha.push(`${a.b}(${a.k})·${b.b}(${b.k}) 육합`);
+          const sp=[a.s,b.s].sort().join('');
+          if(STEMHAP_C[sp]||STEMHAP_C[a.s+b.s]) sh.push(`${a.s}·${b.s} 천간합`);
+        }));
+        return { chungs: ch.join(', ')||'없음', haps: ha.join(', ')||'없음', stemHaps: sh.join(', ')||'없음' };
+      };
+
+      const p1RichPillars = buildRichPillars(r1, r1.dsi);
+      const p2RichPillars = buildRichPillars(r2, r2.dsi);
+      const crossRel = getChungsHaps(r1, r2);
+      const p1FeDesc = Object.entries(r1.fe.pct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}(${v}%)`).join(' > ');
+      const p2FeDesc = Object.entries(r2.fe.pct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}(${v}%)`).join(' > ');
+
+      const p1PillarDesc = p1RichPillars;
+      const p2PillarDesc = p2RichPillars;
+
 
       const prompt = `You are an expert Korean astrologer (명리학) who writes compatibility analyses that are 70% fun and relatable, 30% serious insight. Your writing style: witty, conversational, specific real-life scenarios, NOT generic fortune-cookie advice. Use Korean language throughout.
 
@@ -2903,8 +3023,23 @@ Write EXACTLY 10 sections in this order:
       const compatPayload = {
         t: '2',
         relation: {'couple':'1','friend':'2','business':'3','parent_child':'4','sibling':'5','etc':'6','grandparent':'7','relative':'8','mentor':'9','rival':'10'}[compatRelation]||'1',
-        p1: { name: person1.name, gender: person1.gender, ilgan: STEMS.names[r1.dsi], ilganKr: STEMS.korean[r1.dsi], pillars: p1PillarDesc, sinsal: p1Sinsal.join(', '), fe: Object.entries(r1.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', '), birth: `${person1.year}.${person1.month}.${person1.day}` },
-        p2: { name: person2.name, gender: person2.gender, ilgan: STEMS.names[r2.dsi], ilganKr: STEMS.korean[r2.dsi], pillars: p2PillarDesc, sinsal: p2Sinsal.join(', '), fe: Object.entries(r2.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', '), birth: `${person2.year}.${person2.month}.${person2.day}` }
+        crossChungs: crossRel.chungs,
+        crossHaps: crossRel.haps,
+        crossStemHaps: crossRel.stemHaps,
+        p1: {
+          name: person1.name, gender: person1.gender,
+          ilgan: STEMS.names[r1.dsi], ilganKr: STEMS.korean[r1.dsi],
+          pillars: p1RichPillars, sinsal: p1Sinsal.join(', ')||'없음',
+          fe: p1FeDesc, yongshin: r1.fe.yongshin, gishin: r1.fe.gishin,
+          birth: `${person1.year}.${person1.month}.${person1.day}`
+        },
+        p2: {
+          name: person2.name, gender: person2.gender,
+          ilgan: STEMS.names[r2.dsi], ilganKr: STEMS.korean[r2.dsi],
+          pillars: p2RichPillars, sinsal: p2Sinsal.join(', ')||'없음',
+          fe: p2FeDesc, yongshin: r2.fe.yongshin, gishin: r2.fe.gishin,
+          birth: `${person2.year}.${person2.month}.${person2.day}`
+        }
       };
       const aiFetchC = fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
         method: 'POST',
@@ -4908,7 +5043,7 @@ ${isSangsaeng
     if (!person) return React.createElement('div', { style:{padding:'20px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'} }, '데이터 없음');
     const r = person.result || analyzeSaju(person.year, person.month, person.day, person.hour, person.minute, person.isLunar, false);
 
-    const _cacheKey = `ai_yearly_v42_${person.id}`;
+    const _cacheKey = `ai_yearly_v50_${person.id}`;
     const [aiData, setAiData] = React.useState(() => {
       try { const c = localStorage.getItem(_cacheKey); return c ? JSON.parse(c) : null; } catch(e) { return null; }
     });
@@ -4921,20 +5056,55 @@ ${isSangsaeng
     React.useEffect(() => {
       if (aiData) return;
       const allSinsal = [...r.pillarSinsal.year,...r.pillarSinsal.month,...r.pillarSinsal.day,...r.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
-      const feDesc = Object.entries(r.fe.pct).map(([k,v])=>`${k}:${v}%`).join(', ');
+      const feDesc = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}(${v}%)`).join(' > ');
       const strongEl = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1])[0];
       const weakEl = Object.entries(r.fe.pct).sort((a,b)=>a[1]-b[1])[0];
+
+      // ── 운세용 풍부한 만세력 ──
+      const CHUNG_Y = {'子午':true,'丑未':true,'寅申':true,'卯酉':true,'辰戌':true,'巳亥':true};
+      const STEMHAP_Y = {'甲己':true,'乙庚':true,'丙辛':true,'丁壬':true,'戊癸':true};
+      const ykList = ['year','month','day','hour'].filter(k=>r.pillars[k]);
+      const yChungs=[], yHaps=[], yStemHaps=[];
+      const KN={year:'연주',month:'월주',day:'일주',hour:'시주'};
+      for(let i=0;i<ykList.length;i++) for(let j=i+1;j<ykList.length;j++){
+        const a=r.pillars[ykList[i]],b=r.pillars[ykList[j]];
+        const bp=[a.branch,b.branch].sort().join('');
+        if(CHUNG_Y[bp]||CHUNG_Y[a.branch+b.branch]) yChungs.push(`${KN[ykList[i]]}${a.branch}·${KN[ykList[j]]}${b.branch} 충`);
+        const sp=[a.stem,b.stem].sort().join('');
+        if(STEMHAP_Y[sp]||STEMHAP_Y[a.stem+b.stem]) yStemHaps.push(`${a.stem}·${b.stem} 천간합(${KN[ykList[i]]}·${KN[ykList[j]]})`);
+      }
+      // 병오년(丙午) 천간지지와 내 사주 관계
+      const dayBranch = r.pillars.day?.branch || '';
+      const yearStem2026 = '丙', yearBranch2026 = '午';
+      const vs2026 = (() => {
+        const dayEl = STEMS.elements[r.dsi];
+        const rel = {목:{화:'목생화(상생)',수:'수생목(상생)',금:'금극목(상극)',토:'목극토(상극)',목:'비화(같은기운)'},화:{토:'화생토(상생)',목:'목생화(상생)',수:'수극화(상극)',금:'화극금(상극)',화:'비화'},토:{금:'토생금(상생)',화:'화생토(상생)',목:'목극토(상극)',수:'토극수(상극)',토:'비화'},금:{수:'금생수(상생)',토:'토생금(상생)',화:'화극금(상극)',목:'금극목(상극)',금:'비화'},수:{목:'수생목(상생)',금:'금생수(상생)',토:'토극수(상극)',화:'수극화(상극)',수:'비화'}};
+        return `일간 ${STEMS.korean[r.dsi]}(${dayEl}) × 병오년 화(火) → ${rel[dayEl]?.['화'] || '관계 확인 필요'}`;
+      })();
+      const chungWith2026 = (CHUNG_Y[dayBranch+'午'] || CHUNG_Y['午'+dayBranch]) ? `일지 ${dayBranch}·午 충 — 변화·이동 강함` : '';
       const pillarDesc = ['year','month','day','hour'].map(k => {
         const p = r.pillars[k]; if (!p) return '';
-        return `${({year:'연주',month:'월주',day:'일주',hour:'시주'})[k]}: ${p.stem}(${STEMS.korean[p.si]},${STEMS.elements[p.si]}) ${p.branch} 신살:${r.pillarSinsal[k]?.join(',') || '없음'}`;
+        const tg = k==='day' ? '일간(본인)' : getTenGod(r.dsi, p.si);
+        const tw = getTwelve(STEMS.names[r.dsi], p.bi);
+        const ss = r.pillarSinsal[k]?.join('·') || '없음';
+        return `${KN[k]}: ${p.stem}${p.branch}(${STEMS.korean[p.si]}${BRANCHES.korean[p.bi]}) 십성:${tg} 십이운성:${tw} 오행:${STEMS.elements[p.si]}+${BRANCHES.elements[p.bi]} 신살:${ss}`;
       }).filter(Boolean).join('\n');
+
       const payload = {
         t:'3', name:person.name, gender:person.gender,
         birth:`${person.year}.${person.month}.${person.day}`,
         ilgan:STEMS.names[r.dsi], ilganKr:STEMS.korean[r.dsi],
-        strongEl:`${strongEl[0]} ${strongEl[1]}%`, weakEl:`${weakEl[0]} ${weakEl[1]}%`,
-        sinsal:allSinsal.join(', '), pillars:pillarDesc, feDesc
+        strongEl:`${strongEl[0]}(${strongEl[1]}%)`, weakEl:`${weakEl[0]}(${weakEl[1]}%)`,
+        yongshin:r.fe.yongshin, gishin:r.fe.gishin,
+        sinsal:allSinsal.join(', ')||'없음',
+        pillarSinsal:JSON.stringify(r.pillarSinsal||{}),
+        chungs2026:chungWith2026||'충 없음',
+        stemHaps:yStemHaps.join(', ')||'없음',
+        innerChungs:yChungs.join(', ')||'없음',
+        vs2026,
+        pillars:pillarDesc, feDesc
       };
+
       const encode = o => { const s=JSON.stringify(o); const b=new TextEncoder().encode(s); let bin=''; b.forEach(c=>bin+=String.fromCharCode(c)); return JSON.stringify({b:btoa(bin)}); };
       fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
         method:'POST', headers:{'Content-Type':'text/plain'}, body:encode(payload)
@@ -5684,6 +5854,15 @@ ${isSangsaeng
         },
           React.createElement('span', { style:{fontSize:'20px'} }, '💛'),
           '카카오로 계속하기'
+        ),
+
+        // 구글 로그인 버튼
+        React.createElement('button', {
+          onClick: () => { setShowLogin(false); loginWithGoogle(); },
+          style:{width:'100%',padding:'16px',background:'white',borderRadius:'16px',border:'1px solid rgba(0,0,0,0.08)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',marginBottom:'12px',fontWeight:'700',fontSize:'15px',color:'#1f1f1f',boxShadow:'0 2px 12px rgba(0,0,0,0.12)'}
+        },
+          React.createElement('img', { src:'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg', style:{width:'20px',height:'20px'}, alt:'Google' }),
+          '구글로 계속하기'
         ),
 
         // DEV_MODE 전용 테스트 로그인
