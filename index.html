@@ -553,6 +553,73 @@ function App() {
     });
   };
 
+  // ── 이메일 회원가입/로그인/비번찾기 ──
+  const [emailView, setEmailView] = React.useState('social'); // 'social'|'login'|'signup'|'reset'|'verify'
+  const [emailInput, setEmailInput] = React.useState('');
+  const [pwInput, setPwInput] = React.useState('');
+  const [pw2Input, setPw2Input] = React.useState('');
+  const [emailLoading, setEmailLoading] = React.useState(false);
+  const [emailMsg, setEmailMsg] = React.useState({ type:'', text:'' });
+
+  const resetEmailForm = () => { setEmailInput(''); setPwInput(''); setPw2Input(''); setEmailMsg({ type:'', text:'' }); };
+
+  const loginWithEmail = async () => {
+    if (!emailInput || !pwInput) { setEmailMsg({ type:'err', text:'이메일과 비밀번호를 입력해주세요.' }); return; }
+    setEmailLoading(true); setEmailMsg({ type:'', text:'' });
+    try {
+      const auth = window._firebaseAuth;
+      const result = await auth.signInWithEmailAndPassword(emailInput.trim(), pwInput);
+      const user = result.user;
+      if (!user.emailVerified) {
+        await auth.signOut();
+        setEmailMsg({ type:'err', text:'이메일 인증이 필요합니다. 받은 편지함을 확인해주세요.' });
+        setEmailLoading(false); return;
+      }
+      handleLogin('email', user.email, user.displayName || user.email.split('@')[0]);
+      setShowLogin(false); resetEmailForm(); setEmailView('social');
+    } catch (err) {
+      const msg = err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
+        ? '이메일 또는 비밀번호가 올바르지 않습니다.'
+        : err.code === 'auth/too-many-requests' ? '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.'
+        : '로그인에 실패했습니다. 다시 시도해주세요.';
+      setEmailMsg({ type:'err', text:msg });
+    }
+    setEmailLoading(false);
+  };
+
+  const signUpWithEmail = async () => {
+    if (!emailInput || !pwInput || !pw2Input) { setEmailMsg({ type:'err', text:'모든 항목을 입력해주세요.' }); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) { setEmailMsg({ type:'err', text:'올바른 이메일 형식이 아닙니다.' }); return; }
+    if (pwInput.length < 6) { setEmailMsg({ type:'err', text:'비밀번호는 6자 이상이어야 합니다.' }); return; }
+    if (pwInput !== pw2Input) { setEmailMsg({ type:'err', text:'비밀번호가 일치하지 않습니다.' }); return; }
+    setEmailLoading(true); setEmailMsg({ type:'', text:'' });
+    try {
+      const auth = window._firebaseAuth;
+      const result = await auth.createUserWithEmailAndPassword(emailInput.trim(), pwInput);
+      await result.user.sendEmailVerification();
+      setEmailView('verify');
+      setEmailMsg({ type:'ok', text: emailInput.trim() + '으로 인증 메일을 발송했습니다.' });
+    } catch (err) {
+      const msg = err.code === 'auth/email-already-in-use' ? '이미 가입된 이메일입니다. 로그인을 시도해보세요.'
+        : err.code === 'auth/invalid-email' ? '올바른 이메일 형식이 아닙니다.'
+        : '회원가입에 실패했습니다. 다시 시도해주세요.';
+      setEmailMsg({ type:'err', text:msg });
+    }
+    setEmailLoading(false);
+  };
+
+  const sendPasswordReset = async () => {
+    if (!emailInput) { setEmailMsg({ type:'err', text:'이메일을 입력해주세요.' }); return; }
+    setEmailLoading(true); setEmailMsg({ type:'', text:'' });
+    try {
+      await window._firebaseAuth.sendPasswordResetEmail(emailInput.trim());
+      setEmailMsg({ type:'ok', text:'비밀번호 재설정 메일을 발송했습니다. 받은 편지함을 확인해주세요.' });
+    } catch (err) {
+      setEmailMsg({ type:'err', text: err.code === 'auth/user-not-found' ? '등록되지 않은 이메일입니다.' : '메일 발송에 실패했습니다.' });
+    }
+    setEmailLoading(false);
+  };
+
   // ── 구글 로그인 ──
   const loginWithGoogle = async () => {
     try {
@@ -5823,62 +5890,118 @@ ${isSangsaeng
   };
 
   // ===== 로그인 모달 =====
-  const LoginModal = () => React.createElement('div', {
-    style:{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'},
-    onClick: () => setShowLogin(false)
-  },
-    // 배경 오버레이
-    React.createElement('div', { style:{position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(8px)'} }),
-    // 모달 시트
-    React.createElement('div', {
-      style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',overflow:'hidden'},
-      onClick: e => e.stopPropagation()
+  const LoginModal = () => {
+    const inputStyle = {width:'100%',padding:'14px 16px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'14px',color:'white',fontSize:'15px',outline:'none',marginBottom:'10px',boxSizing:'border-box'};
+    const msgStyle = (type) => ({fontSize:'12px',padding:'10px 14px',borderRadius:'10px',marginBottom:'10px',background: type==='ok' ? 'rgba(52,211,153,0.12)' : 'rgba(239,68,68,0.12)',color: type==='ok' ? '#34d399' : '#fca5a5',lineHeight:'1.5'});
+
+    return React.createElement('div', {
+      style:{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'},
+      onClick: () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); }
     },
-      // 핸들
-      React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.15)',margin:'12px auto 0'} }),
-      // 별빛 배경
-      React.createElement('div', { style:{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',width:'300px',height:'200px',background:'radial-gradient(circle at 50% 0%,rgba(124,58,237,0.18),transparent 70%)',pointerEvents:'none'} }),
+      React.createElement('div', { style:{position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(8px)'} }),
+      React.createElement('div', {
+        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',overflow:'hidden'},
+        onClick: e => e.stopPropagation()
+      },
+        React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.15)',margin:'12px auto 0'} }),
+        React.createElement('div', { style:{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',width:'300px',height:'200px',background:'radial-gradient(circle at 50% 0%,rgba(124,58,237,0.18),transparent 70%)',pointerEvents:'none'} }),
 
-      React.createElement('div', { style:{padding:'28px 24px 32px',position:'relative'} },
-        // 헤더
-        React.createElement('div', { style:{textAlign:'center',marginBottom:'28px'} },
-          React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'18px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',margin:'0 auto 14px',boxShadow:'0 0 30px rgba(139,92,246,0.4)'} }, '✦'),
-          React.createElement('h2', { style:{color:'white',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px',marginBottom:'6px'} }, '사주ON 로그인'),
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'13px',lineHeight:'1.6'} }, '로그인하고 나의 사주를 저장하세요')
-        ),
+        React.createElement('div', { style:{padding:'28px 24px 32px',position:'relative'} },
 
-        // 카카오 로그인 버튼
-        React.createElement('button', {
-          onClick: () => { setShowLogin(false); loginWithKakao(); },
-          style:{width:'100%',padding:'16px',background:'#FEE500',borderRadius:'16px',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',marginBottom:'12px',fontWeight:'800',fontSize:'15px',color:'#3C1E1E',boxShadow:'0 4px 20px rgba(254,229,0,0.25)'}
-        },
-          React.createElement('span', { style:{fontSize:'20px'} }, '💛'),
-          '카카오로 계속하기'
-        ),
+          // ── 헤더 ──
+          React.createElement('div', { style:{textAlign:'center',marginBottom:'24px'} },
+            React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'18px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',margin:'0 auto 14px',boxShadow:'0 0 30px rgba(139,92,246,0.4)'} }, '✦'),
+            React.createElement('h2', { style:{color:'white',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px',marginBottom:'6px'} },
+              emailView==='login' ? '이메일 로그인' : emailView==='signup' ? '이메일 회원가입' : emailView==='reset' ? '비밀번호 찾기' : emailView==='verify' ? '인증 메일 발송 완료' : '사주ON 로그인'
+            ),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'13px'} },
+              emailView==='social' ? '로그인하고 나의 사주를 저장하세요' : emailView==='verify' ? '받은 편지함을 확인해주세요' : '이메일로 계속하기'
+            )
+          ),
 
-        // 구글 로그인 버튼
-        React.createElement('button', {
-          onClick: () => { setShowLogin(false); loginWithGoogle(); },
-          style:{width:'100%',padding:'16px',background:'white',borderRadius:'16px',border:'1px solid rgba(0,0,0,0.08)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',marginBottom:'12px',fontWeight:'700',fontSize:'15px',color:'#1f1f1f',boxShadow:'0 2px 12px rgba(0,0,0,0.12)'}
-        },
-          React.createElement('img', { src:'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg', style:{width:'20px',height:'20px'}, alt:'Google' }),
-          '구글로 계속하기'
-        ),
+          // ── 소셜 뷰 ──
+          emailView === 'social' && React.createElement(React.Fragment, null,
+            React.createElement('button', {
+              onClick: () => { setShowLogin(false); loginWithKakao(); },
+              style:{width:'100%',padding:'16px',background:'#FEE500',borderRadius:'16px',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',marginBottom:'10px',fontWeight:'800',fontSize:'15px',color:'#3C1E1E',boxShadow:'0 4px 20px rgba(254,229,0,0.25)'}
+            }, React.createElement('span', { style:{fontSize:'20px'} }, '💛'), '카카오로 계속하기'),
 
+            React.createElement('button', {
+              onClick: () => { setShowLogin(false); loginWithGoogle(); },
+              style:{width:'100%',padding:'16px',background:'white',borderRadius:'16px',border:'1px solid rgba(0,0,0,0.08)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',marginBottom:'10px',fontWeight:'700',fontSize:'15px',color:'#1f1f1f',boxShadow:'0 2px 12px rgba(0,0,0,0.12)'}
+            }, React.createElement('img', { src:'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg', style:{width:'20px',height:'20px'}, alt:'Google' }), '구글로 계속하기'),
 
-        // 안내
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'11px',textAlign:'center',lineHeight:'1.7',marginTop:'8px'} },
-          '로그인 시 이용약관 및 개인정보처리방침에 동의하게 됩니다'
-        ),
+            React.createElement('button', {
+              onClick: () => { resetEmailForm(); setEmailView('login'); },
+              style:{width:'100%',padding:'16px',background:'rgba(255,255,255,0.05)',borderRadius:'16px',border:'1px solid rgba(255,255,255,0.1)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',marginBottom:'10px',fontWeight:'700',fontSize:'15px',color:'rgba(255,255,255,0.8)'}
+            }, React.createElement('span', { style:{fontSize:'20px'} }, '✉️'), '이메일로 계속하기'),
 
-        // 닫기 버튼
-        React.createElement('button', {
-          onClick: () => setShowLogin(false),
-          style:{width:'100%',padding:'14px',background:'rgba(255,255,255,0.04)',borderRadius:'16px',border:'1px solid rgba(255,255,255,0.07)',cursor:'pointer',color:'rgba(255,255,255,0.4)',fontSize:'14px',fontWeight:'500',marginTop:'10px'}
-        }, '나중에 할게요')
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'11px',textAlign:'center',lineHeight:'1.7',marginTop:'6px'} }, '로그인 시 이용약관 및 개인정보처리방침에 동의하게 됩니다'),
+            React.createElement('button', { onClick: () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); }, style:{width:'100%',padding:'14px',background:'transparent',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.3)',fontSize:'13px',marginTop:'6px'} }, '나중에 할게요')
+          ),
+
+          // ── 이메일 로그인 뷰 ──
+          emailView === 'login' && React.createElement(React.Fragment, null,
+            emailMsg.text && React.createElement('div', { style:msgStyle(emailMsg.type) }, emailMsg.text),
+            React.createElement('input', { type:'email', placeholder:'이메일', value:emailInput, onChange:e=>setEmailInput(e.target.value), style:inputStyle }),
+            React.createElement('input', { type:'password', placeholder:'비밀번호', value:pwInput, onChange:e=>setPwInput(e.target.value), onKeyDown:e=>e.key==='Enter'&&loginWithEmail(), style:{...inputStyle,marginBottom:'6px'} }),
+            React.createElement('div', { style:{textAlign:'right',marginBottom:'14px'} },
+              React.createElement('button', { onClick:()=>{ resetEmailForm(); setEmailView('reset'); }, style:{background:'none',border:'none',color:'rgba(255,255,255,0.35)',fontSize:'12px',cursor:'pointer'} }, '비밀번호를 잊으셨나요?')
+            ),
+            React.createElement('button', {
+              onClick: loginWithEmail, disabled: emailLoading,
+              style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'800',fontSize:'15px',color:'white',marginBottom:'10px',opacity:emailLoading?0.6:1}
+            }, emailLoading ? '로그인 중...' : '로그인'),
+            React.createElement('button', { onClick:()=>{ resetEmailForm(); setEmailView('signup'); }, style:{width:'100%',padding:'13px',background:'transparent',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'14px',cursor:'pointer',color:'rgba(255,255,255,0.5)',fontSize:'13px',marginBottom:'10px'} }, '계정이 없으신가요? 회원가입'),
+            React.createElement('button', { onClick:()=>{ resetEmailForm(); setEmailView('social'); }, style:{width:'100%',padding:'12px',background:'transparent',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.25)',fontSize:'12px'} }, '← 다른 방법으로 로그인')
+          ),
+
+          // ── 이메일 회원가입 뷰 ──
+          emailView === 'signup' && React.createElement(React.Fragment, null,
+            emailMsg.text && React.createElement('div', { style:msgStyle(emailMsg.type) }, emailMsg.text),
+            React.createElement('input', { type:'email', placeholder:'이메일', value:emailInput, onChange:e=>setEmailInput(e.target.value), style:inputStyle }),
+            React.createElement('input', { type:'password', placeholder:'비밀번호 (6자 이상)', value:pwInput, onChange:e=>setPwInput(e.target.value), style:inputStyle }),
+            React.createElement('input', { type:'password', placeholder:'비밀번호 확인', value:pw2Input, onChange:e=>setPw2Input(e.target.value), onKeyDown:e=>e.key==='Enter'&&signUpWithEmail(), style:{...inputStyle,marginBottom:'14px'} }),
+            React.createElement('button', {
+              onClick: signUpWithEmail, disabled: emailLoading,
+              style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'800',fontSize:'15px',color:'white',marginBottom:'10px',opacity:emailLoading?0.6:1}
+            }, emailLoading ? '가입 중...' : '회원가입'),
+            React.createElement('button', { onClick:()=>{ resetEmailForm(); setEmailView('login'); }, style:{width:'100%',padding:'13px',background:'transparent',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'14px',cursor:'pointer',color:'rgba(255,255,255,0.5)',fontSize:'13px',marginBottom:'10px'} }, '이미 계정이 있으신가요? 로그인'),
+            React.createElement('button', { onClick:()=>{ resetEmailForm(); setEmailView('social'); }, style:{width:'100%',padding:'12px',background:'transparent',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.25)',fontSize:'12px'} }, '← 다른 방법으로 로그인')
+          ),
+
+          // ── 인증 메일 발송 완료 뷰 ──
+          emailView === 'verify' && React.createElement(React.Fragment, null,
+            React.createElement('div', { style:{textAlign:'center',padding:'8px 0 20px'} },
+              React.createElement('div', { style:{fontSize:'48px',marginBottom:'16px'} }, '📬'),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.7)',fontSize:'14px',lineHeight:'1.8',marginBottom:'6px'} }, emailMsg.text),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'12px',lineHeight:'1.6'} }, '인증 후 로그인 탭으로 이동해 로그인해주세요.')
+            ),
+            React.createElement('button', { onClick:()=>{ resetEmailForm(); setEmailView('login'); }, style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'800',fontSize:'15px',color:'white',marginBottom:'10px'} }, '로그인하러 가기'),
+            React.createElement('button', { onClick:()=>{ setShowLogin(false); resetEmailForm(); setEmailView('social'); }, style:{width:'100%',padding:'12px',background:'transparent',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.25)',fontSize:'12px'} }, '나중에 할게요')
+          ),
+
+          // ── 비밀번호 찾기 뷰 ──
+          emailView === 'reset' && React.createElement(React.Fragment, null,
+            emailMsg.text && React.createElement('div', { style:msgStyle(emailMsg.type) }, emailMsg.text),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'13px',lineHeight:'1.6',marginBottom:'14px'} }, '가입하신 이메일을 입력하시면 비밀번호 재설정 링크를 보내드립니다.'),
+            React.createElement('input', { type:'email', placeholder:'가입한 이메일', value:emailInput, onChange:e=>setEmailInput(e.target.value), onKeyDown:e=>e.key==='Enter'&&sendPasswordReset(), style:inputStyle }),
+            React.createElement('button', {
+              onClick: sendPasswordReset, disabled: emailLoading,
+              style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'800',fontSize:'15px',color:'white',marginBottom:'10px',opacity:emailLoading?0.6:1}
+            }, emailLoading ? '발송 중...' : '재설정 메일 보내기'),
+            React.createElement('button', { onClick:()=>{ resetEmailForm(); setEmailView('login'); }, style:{width:'100%',padding:'12px',background:'transparent',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.25)',fontSize:'12px'} }, '← 로그인으로 돌아가기')
+          ),
+
+          DEV_MODE && emailView === 'social' && React.createElement('button', {
+            onClick: () => { handleLogin('test', 'test@dev.com', '테스트유저'); },
+            style:{width:'100%',padding:'14px',background:'rgba(52,211,153,0.1)',borderRadius:'16px',border:'1px solid rgba(52,211,153,0.3)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',marginTop:'6px',fontWeight:'700',fontSize:'14px',color:'#34d399'}
+          }, React.createElement('span', { style:{fontSize:'18px'} }, '🔧'), '[DEV] 테스트 로그인')
+        )
       )
-    )
-  );
+    );
+  };
+
 
   // 고정 헤더
   const Header = () => React.createElement('header', { 
