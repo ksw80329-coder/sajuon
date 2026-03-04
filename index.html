@@ -6238,7 +6238,7 @@ ${isSangsaeng
       setLoading(true);
       setDaewoonData(null);
 
-      const inp = person.input;
+      const inp = person;  // savedSaju는 { id, ...inputData, result } 구조
       const result = person.result;
       if (!inp || !result) { setLoading(false); return; }
 
@@ -6247,8 +6247,8 @@ ${isSangsaeng
           inp.year, inp.month, inp.day,
           inp.hour !== 'unknown' ? parseInt(inp.hour) : 12,
           inp.minute ? parseInt(inp.minute) : 0,
-          inp.gender,
-          inp.calendar === '음력',
+          inp.gender || person.gender,
+          (inp.calendar === '음력' || inp.isLunar === true),
           inp.isLeapMonth || false,
           result.pillars
         );
@@ -6261,7 +6261,7 @@ ${isSangsaeng
 
     // 현재 몇 번째 대운인지
     const currentYear = new Date().getFullYear();
-    const birthYear = person ? parseInt(person.input?.year) : 0;
+    const birthYear = person ? parseInt(person.year) : 0;
     const currentAge = currentYear - birthYear;
     const currentDaewoonIdx = daewoonData
       ? daewoonData.daewoons.findIndex((dw, i) => {
@@ -6341,11 +6341,11 @@ ${isSangsaeng
             style:{background:'rgba(14,165,233,0.08)',border:'1px solid rgba(14,165,233,0.2)',borderRadius:'18px',padding:'16px 18px',marginBottom:'16px',display:'flex',alignItems:'center',gap:'14px'}
           },
             React.createElement('div', {
-              style:{width:'48px',height:'48px',borderRadius:'50%',background:person.input?.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',color:'white',fontWeight:'900',flexShrink:0}
-            }, person.input?.gender==='여성'?'♀':'♂'),
+              style:{width:'48px',height:'48px',borderRadius:'50%',background:person.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',color:'white',fontWeight:'900',flexShrink:0}
+            }, person.gender==='여성'?'♀':'♂'),
             React.createElement('div', { style:{flex:1} },
-              React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'16px',marginBottom:'3px'} }, (person.input?.name||'')+'님의 대운'),
-              React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, person.input?.year+'.'+person.input?.month+'.'+person.input?.day+' · '+person.input?.gender),
+              React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'16px',marginBottom:'3px'} }, (person.name||'')+'님의 대운'),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, person.year+'.'+person.month+'.'+person.day+' · '+person.gender),
               daewoonData && React.createElement('p', { style:{color:'#38bdf8',fontSize:'12px',fontWeight:'600',marginTop:'4px'} },
                 (daewoonData.isForward ? '▶ 순행' : '◀ 역행') + ' · 대운 시작 ' + daewoonData.startAge + '세')
             )
