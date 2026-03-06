@@ -73,7 +73,19 @@
     .saju-hero-text { background: linear-gradient(135deg,#fff 0%,#c4b5fd 40%,#f9a8d4 100%); background-size:200% 200%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:shimmer 4s ease infinite; }
     .star-dot { animation:twinkle var(--dur,3s) ease-in-out infinite; animation-delay:var(--del,0s); }
     .float-card { animation:floatUp 6s ease-in-out infinite; }
-    </style>
+      @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes progress {
+    0% { width: 5%; }
+    30% { width: 45%; }
+    60% { width: 75%; }
+    85% { width: 90%; }
+    100% { width: 98%; }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+</style>
 </head>
 <body class="text-white">
 <div id="app"></div>
@@ -1217,8 +1229,8 @@ function App() {
     if (!showPremiumSheet) return null;
     const items = [
       { icon:'💘', label:'연애·결혼 타이밍', sub:'이상형 · 결혼 적기 · 내 연애 스타일', screen:'love', color:'#f9a8d4', price:'⭐29' },
-      { icon:'📊', label:'인생 타이밍 분석', sub:'이직 · 창업 · 투자 · 이사 최적 시기', screen:'timing', color:'#60a5fa', price:'⭐29' },
-      { icon:'🗺️', label:'평생 인생 로드맵', sub:'대운 10개 — 전성기·전환기 전체 지도', screen:'roadmap', color:'#c4b5fd', price:'⭐49', badge:'BEST' },
+      { icon:'📊', label:'인생 타이밍 분석', sub:'이직 · 창업 · 투자 · 이사 최적 시기', screen:'timing', color:'#60a5fa', price:'⭐10/개' },
+      { icon:'🗺️', label:'대운 인생 지도', sub:'대운 10개 완전 분석 · 전성기·취약기 특정', screen:'roadmap', color:'#c4b5fd', price:'⭐49', badge:'BEST' },
       { icon:'🌊', label:'대운풀이', sub:'내 대운 흐름 무료 확인', screen:'daewoon', color:'#7dd3fc', price:'무료' },
     ];
     return React.createElement(React.Fragment, null,
@@ -1262,6 +1274,53 @@ function App() {
           ))
         )
       )
+    );
+  };
+
+
+  // ===== AI 분석 로딩 컴포넌트 =====
+  const AiLoadingCard = ({ message = 'AI가 사주를 분석하고 있어요', steps = ['사주 원국 해석 중', '대운·세운 교차 분석 중', '개인화 콘텐츠 생성 중'] }) => {
+    const [stepIdx, setStepIdx] = React.useState(0);
+    const [dots, setDots] = React.useState('');
+    const [elapsed, setElapsed] = React.useState(0);
+    React.useEffect(() => {
+      const d = setInterval(() => setDots(p => p.length >= 3 ? '' : p + '·'), 500);
+      const s = setInterval(() => setStepIdx(p => (p + 1) % steps.length), 3000);
+      const t = setInterval(() => setElapsed(p => p + 1), 1000);
+      return () => { clearInterval(d); clearInterval(s); clearInterval(t); };
+    }, []);
+    const tips = [
+      '💡 결과는 캐시되어 다음에 즉시 열람됩니다',
+      '⚡ 대운·세운·신살을 동시에 교차 분석 중',
+      '🔮 AI가 당신만을 위한 분석을 작성 중',
+    ];
+    return React.createElement('div', {
+      style:{margin:'8px 0 16px',background:'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(109,40,217,0.05))',border:'1px solid rgba(167,139,250,0.2)',borderRadius:'24px',padding:'28px 24px',textAlign:'center',position:'relative',overflow:'hidden'}
+    },
+      // 배경 글로우
+      React.createElement('div',{style:{position:'absolute',top:'-20px',left:'50%',transform:'translateX(-50%)',width:'160px',height:'160px',background:'radial-gradient(circle,rgba(124,58,237,0.15),transparent 70%)',pointerEvents:'none'}}),
+      // 회전 링 애니메이션
+      React.createElement('div', { style:{position:'relative',width:'72px',height:'72px',margin:'0 auto 20px'} },
+        React.createElement('div', { style:{position:'absolute',inset:0,borderRadius:'50%',border:'2px solid rgba(167,139,250,0.12)'} }),
+        React.createElement('div', { style:{position:'absolute',inset:0,borderRadius:'50%',border:'2px solid transparent',borderTopColor:'#a78bfa',animation:'spin 1.2s linear infinite'} }),
+        React.createElement('div', { style:{position:'absolute',inset:'6px',borderRadius:'50%',border:'2px solid transparent',borderTopColor:'#7c3aed',animation:'spin 0.8s linear infinite reverse'} }),
+        React.createElement('div', { style:{position:'absolute',inset:'14px',borderRadius:'50%',border:'1px solid transparent',borderTopColor:'#c4b5fd',animation:'spin 1.5s linear infinite'} }),
+        React.createElement('div', { style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'26px'} }, '🔮')
+      ),
+      // 메시지
+      React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'15px',marginBottom:'6px',letterSpacing:'-0.3px'} }, message + dots),
+      // 현재 단계
+      React.createElement('p', { style:{color:'#c4b5fd',fontSize:'12px',fontWeight:'600',marginBottom:'20px',minHeight:'18px'} }, steps[stepIdx]),
+      // 프로그레스 바
+      React.createElement('div', { style:{background:'rgba(255,255,255,0.07)',borderRadius:'6px',height:'5px',overflow:'hidden',marginBottom:'12px'} },
+        React.createElement('div', { style:{height:'100%',background:'linear-gradient(90deg,#6d28d9,#7c3aed,#a855f7,#c084fc)',borderRadius:'6px',animation:'progress 25s ease-out forwards'} })
+      ),
+      // 경과 시간 + 팁
+      React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'10px'} }, elapsed + '초 경과'),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'10px'} }, '평균 15~30초')
+      ),
+      React.createElement('p',{style:{color:'rgba(196,181,253,0.4)',fontSize:'10px',marginTop:'10px',fontStyle:'italic'}}, tips[stepIdx % tips.length])
     );
   };
 
@@ -2836,23 +2895,22 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         }
       }
       setScreen('love-result');
-    } else if (prod.name === '인생 타이밍 분석') {
+    } else if (prod.name && prod.name.startsWith('인생 타이밍 분석')) {
+      const catFromProd = prod.name.includes(' - ') ? prod.name.split(' - ')[1] : timingCategory;
       const person = savedSaju.find(s => String(s.id) === String(timingPerson));
       if (person) {
-        const cacheKey = `timing_${timingPerson}_${timingCategory}`;
-        const alreadySaved = savedTiming.some(t => t.personId === timingPerson && t.category === timingCategory);
+        const alreadySaved = savedTiming.some(t => t.personId === timingPerson && t.category === catFromProd);
         if (!alreadySaved) {
           setSavedTiming(prev => [...prev, {
-            id: Date.now(),
-            personId: timingPerson,
-            personName: person.name,
-            category: timingCategory,
+            id: Date.now(), personId: timingPerson,
+            personName: person.name, category: catFromProd,
             date: new Date().toLocaleDateString()
           }]);
         }
       }
+      setTimingCategory(catFromProd);
       setScreen('timing-result');
-    } else if (prod.name === '평생 인생 로드맵') {
+    } else if (prod.name === '대운 인생 지도') {
       const person = savedSaju.find(s => String(s.id) === String(roadmapPerson));
       if (person) {
         const alreadySaved = savedRoadmap.some(r => r.personId === roadmapPerson);
@@ -3085,7 +3143,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'14px',marginBottom:'2px'}},'연애·결혼 타이밍'),
             React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'}},'이상형·결혼 적기·내 연애 스타일')
           ),
-          React.createElement('p',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'15px',flexShrink:0}},'⭐29')
+          React.createElement('div',{style:{textAlign:'right',flexShrink:0}},React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'9px',textDecoration:'line-through'}},'⭐29'),React.createElement('p',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'14px'}},'⭐10'))
         ),
 
         // 인생 타이밍 분석 카드
@@ -3099,10 +3157,10 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'14px',marginBottom:'2px'}},'인생 타이밍 분석'),
             React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'}},'이직·창업·결혼·투자 — 최적 시기 특정')
           ),
-          React.createElement('p',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'15px',flexShrink:0}},'⭐29')
+          React.createElement('div',{style:{textAlign:'right',flexShrink:0}},React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'9px',textDecoration:'line-through'}},'⭐29'),React.createElement('p',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'14px'}},'⭐10'))
         ),
 
-        // 평생 인생 로드맵 카드
+        // 대운 인생 지도 카드
         React.createElement('div', {
           onClick: () => setScreen('roadmap'),
           style:{background:'linear-gradient(135deg,rgba(167,139,250,0.1),rgba(124,58,237,0.05))',borderRadius:'18px',padding:'16px 20px',cursor:'pointer',border:'1px solid rgba(167,139,250,0.18)',display:'flex',alignItems:'center',gap:'14px',marginTop:'10px',position:'relative',overflow:'hidden'}
@@ -3110,8 +3168,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           React.createElement('div',{style:{position:'absolute',right:'-10px',top:'-10px',width:'80px',height:'80px',background:'radial-gradient(circle,rgba(167,139,250,0.15),transparent 70%)',pointerEvents:'none'}}),
           React.createElement('div',{style:{width:'44px',height:'44px',borderRadius:'14px',background:'linear-gradient(135deg,rgba(167,139,250,0.25),rgba(124,58,237,0.15))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0}},'🗺️'),
           React.createElement('div',{style:{flex:1}},
-            React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'14px',marginBottom:'2px'}},'평생 인생 로드맵'),
-            React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'}},'대운 10개 — 전성기·전환기 전체 지도')
+            React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'14px',marginBottom:'2px'}},'대운 인생 지도'),
+            React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'}},'대운 10개 완전 분석 · 전성기·취약기 특정')
           ),
           React.createElement('div',{style:{textAlign:'right',flexShrink:0}},
             React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'9px',textDecoration:'line-through'}},'⭐99'),
@@ -6069,7 +6127,7 @@ ${isSangsaeng
       setTimingPerson(selPerson);
       setTimingCategory(selCat);
       if (already) { setScreen('timing-result'); return; }
-      openPayment({ name: '인생 타이밍 분석', price: 2900, stars: 29 });
+      openPayment({ name: `인생 타이밍 분석 - ${selCat}`, price: 1000, stars: 10 });
     };
 
     const cat = TIMING_CATS.find(c => c.id === selCat);
@@ -6216,7 +6274,7 @@ ${isSangsaeng
           // CTA
           React.createElement('button',{onClick:handleStart,
             style:{width:'100%',padding:'17px',background:`linear-gradient(135deg,${cat.color},${cat.color}aa)`,borderRadius:'16px',fontWeight:'900',fontSize:'16px',color:'#070514',border:'none',cursor:'pointer',boxShadow:`0 4px 30px ${cat.glow}`,letterSpacing:'-0.3px'}
-          }, savedTiming.some(t=>String(t.personId)===String(selPerson)&&t.category===selCat) ? '결과 다시 보기 →' : `${cat.icon} ${cat.label} 타이밍 분석 (⭐29별)`),
+          }, savedTiming.some(t=>String(t.personId)===String(selPerson)&&t.category===selCat) ? '결과 다시 보기 →' : `${cat.icon} ${cat.label} 타이밍 분석 (⭐10별 · 1,000원)`),
           React.createElement('p',{style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',textAlign:'center',marginTop:'10px'}},'별 충전 후 즉시 열람 · 카테고리별 별도 분석')
         )
       )
@@ -6401,7 +6459,7 @@ ${nextDwDesc}
               return React.createElement('button',{key:tc.id,
                 onClick:()=>{
                   if(paid){ setTimingCategory(tc.id); }
-                  else{ setTimingCategory(tc.id); openPayment({name:'인생 타이밍 분석',price:2900,stars:29}); }
+                  else{ setTimingCategory(tc.id); openPayment({name:`인생 타이밍 분석 - ${tc.id}`,price:1000,stars:10}); }
                 },
                 style:{flexShrink:0,padding:'5px 10px',borderRadius:'20px',fontSize:'11px',fontWeight:isCur?'700':'400',
                   background:isCur?`${tc.color}25`:'rgba(255,255,255,0.04)',
@@ -6418,13 +6476,7 @@ ${nextDwDesc}
         ),
 
         // 로딩 스켈레톤
-        aiLoading && React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:'12px',marginBottom:'20px'}},
-          [1,2,3,4,5].map(i=>React.createElement('div',{key:i,style:{background:'rgba(255,255,255,0.03)',borderRadius:'18px',border:'1px solid rgba(255,255,255,0.06)',padding:'20px'}},
-            React.createElement('div',{style:{width:'40%',height:'12px',borderRadius:'6px',background:'rgba(255,255,255,0.06)',marginBottom:'12px'}}),
-            React.createElement('div',{style:{width:'100%',height:'8px',borderRadius:'4px',background:'rgba(255,255,255,0.04)',marginBottom:'8px'}}),
-            React.createElement('div',{style:{width:'75%',height:'8px',borderRadius:'4px',background:'rgba(255,255,255,0.04)'}})
-          ))
-        ),
+        aiLoading && React.createElement(AiLoadingCard, { message: 'AI가 타이밍을 분석하고 있어요', steps: ['대운·세운 데이터 로딩 중', '최적 시기 계산 중', '맞춤 전략 생성 중'] }),
 
         // 에러
         aiError && React.createElement('div',{style:{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'16px',padding:'20px',textAlign:'center',marginBottom:'16px'}},
@@ -6444,12 +6496,12 @@ ${nextDwDesc}
             TIMING_CATS.filter(tc=>tc.id!==timingCategory).map((tc,i)=>{
               const paid = savedTiming.some(t=>String(t.personId)===String(timingPerson)&&t.category===tc.id);
               return React.createElement('button',{key:i,
-                onClick:()=>{ setTimingCategory(tc.id); if(paid) setScreen('timing-result'); else openPayment({name:'인생 타이밍 분석',price:2900,stars:29}); },
+                onClick:()=>{ setTimingCategory(tc.id); if(paid) setScreen('timing-result'); else openPayment({name:`인생 타이밍 분석 - ${tc.id}`,price:1000,stars:10}); },
                 style:{display:'flex',alignItems:'center',gap:'6px',padding:'8px 14px',background:paid?`${tc.color}15`:'rgba(255,255,255,0.04)',border:paid?`1px solid ${tc.color}30`:'1px solid rgba(255,255,255,0.07)',borderRadius:'20px',cursor:'pointer'}
               },
                 React.createElement('span',{style:{fontSize:'14px'}},tc.icon),
                 React.createElement('span',{style:{color:paid?tc.color:'rgba(255,255,255,0.4)',fontSize:'11px',fontWeight:paid?'600':'400'}},tc.label),
-                !paid && React.createElement('span',{style:{color:'#fbbf24',fontSize:'10px'}},'⭐29')
+                !paid && React.createElement('span',{style:{color:'#fbbf24',fontSize:'10px'}},'⭐10')
               );
             })
           )
@@ -6511,7 +6563,7 @@ ${nextDwDesc}
 
 
 
-  // ===== 평생 인생 로드맵 입력 =====
+  // ===== 대운 인생 지도 입력 =====
   const RoadmapScreen = () => {
     const [selPerson, setSelPerson] = React.useState(savedSaju.length > 0 ? savedSaju[0].id : null);
 
@@ -6520,21 +6572,21 @@ ${nextDwDesc}
       const already = savedRoadmap.some(r => String(r.personId) === String(selPerson));
       setRoadmapPerson(selPerson);
       if (already) { setScreen('roadmap-result'); return; }
-      openPayment({ name: '평생 인생 로드맵', price: 4900, stars: 49 });
+      openPayment({ name: '대운 인생 지도', price: 4900, stars: 49 });
     };
 
     return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'112px',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
       React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
 
-        React.createElement(PageHeader, { label:'평생 인생 로드맵', title:'나의 인생 전체 지도', backTarget:'home' }),
+        React.createElement(PageHeader, { label:'대운 인생 지도', title:'나의 인생 전체 지도', backTarget:'home' }),
 
         // 히어로
         React.createElement('div', { style:{textAlign:'center',padding:'16px 0 24px',position:'relative'} },
           React.createElement('div', { style:{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'280px',height:'220px',background:'radial-gradient(ellipse,rgba(167,139,250,0.18),transparent 70%)',pointerEvents:'none'} }),
           React.createElement('div', { style:{fontSize:'50px',marginBottom:'14px',lineHeight:1} }, '🗺️'),
           React.createElement('h1', { style:{fontSize:'22px',fontWeight:'900',letterSpacing:'-1px',color:'white',marginBottom:'10px'} },
-            React.createElement('span', { style:{background:'linear-gradient(135deg,#c4b5fd,#a78bfa,#7c3aed)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'} }, '평생 인생 로드맵')
+            React.createElement('span', { style:{background:'linear-gradient(135deg,#c4b5fd,#a78bfa,#7c3aed)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'} }, '대운 인생 지도')
           ),
           React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',lineHeight:'1.7',marginBottom:'14px'} }, '대운 10개 주기로 보는 내 인생 전체의 흐름\n10대부터 80대까지 각 시기의 에너지와 전략'),
           React.createElement('div', { style:{display:'flex',justifyContent:'center',gap:'6px',flexWrap:'wrap'} },
@@ -6619,7 +6671,7 @@ ${nextDwDesc}
             ),
             React.createElement('div',{style:{textAlign:'right'}},
               React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'10px'}},'한 번 구매로'),
-              React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'12px'}},'평생 무제한 열람')
+              React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'12px'}},'무제한 재열람 가능')
             )
           ),
 
@@ -6633,7 +6685,7 @@ ${nextDwDesc}
     );
   };
 
-  // ===== 평생 인생 로드맵 결과 =====
+  // ===== 대운 인생 지도 결과 =====
   const RoadmapResultScreen = () => {
     const person = savedSaju.find(s => String(s.id) === String(roadmapPerson));
     if (!person) return React.createElement('div',{style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'}},'데이터 없음');
@@ -6675,40 +6727,59 @@ ${nextDwDesc}
 
     React.useEffect(()=>{
       if (!aiLoading) return;
-      const prompt = `당신은 사주 기반 인생 로드맵 전문가입니다. 아래 사주를 기반으로 이 사람의 평생 인생 로드맵을 분석해주세요.
+
+      // 현재 나이 기준 동적 섹션 구성
+      const pastDws = dwData ? dwData.daewoons.filter(dw => dw.endAge < currentAge) : [];
+      const futureDws = dwData ? dwData.daewoons.filter(dw => dw.age > currentAge) : [];
+      const hasPast = pastDws.length >= 2;
+      const pastDesc = hasPast ? pastDws.map(dw=>`${dw.age}~${dw.endAge}세:${dw.stemKr}${dw.branchKr}(${dw.tenGod})`).join(' → ') : '';
+      const futureDesc = futureDws.slice(0,5).map(dw=>`${dw.age}~${dw.endAge}세:${dw.stemKr}${dw.branchKr}(${dw.tenGod})`).join(' → ');
+
+      const sec2 = hasPast
+        ? `2. 📖 ${inp.name}의 지나온 길 (${pastDws[0].age}~${pastDws[pastDws.length-1].endAge}세) — 지나간 대운들(${pastDesc})을 돌아봤을 때 어떤 패턴이 반복됐는지, 그 경험이 지금의 ${inp.name}을 어떻게 만들었는지`
+        : `2. 🌱 성장기·청년기 (${dwData?.daewoons[0]?.age||1}~${dwData?.daewoons[1]?.endAge||20}세) — 초반 두 대운에서 놓이는 환경, 오는 기회와 시련, ${inp.name}의 오행 기질이 처음 드러나는 방식`;
+
+      const sec5 = futureDws.length >= 2
+        ? `5. 🚀 앞으로 남은 대운 (${futureDws[0].age}~${futureDws[Math.min(4,futureDws.length-1)].endAge}세) — ${futureDesc} 흐름에서 각 대운에 집중할 것과 피해야 할 것, ${inp.name}의 용신·기신 기준 유리·불리 시기`
+        : `5. 🏔️ 후반기 흐름 — 남은 대운의 에너지 방향, ${inp.name}이 후반부 삶에서 집중해야 할 가치와 역할`;
+
+      const prompt = `당신은 사주 명리학 전문가입니다. 아래 사주의 10개 대운 전체를 아우르는 인생 흐름 분석을 제공하세요.
 
 [사주 데이터]
 이름: ${inp.name} / 성별: ${inp.gender} / 현재 나이: ${currentAge}세 (${birthYear}년생)
 일간: ${dayGan}(${dayGanKr}) / 오행: ${dayEl} / 용신: ${yongshin} / 기신: ${gishin}
 사주 원국: ${pillarsDesc} / 오행 분포: ${feDesc}
 신살: ${allSinsal.join(',')||'없음'}
-대운 전체: ${dwDesc}
+대운 10개 전체: ${dwDesc}
 ${curDwDesc}
+지나간 대운: ${pastDesc||'없음(초반대운)'}
+앞으로 남은 대운: ${futureDesc||'없음'}
 
 [필수 규칙]
 - JSON만 출력 (마크다운 없음)
 - 각 섹션 650~800자
-- 이름(${inp.name}) 자주 언급해 개인화
-- 각 대운별 구체적 나이와 시기 언급 필수
-- 일간 오행 기질을 전 섹션에 녹여낼 것
-- 전성기와 주의 시기는 반드시 구체적 나이·대운 특정
-- 추상적 표현("노력하면", "열심히") 금지 — 구체적 행동 제시
+- 이름(${inp.name}) 반드시 5회 이상 언급
+- 10개 대운 전체를 골고루 다룰 것 — 특정 나이대에만 편중 절대 금지
+- 각 대운의 나이와 간지(예: 38~47세 병오대운) 구체적으로 명시
+- 일간 오행 기질·용신·기신을 근거로 판단
+- 추상적 표현 금지, 구체적 행동·판단 기준 제시
+- 현재 나이(${currentAge}세) 기준 과거대운은 회고, 미래대운은 전략으로 서술
 
 {
-  "headline": "한 줄 인생 테마 (30자 이내)",
-  "peak": { "age": "전성기 나이 예:38~47세", "dw": "해당 대운 간지" },
+  "headline": "한 줄 인생 테마 (30자 이내, ${inp.name}의 오행 기질 반영)",
+  "peak": { "age": "전성기 나이대 예:38~47세", "dw": "해당 대운 간지 예:병오" },
   "sections": [
     {"icon":"이모지","color":"hex색상","title":"섹션제목","content":"650~800자"}
   ]
 }
 
-섹션 6개:
-1. 🌅 ${inp.name}의 인생 테마 — 일간 ${dayGan}(${dayGanKr})이 타고난 기질과 삶의 주제, 어떤 방향으로 에너지가 흘러야 잘 사는 사람인지
-2. 🌱 성장기·청년기 (첫 번째~두 번째 대운) — 초반 대운에서 어떤 환경에 놓이는지, 어떤 기회와 시련이 오는지
-3. ⚡ 전성기 분석 — 가장 강한 대운과 그 시기에 해야 할 것, 왜 그 대운이 전성기인지 오행·십성 근거
-4. ⚠️ 주의 시기와 전략 — 에너지가 약해지거나 충극이 심한 대운, 이 시기를 현명하게 넘기는 방법
-5. 🏔️ 중년·장년기 흐름 — 40~60대 대운의 방향, 이 시기에 집중해야 할 분야와 피해야 할 것
-6. 🎯 지금 ${inp.name}에게 — 현재 대운(${curDwDesc.slice(0,30)})이 인생 전체에서 어떤 위치인지, 지금 당장 해야 할 것`;
+섹션 6개 (순서 고정):
+1. 🌅 ${inp.name}의 인생 테마 — 일간 ${dayGan}(${dayGanKr})의 타고난 기질, 이 사람이 잘 사는 삶의 방향, 10개 대운 전체에 흐르는 공통 주제
+${sec2}
+3. ⚡ 전성기 대운 — 10개 대운 중 오행·용신 기준으로 가장 강한 대운(나이·간지 특정), 왜 그 대운이 전성기인지 명리 근거, 그 시기 핵심 행동
+4. ⚠️ 조심해야 할 대운 — 기신·충극이 겹치는 취약 대운(나이·간지 특정), 그 시기를 현명하게 버티는 구체적 전략
+${sec5}
+6. 🎯 지금 이 순간 — 현재 대운(${curDwDesc.slice(0,40)})이 10개 대운 중 어느 위치인지, ${inp.name}이 지금 당장 해야 할 가장 중요한 것 1~3가지`;
 
       const ctrl = new AbortController();
       (async()=>{
@@ -6734,7 +6805,7 @@ ${curDwDesc}
 
     // 대운 타임라인 렌더
     const elColor = {목:'#4ade80',화:'#f87171',토:'#fbbf24',금:'#e2e8f0',수:'#60a5fa'};
-    const shareData = { title:`${inp.name}님의 평생 인생 로드맵 — 사주ON`, desc:peakInfo?.headline||'나의 인생 전체 지도', tag:'roadmap' };
+    const shareData = { title:`${inp.name}님의 대운 인생 지도 — 사주ON`, desc:peakInfo?.headline||'나의 인생 전체 지도', tag:'roadmap' };
 
     return React.createElement('div',{style:{minHeight:'100vh',background:'#070514',paddingBottom:'100px',position:'relative',overflow:'hidden'}},
       React.createElement(StarBg),
@@ -6744,7 +6815,7 @@ ${curDwDesc}
           React.createElement('button',{onClick:()=>setScreen('roadmap'),style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'white',fontSize:'16px',cursor:'pointer'}},'←'),
           React.createElement('div',{style:{flex:1}},
             React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase'}},'LIFE ROADMAP'),
-            React.createElement('h1',{style:{color:'white',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.5px'}},inp.name+'님의 평생 인생 로드맵')
+            React.createElement('h1',{style:{color:'white',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.5px'}},inp.name+'님의 대운 인생 지도')
           ),
           React.createElement(ShareButton,{title:shareData.title,desc:shareData.desc,tag:shareData.tag})
         ),
@@ -6767,6 +6838,14 @@ ${curDwDesc}
           )
         ),
 
+        // 안내 문구
+        React.createElement('div',{style:{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)',borderRadius:'14px',padding:'10px 14px',marginBottom:'12px',display:'flex',gap:'8px',alignItems:'flex-start'}},
+          React.createElement('span',{style:{fontSize:'14px',flexShrink:0}},'ℹ️'),
+          React.createElement('p',{style:{color:'rgba(196,181,253,0.7)',fontSize:'11px',lineHeight:'1.6'}},
+            `이 분석은 사주 명리학의 대운(大運) 10개를 기반으로 합니다. 대운은 약 ${dwData?.daewoons[0]?.age||1}세부터 시작해 10년 단위로 흘러가며, 현재 나이(${currentAge}세) 기준으로 과거는 회고, 미래는 전략적 관점에서 서술됩니다. 명리학적 해석이며 단순 참고용입니다.`
+          )
+        ),
+
         // 대운 타임라인
         dwData && React.createElement('div',{style:{background:'rgba(255,255,255,0.03)',borderRadius:'18px',border:'1px solid rgba(255,255,255,0.06)',padding:'14px',marginBottom:'14px'}},
           React.createElement('p',{style:{color:'rgba(255,255,255,0.25)',fontSize:'10px',letterSpacing:'1px',fontWeight:'600',marginBottom:'10px'}},'✦  대운 타임라인'),
@@ -6785,13 +6864,7 @@ ${curDwDesc}
         ),
 
         // 로딩
-        aiLoading && React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:'12px',marginBottom:'20px'}},
-          [1,2,3,4,5,6].map(i=>React.createElement('div',{key:i,style:{background:'rgba(255,255,255,0.03)',borderRadius:'18px',border:'1px solid rgba(255,255,255,0.06)',padding:'20px'}},
-            React.createElement('div',{style:{width:'40%',height:'12px',borderRadius:'6px',background:'rgba(255,255,255,0.06)',marginBottom:'12px'}}),
-            React.createElement('div',{style:{width:'100%',height:'8px',borderRadius:'4px',background:'rgba(255,255,255,0.04)',marginBottom:'8px'}}),
-            React.createElement('div',{style:{width:'70%',height:'8px',borderRadius:'4px',background:'rgba(255,255,255,0.04)'}})
-          ))
-        ),
+        aiLoading && React.createElement(AiLoadingCard, { message: 'AI가 인생 로드맵을 그리고 있어요', steps: ['대운 10개 데이터 분석 중', '전성기·전환기 특정 중', '인생 전략 생성 중'] }),
 
         // 에러
         aiError && React.createElement('div',{style:{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'16px',padding:'20px',textAlign:'center',marginBottom:'16px'}},
@@ -6944,7 +7017,7 @@ ${curDwDesc}
           // CTA 버튼
           React.createElement('button', { onClick:handleStart,
             style:{width:'100%',padding:'17px',background:'linear-gradient(135deg,#ec4899,#f43f5e)',borderRadius:'16px',fontWeight:'900',fontSize:'16px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 4px 30px rgba(236,72,153,0.4)',letterSpacing:'-0.3px'}
-          }, savedLove.some(l=>String(l.personId)===String(selPerson)) ? '결과 다시 보기 →' : '💘 연애·결혼 타이밍 분석 (⭐29별)'),
+          }, savedLove.some(l=>String(l.personId)===String(selPerson)) ? '결과 다시 보기 →' : '💘 연애·결혼 타이밍 분석 (⭐10별 · 1,000원)'),
           React.createElement('p',{style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',textAlign:'center',marginTop:'10px'}},'별 충전 후 즉시 열람 · 재열람 무제한')
         )
       )
@@ -7098,13 +7171,7 @@ ${curDwDesc}
         ),
 
         // 섹션 로딩 중
-        aiLoading && React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:'12px',marginBottom:'20px'}},
-          [1,2,3,4,5].map(i=>React.createElement('div',{key:i,style:{background:'rgba(255,255,255,0.03)',borderRadius:'18px',border:'1px solid rgba(255,255,255,0.06)',padding:'20px'}},
-            React.createElement('div',{style:{width:'40%',height:'12px',borderRadius:'6px',background:'rgba(255,255,255,0.06)',marginBottom:'12px'}}),
-            React.createElement('div',{style:{width:'100%',height:'8px',borderRadius:'4px',background:'rgba(255,255,255,0.04)',marginBottom:'8px'}}),
-            React.createElement('div',{style:{width:'80%',height:'8px',borderRadius:'4px',background:'rgba(255,255,255,0.04)'}})
-          ))
-        ),
+        aiLoading && React.createElement(AiLoadingCard, { message: 'AI가 연애 사주를 분석하고 있어요', steps: ['연애 기질 분석 중', '인연 시기 계산 중', '맞춤 조언 생성 중'] }),
 
         // 에러
         aiError && React.createElement('div',{style:{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'16px',padding:'20px',textAlign:'center',marginBottom:'16px'}},
@@ -8091,7 +8158,7 @@ ${curDwDesc}
         // 안내문구
         React.createElement('div', { style:{background:'rgba(255,255,255,0.02)',borderRadius:'14px',padding:'14px 16px',border:'1px solid rgba(255,255,255,0.05)'} },
           React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'11px',lineHeight:'1.8'} },
-            '충전한 별은 사주 분석(⭐29), 궁합(⭐10), 신년운세(⭐19)에 사용됩니다. 콘텐츠 열람 후 환불은 전자상거래법에 따라 불가합니다.'
+            '충전한 별은 사주 분석(⭐29), 궁합(⭐10), 신년운세(⭐19), 타이밍 분석(⭐10/개)에 사용됩니다. 콘텐츠 열람 후 환불은 전자상거래법에 따라 불가합니다.'
           )
         )
       )
@@ -8471,7 +8538,7 @@ ${curDwDesc}
           { icon: '🔮', label: '사주 분석', screen: 'input', color: '#c4b5fd' },
           { icon: '💘', label: '연애·결혼 타이밍', screen: 'love', color: '#f9a8d4' },
           { icon: '📊', label: '인생 타이밍 분석', screen: 'timing', color: '#60a5fa' },
-          { icon: '🗺️', label: '평생 인생 로드맵', screen: 'roadmap', color: '#c4b5fd' },
+          { icon: '🗺️', label: '대운 인생 지도', screen: 'roadmap', color: '#c4b5fd' },
           { icon: '💕', label: '궁합 분석', screen: 'compatibility', color: '#f9a8d4' },
           { icon: '🎊', label: '2026 운세', screen: 'yearly', color: '#fcd34d' },
           { icon: '🌊', label: '대운풀이', screen: 'daewoon', color: '#7dd3fc' },
