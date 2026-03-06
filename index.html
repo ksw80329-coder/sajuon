@@ -3360,11 +3360,11 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                 ['상호명', '사주ON'],
                 ['대표자', '고승우'],
                 ['사업자등록번호', '294-18-02476'],
-                ['통신판매업신고', '미신고(준비중)'],
+                ['통신판매업신고', '2026-경남진주-0110'],
                 ['사업장 주소', '경상남도 진주시 도동천로 48, 104-1504'],
                 ['고객센터', '050-6522-1519'],
                 ['이메일', 'godwk15@naver.com'],
-                ['운영시간', '평일 10:00~18:00']
+                ['이메일 응답', '문의 접수 후 순차 답변']
               ].map(([label, value], i) =>
                 React.createElement('div', { key: i, style:{display:'flex',flexDirection:'column',gap:'3px'} },
                   React.createElement('span', { style:{color:'rgba(255,255,255,0.28)',fontSize:'10px',fontWeight:'600',letterSpacing:'0.3px'} }, label),
@@ -3852,7 +3852,7 @@ ${pillarDesc}
       };
       const aiFetch = callAI(sajuPayload);
       aiFetch.then(data => {
-        const text = data.content?.[0]?.text || '';
+        const text = (data.content||[]).map(x=>x.text||'').join('');
         console.log('===== AI 사주 응답 =====');
         console.log('data 전체:', JSON.stringify(data).slice(0,500));
         console.log('text 길이:', text.length, '| text:', text.slice(0,200));
@@ -4169,15 +4169,8 @@ ${pillarDesc}
     const CompatibilityResultScreen = () => {
     const person1 = savedSaju.find(s => String(s.id) === String(compatPerson1));
     const person2 = savedSaju.find(s => String(s.id) === String(compatPerson2));
-    
-    if (!person1 || !person2) return React.createElement('div', { style:{padding:'16px',textAlign:'center',color:'rgba(255,255,255,0.4)'} }, '데이터 없음');
-    
-    const r1 = person1.result || analyzeSaju(person1.year, person1.month, person1.day, person1.hour, person1.minute, person1.isLunar, false);
-    const r2 = person2.result || analyzeSaju(person2.year, person2.month, person2.day, person2.hour, person2.minute, person2.isLunar, false);
 
-    // ===== AI 궁합 해설 =====
-    const _compatRelNorm = {'couple':'1','friend':'2','business':'3','parent_child':'4','sibling':'5','etc':'6','grandparent':'7','relative':'8','mentor':'9','rival':'10'}[compatRelation] || compatRelation;
-    const _compatCacheKey = `ai_compat_v31_${person1.id}_${person2.id}_${_compatRelNorm}`;
+    const _compatCacheKey = (person1 && person2) ? `ai_compat_v31_${person1.id}_${person2.id}_${compatRelation||'couple'}` : 'ai_compat_null';
     const [aiCompatSections, setAiCompatSections] = React.useState(() => {
       try { const c = localStorage.getItem(_compatCacheKey); const p = c ? JSON.parse(c) : null; return p && Array.isArray(p.sections) && p.sections.length > 0 ? p.sections : null; } catch(e) { return null; }
     });
@@ -4192,6 +4185,14 @@ ${pillarDesc}
     });
     const [aiCompatError, setAiCompatError] = React.useState(false);
 
+
+    if (!person1 || !person2) return React.createElement('div', { style:{padding:'16px',textAlign:'center',color:'rgba(255,255,255,0.4)'} }, '데이터 없음');
+
+    const r1 = person1.result || analyzeSaju(person1.year, person1.month, person1.day, person1.hour, person1.minute, person1.isLunar, false);
+    const r2 = person2.result || analyzeSaju(person2.year, person2.month, person2.day, person2.hour, person2.minute, person2.isLunar, false);
+
+
+    // ===== AI 궁합 해설 =====
     React.useEffect(() => {
       const cacheKey = _compatCacheKey;
       if (aiCompatSections) return; // 이미 캐시에서 로드됨
@@ -4252,7 +4253,7 @@ Four pillars: ${p2PillarDesc}
 Sinsal: ${p2Sinsal.join(', ') || 'none'}
 Five elements: ${Object.entries(r2.fe.pct).map(([k,v])=>k+':'+v+'%').join(', ')}
 
-Relationship type: ${relationLabel}
+Relationship type: ${relationLabel[compatRelation]||'연인/부부'}
 Core astrology: ${el1Full} vs ${el2Full}, ${isSangsaeng?'상생(sangsaeng)':isSanggeuk?'상극(sanggeuk)':'비화(bihwa)'} relationship
 
 CRITICAL WRITING RULES:
@@ -4283,7 +4284,7 @@ Write EXACTLY 10 sections in this order:
 9. 🛌 일상의 에너지 차이 — 아침형/저녁형, 집에서 쉬는 방식, 혼자만의 시간이 필요한 정도, 이게 맞는지 안 맞는지
 10. 💌 ${person1.name}에게, ${person2.name}에게 — 각자에게 드리는 솔직하고 구체적인 조언 (관계 더 잘되게 하는 실천법)`;
 
-      const minLoadC = new Promise(resolve => setTimeout(resolve, 60000));
+      const minLoadC = new Promise(resolve => setTimeout(resolve, 2000));
       const compatPayload = {
         t: '2',
         relation: {'couple':'1','friend':'2','business':'3','parent_child':'4','sibling':'5','etc':'6','grandparent':'7','relative':'8','mentor':'9','rival':'10'}[compatRelation]||'1',
@@ -4307,7 +4308,7 @@ Write EXACTLY 10 sections in this order:
       };
       const aiFetchC = callAI(compatPayload);
       aiFetchC.then(data => {
-        const text = data.content?.[0]?.text || '';
+        const text = (data.content||[]).map(x=>x.text||'').join('');
         console.log('AI 궁합 응답 길이:', text.length);
         let result = null;
         try {
@@ -7621,7 +7622,7 @@ ${curDwDesc}
       // 검증된 /q 방식 (callAI 헬퍼)
       callAI(payload)
       .then(data => {
-        const text = data.content?.[0]?.text || '';
+        const text = (data.content||[]).map(x=>x.text||'').join('');
         console.log('운세 응답 길이:', text.length);
         try {
           const clean = text.replace(/```json|```/g,'').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,' ').trim();
