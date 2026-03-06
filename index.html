@@ -1228,10 +1228,10 @@ function App() {
 
   // ===== 결제 최종 확인 모달 (전자상거래법 제17조) =====
   const PurchaseConfirmModal = () => {
-    if (!purchaseConfirm) return null;
-    const { product, onConfirm } = purchaseConfirm;
     const [checked1, setChecked1] = React.useState(false);
     const [checked2, setChecked2] = React.useState(false);
+    if (!purchaseConfirm) return null;
+    const { product, onConfirm } = purchaseConfirm;
     const canConfirm = checked1 && checked2;
     return React.createElement(React.Fragment, null,
       React.createElement('div', {
