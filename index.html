@@ -1291,9 +1291,9 @@ function App() {
             style:{marginTop:'2px',width:'16px',height:'16px',cursor:'pointer',accentColor:'#a855f7',flexShrink:0}
           }),
           React.createElement('p',{style:{color:'rgba(255,255,255,0.7)',fontSize:'12px',lineHeight:'1.6',fontWeight: checked2?'600':'400'}},
-            '본 사주·운세 결과는 전통 명리학과 AI를 기반으로 한 ',
+            '이 풀이는 전통 명리학 원리에 기반한 ',
             React.createElement('strong',{style:{color:'#c4b5fd'}},'참고용 콘텐츠'),
-            '이며, 실제 인생 결정의 유일한 근거로 삼아서는 안 됩니다.'
+            '이에요. 재미와 자기 이해를 위해 활용하세요. 😊'
           )
         ),
         // 버튼
@@ -1369,7 +1369,7 @@ function App() {
 
 
   // ===== AI 분석 로딩 컴포넌트 =====
-  const AiLoadingCard = ({ message = 'AI가 사주를 분석하고 있어요', steps = ['사주 원국 해석 중', '대운·세운 교차 분석 중', '개인화 콘텐츠 생성 중'] }) => {
+  const AiLoadingCard = ({ message = '사주를 풀이하고 있어요', steps = ['사주 원국을 읽는 중', '대운·세운을 살피는 중', '풀이를 완성하는 중'] }) => {
     const [stepIdx, setStepIdx] = React.useState(0);
     const [dots, setDots] = React.useState('');
     const [elapsed, setElapsed] = React.useState(0);
@@ -1380,9 +1380,9 @@ function App() {
       return () => { clearInterval(d); clearInterval(s); clearInterval(t); };
     }, []);
     const tips = [
-      '💡 결과는 캐시되어 다음에 즉시 열람됩니다',
-      '⚡ 대운·세운·신살을 동시에 교차 분석 중',
-      '🔮 AI가 당신만을 위한 분석을 작성 중',
+      '💡 한 번 풀이한 결과는 다음에 바로 확인할 수 있어요',
+      '⚡ 대운·세운·신살을 종합해 풀이 중',
+      '🔮 당신만을 위한 풀이를 작성 중',
     ];
     return React.createElement('div', {
       style:{margin:'8px 0 16px',background:'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(109,40,217,0.05))',border:'1px solid rgba(167,139,250,0.2)',borderRadius:'24px',padding:'28px 24px',textAlign:'center',position:'relative',overflow:'hidden'}
@@ -1456,8 +1456,8 @@ function App() {
       { label: '신살 탐색', sub: '30여 가지 신살의 영향을 해석 중' },
       { label: '일간 심층 분석', sub: '나를 나타내는 핵심 기둥을 읽는 중' },
       { label: '관계 패턴 파악', sub: '충·합·형·파·해의 구조를 분석 중' },
-      { label: '명리 해설 생성', sub: '당신만의 이야기를 문장으로 풀어내는 중' },
-      { label: '최종 정리 중', sub: '곧 결과를 보여드립니다' },
+      { label: '풀이를 완성하는 중', sub: '당신만의 이야기를 문장으로 풀어내는 중' },
+      { label: '마지막으로 가다듬는 중', sub: '곧 결과를 보여드립니다' },
     ];
     const tips = [
       { title: '일간(日干)이란?', body: '사주 네 기둥 중 일간이 나 자신. 이것 하나로 성격의 뿌리가 결정됩니다.' },
@@ -4455,7 +4455,7 @@ Write EXACTLY 10 sections in this order:
       React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 16px 16px'} },
         React.createElement('button', { onClick: () => setScreen('compatibility'), style:{color:'rgba(255,255,255,0.5)',fontSize:'22px',background:'none',border:'none',cursor:'pointer'} }, '←'),
         React.createElement('div', { style:{flex:1} },
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase'} }, '궁합 분석 결과'),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase'} }, '두 사람의 인연 풀이'),
           React.createElement('h1', { style:{color:'white',fontWeight:'800',fontSize:'17px',letterSpacing:'-0.3px'} }, '궁합 풀이')
         ),
         React.createElement('span', { style:{fontSize:'10px',fontWeight:'800',letterSpacing:'1px',color:'#f9a8d4',background:'rgba(236,72,153,0.15)',padding:'4px 10px',borderRadius:'20px',border:'1px solid rgba(236,72,153,0.25)'} }, 'PREMIUM')
@@ -4639,7 +4639,7 @@ Write EXACTLY 10 sections in this order:
               React.createElement('div', { style:{width:'36px',height:'36px',borderRadius:'12px',background:'rgba(236,72,153,0.1)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'} }, '💕'),
               React.createElement('div', null,
                 React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'9px',letterSpacing:'3px',textTransform:'uppercase',marginBottom:'2px'} }, 'DEEP ANALYSIS'),
-                React.createElement('h3', { style:{color:'white',fontWeight:'800',fontSize:'14px'} }, '두 사람의 궁합을 분석 중...'),
+                React.createElement('h3', { style:{color:'white',fontWeight:'800',fontSize:'14px'} }, '두 사람의 인연을 살펴보고 있어요'),
                 React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px',marginTop:'2px'} }, '천간·지지·신살 종합 해석 중')
               )
             ),
@@ -6585,12 +6585,12 @@ ${nextDwDesc}
         ),
 
         // 로딩 스켈레톤
-        aiLoading && React.createElement(AiLoadingCard, { message: 'AI가 타이밍을 분석하고 있어요', steps: ['대운·세운 데이터 로딩 중', '최적 시기 계산 중', '맞춤 전략 생성 중'] }),
+        aiLoading && React.createElement(AiLoadingCard, { message: '타이밍을 정밀 분석하고 있어요', steps: ['대운·세운을 불러오는 중', '최적 시기를 살피는 중', '맞춤 풀이를 완성하는 중'] }),
 
         // 에러
         aiError && React.createElement('div',{style:{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'16px',padding:'20px',textAlign:'center',marginBottom:'16px'}},
-          React.createElement('p',{style:{color:'#fca5a5',fontSize:'14px',marginBottom:'12px'}},'분석 생성 중 오류가 발생했습니다'),
-          React.createElement('button',{onClick:()=>{setAiError(false);setAiLoading(true);},style:{padding:'10px 20px',background:'rgba(239,68,68,0.2)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'10px',color:'#fca5a5',fontSize:'12px',fontWeight:'700',cursor:'pointer'}},'다시 시도')
+          React.createElement('p',{style:{color:'#fca5a5',fontSize:'14px',marginBottom:'12px'}},'풀이를 완성하는 중 오류가 발생했습니다'),
+          React.createElement('button',{onClick:()=>{setAiError(false);setAiLoading(true);},style:{padding:'10px 20px',background:'rgba(239,68,68,0.2)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'10px',color:'#fca5a5',fontSize:'12px',fontWeight:'700',cursor:'pointer'}},'다시 풀이받기')
         ),
 
         // AI 섹션
@@ -6951,7 +6951,7 @@ ${sec5}
         React.createElement('div',{style:{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)',borderRadius:'14px',padding:'10px 14px',marginBottom:'12px',display:'flex',gap:'8px',alignItems:'flex-start'}},
           React.createElement('span',{style:{fontSize:'14px',flexShrink:0}},'ℹ️'),
           React.createElement('p',{style:{color:'rgba(196,181,253,0.7)',fontSize:'11px',lineHeight:'1.6'}},
-            `이 분석은 사주 명리학의 대운(大運) 10개를 기반으로 합니다. 대운은 약 ${dwData?.daewoons[0]?.age||1}세부터 시작해 10년 단위로 흘러가며, 현재 나이(${currentAge}세) 기준으로 과거는 회고, 미래는 전략적 관점에서 서술됩니다. 명리학적 해석이며 단순 참고용입니다.`
+            `이 풀이는 대운(大運) 10개를 기반으로 한 명리학적 해석이에요. 대운은 약 ${dwData?.daewoons[0]?.age||1}세부터 10년 단위로 흘러가며, 현재(${currentAge}세) 기준으로 지나온 길은 회고, 앞으로의 길은 전략으로 풀어드립니다. 재미와 성찰을 위해 활용하세요. 😊`
           )
         ),
 
@@ -6973,12 +6973,12 @@ ${sec5}
         ),
 
         // 로딩
-        aiLoading && React.createElement(AiLoadingCard, { message: 'AI가 인생 로드맵을 그리고 있어요', steps: ['대운 10개 데이터 분석 중', '전성기·전환기 특정 중', '인생 전략 생성 중'] }),
+        aiLoading && React.createElement(AiLoadingCard, { message: '인생 흐름을 풀어내고 있어요', steps: ['대운 10개를 살피는 중', '전성기·전환기를 읽는 중', '인생 흐름을 완성하는 중'] }),
 
         // 에러
         aiError && React.createElement('div',{style:{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'16px',padding:'20px',textAlign:'center',marginBottom:'16px'}},
-          React.createElement('p',{style:{color:'#fca5a5',fontSize:'14px',marginBottom:'12px'}},'분석 생성 중 오류가 발생했습니다'),
-          React.createElement('button',{onClick:()=>{setAiError(false);setAiLoading(true);},style:{padding:'10px 20px',background:'rgba(239,68,68,0.2)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'10px',color:'#fca5a5',fontSize:'12px',fontWeight:'700',cursor:'pointer'}},'다시 시도')
+          React.createElement('p',{style:{color:'#fca5a5',fontSize:'14px',marginBottom:'12px'}},'풀이를 완성하는 중 오류가 발생했습니다'),
+          React.createElement('button',{onClick:()=>{setAiError(false);setAiLoading(true);},style:{padding:'10px 20px',background:'rgba(239,68,68,0.2)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'10px',color:'#fca5a5',fontSize:'12px',fontWeight:'700',cursor:'pointer'}},'다시 풀이받기')
         ),
 
         // AI 섹션
@@ -7280,12 +7280,12 @@ ${curDwDesc}
         ),
 
         // 섹션 로딩 중
-        aiLoading && React.createElement(AiLoadingCard, { message: 'AI가 연애 사주를 분석하고 있어요', steps: ['연애 기질 분석 중', '인연 시기 계산 중', '맞춤 조언 생성 중'] }),
+        aiLoading && React.createElement(AiLoadingCard, { message: '연애 사주를 풀이하고 있어요', steps: ['연애 기질을 읽는 중', '인연 시기를 살피는 중', '맞춤 풀이를 완성하는 중'] }),
 
         // 에러
         aiError && React.createElement('div',{style:{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'16px',padding:'20px',textAlign:'center',marginBottom:'16px'}},
-          React.createElement('p',{style:{color:'#fca5a5',fontSize:'14px',marginBottom:'12px'}},'분석 생성 중 오류가 발생했습니다'),
-          React.createElement('button',{onClick:()=>{setAiError(false);setAiLoading(true);},style:{padding:'10px 20px',background:'rgba(239,68,68,0.2)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'10px',color:'#fca5a5',fontSize:'12px',fontWeight:'700',cursor:'pointer'}},'다시 시도')
+          React.createElement('p',{style:{color:'#fca5a5',fontSize:'14px',marginBottom:'12px'}},'풀이를 완성하는 중 오류가 발생했습니다'),
+          React.createElement('button',{onClick:()=>{setAiError(false);setAiLoading(true);},style:{padding:'10px 20px',background:'rgba(239,68,68,0.2)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'10px',color:'#fca5a5',fontSize:'12px',fontWeight:'700',cursor:'pointer'}},'다시 풀이받기')
         ),
 
         // AI 섹션 출력
@@ -7559,7 +7559,7 @@ ${curDwDesc}
 
         // 5대 운세 카드
         aiData.sections && React.createElement('div', { style:{marginBottom:'20px'} },
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'2px',marginBottom:'12px'} }, '✦ 2026 심층 분석'),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'2px',marginBottom:'12px'} }, '✦ 2026 심층 풀이'),
           aiData.sections.map((s, i) => {
             const isOpen = openIdx === i;
             const gradients = [
@@ -7640,7 +7640,7 @@ ${curDwDesc}
         React.createElement('button', {
           onClick:()=>{ try{localStorage.removeItem(_cacheKey);}catch(e){} setLoading(true); setAiData(null); },
           style:{background:'linear-gradient(135deg,#7c3aed,#3b82f6)',color:'white',border:'none',padding:'12px 28px',borderRadius:'14px',fontWeight:'700',cursor:'pointer'}
-        }, '다시 시도')
+        }, '다시 풀이받기')
       ),
 
       // 하단 공유 배너
