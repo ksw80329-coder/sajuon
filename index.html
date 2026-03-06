@@ -934,7 +934,9 @@ function App() {
   const [lovePerson, setLovePerson] = useState(null);
   const [savedTiming, setSavedTimingRaw] = useState(() => session ? loadUserData(session.key, 'savedTiming', []) : []);
   const [timingPerson, setTimingPerson] = useState(null);
-  const [timingCategory, setTimingCategory] = useState('career'); // career|love|money|health|move
+  const [timingCategory, setTimingCategory] = useState('career');
+  const [savedRoadmap, setSavedRoadmapRaw] = useState(() => session ? loadUserData(session.key, 'savedRoadmap', []) : []);
+  const [roadmapPerson, setRoadmapPerson] = useState(null); // career|love|money|health|move
   
   // 아코디언 열림 상태
   const [openAccordions, setOpenAccordions] = useState({});
@@ -1182,6 +1184,21 @@ function App() {
     setSavedLoveRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (userKey) saveUserData(userKey, 'savedLove', next);
+      return next;
+    });
+  };
+
+  const setSavedTiming = (updater) => {
+    setSavedTimingRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (userKey) saveUserData(userKey, 'savedTiming', next);
+      return next;
+    });
+  };
+  const setSavedRoadmap = (updater) => {
+    setSavedRoadmapRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (userKey) saveUserData(userKey, 'savedRoadmap', next);
       return next;
     });
   };
@@ -2305,14 +2322,14 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   const [dailyLoading, setDailyLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (isLoggedIn && savedSaju.length > 0 && !dailyFortune && !dailyLoading) {
+    if (isLoggedIn && savedSaju.length > 0 && !dailyFortune) {
       setDailyLoading(true);
-      getDailyFortune(savedSaju).then(f => {
-        setDailyFortune(f);
-        setDailyLoading(false);
-      });
+      getDailyFortune(savedSaju)
+        .then(f => { setDailyFortune(f); })
+        .catch(() => {})
+        .finally(() => { setDailyLoading(false); });
     }
-  }, [isLoggedIn, savedSaju, dailyFortune, dailyLoading, getDailyFortune]);
+  }, [isLoggedIn]);
 
   // 데일리 운세 카드 컴포넌트
   const DailyFortuneCard = () => {
@@ -6240,7 +6257,7 @@ ${nextDwDesc}
       (async()=>{
         try{
           // 검증된 /q 엔드포인트 사용
-          const payload = { prompt, max_tokens: 7000 };
+          const payload = { t: '4', prompt, max_tokens: 7000 };
           const data = await callAI(payload, ctrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
           const clean = text.replace(/```json|```/g,'').trim();
@@ -6592,7 +6609,7 @@ ${curDwDesc}
       const ctrl = new AbortController();
       (async()=>{
         try{
-          const payload = { prompt, max_tokens: 8000 };
+          const payload = { t: '4', prompt, max_tokens: 8000 };
           const data = await callAI(payload, ctrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
           const clean = text.replace(/```json|```/g,'').trim();
@@ -6921,7 +6938,7 @@ ${curDwDesc}
       (async () => {
         try {
           // 검증된 /q 엔드포인트 사용
-          const payload = { prompt, max_tokens: 7000 };
+          const payload = { t: '4', prompt, max_tokens: 7000 };
           const data = await callAI(payload, ctrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
           const clean = text.replace(/```json|```/g,'').trim();
