@@ -943,6 +943,7 @@ function App() {
   
   // 사이드 메뉴 상태
   const [showSideMenu, setShowSideMenu] = useState(false);
+  const [showPremiumSheet, setShowPremiumSheet] = useState(false);
 
   // ===== 카카오 로그인 =====
   const loginWithKakao = () => {
@@ -1209,6 +1210,60 @@ function App() {
   const [showChargeModal, setShowChargeModal] = useState(false);
   
   // 아코디언 아이템 컴포넌트
+
+
+  // ===== 프리미엄 바텀 시트 =====
+  const PremiumSheet = () => {
+    if (!showPremiumSheet) return null;
+    const items = [
+      { icon:'💘', label:'연애·결혼 타이밍', sub:'이상형 · 결혼 적기 · 내 연애 스타일', screen:'love', color:'#f9a8d4', price:'⭐29' },
+      { icon:'📊', label:'인생 타이밍 분석', sub:'이직 · 창업 · 투자 · 이사 최적 시기', screen:'timing', color:'#60a5fa', price:'⭐29' },
+      { icon:'🗺️', label:'평생 인생 로드맵', sub:'대운 10개 — 전성기·전환기 전체 지도', screen:'roadmap', color:'#c4b5fd', price:'⭐49', badge:'BEST' },
+      { icon:'🌊', label:'대운풀이', sub:'내 대운 흐름 무료 확인', screen:'daewoon', color:'#7dd3fc', price:'무료' },
+    ];
+    return React.createElement(React.Fragment, null,
+      React.createElement('div', {
+        onClick: () => setShowPremiumSheet(false),
+        style:{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:500}
+      }),
+      React.createElement('div', {
+        style:{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',
+          width:'100%',maxWidth:'512px',zIndex:501,
+          background:'#0d0b1e',borderRadius:'24px 24px 0 0',
+          border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',paddingBottom:'32px'}
+      },
+        React.createElement('div',{style:{display:'flex',justifyContent:'center',padding:'12px 0 8px'}},
+          React.createElement('div',{style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.15)'}})
+        ),
+        React.createElement('div',{style:{padding:'4px 20px 14px',borderBottom:'1px solid rgba(255,255,255,0.06)'}},
+          React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'4px'}},'PREMIUM SERVICES'),
+          React.createElement('p',{style:{color:'white',fontWeight:'900',fontSize:'18px',letterSpacing:'-0.5px'}},'프리미엄 분석')
+        ),
+        React.createElement('div',{style:{padding:'12px 16px',display:'flex',flexDirection:'column',gap:'8px'}},
+          items.map((item,i) => React.createElement('button',{
+            key:i,
+            onClick:()=>{ setShowPremiumSheet(false); setScreen(item.screen); },
+            style:{display:'flex',alignItems:'center',gap:'14px',padding:'14px 16px',
+              background:`linear-gradient(135deg,${item.color}15,${item.color}06)`,
+              border:`1px solid ${item.color}25`,borderRadius:'18px',cursor:'pointer',
+              position:'relative',textAlign:'left',width:'100%'}
+          },
+            item.badge && React.createElement('div',{style:{position:'absolute',top:'8px',right:'12px',
+              background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'6px',padding:'2px 7px',
+              fontSize:'9px',fontWeight:'900',color:'#1a1a1a'}},item.badge),
+            React.createElement('div',{style:{width:'46px',height:'46px',borderRadius:'14px',flexShrink:0,
+              background:`linear-gradient(135deg,${item.color}25,${item.color}10)`,
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px'}},item.icon),
+            React.createElement('div',{style:{flex:1}},
+              React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'14px',marginBottom:'2px'}},item.label),
+              React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'}},item.sub)
+            ),
+            React.createElement('p',{style:{color:item.price==='무료'?'#4ade80':'#fbbf24',fontWeight:'900',fontSize:'14px',flexShrink:0}},item.price)
+          ))
+        )
+      )
+    );
+  };
 
   // ── 공통: 별 배경 컴포넌트 ──────────────────────────────
   const StarBg = () => React.createElement('div', {
@@ -2797,6 +2852,18 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         }
       }
       setScreen('timing-result');
+    } else if (prod.name === '평생 인생 로드맵') {
+      const person = savedSaju.find(s => String(s.id) === String(roadmapPerson));
+      if (person) {
+        const alreadySaved = savedRoadmap.some(r => r.personId === roadmapPerson);
+        if (!alreadySaved) {
+          setSavedRoadmap(prev => [...prev, {
+            id: Date.now(), personId: roadmapPerson,
+            personName: person.name, date: new Date().toLocaleDateString()
+          }]);
+        }
+      }
+      setScreen('roadmap-result');
     }
   };
 
@@ -6193,16 +6260,34 @@ ${isSangsaeng
     const allSinsal = [...(r.pillarSinsal?.year||[]),...(r.pillarSinsal?.month||[]),...(r.pillarSinsal?.day||[]),...(r.pillarSinsal?.hour||[])].filter((v,i,a)=>a.indexOf(v)===i);
 
     const _cacheKey = `ai_timing_v1_${inp.name}_${inp.year}_${inp.month}_${inp.day}_${timingCategory}`;
-    const [aiSections, setAiSections] = React.useState(()=>{
-      try{ const p=JSON.parse(localStorage.getItem(_cacheKey)||'null'); return Array.isArray(p)&&p.length>0?p:null; }catch(e){return null;}
-    });
-    const [aiLoading, setAiLoading] = React.useState(()=>{
-      try{ const p=JSON.parse(localStorage.getItem(_cacheKey)||'null'); return !(Array.isArray(p)&&p.length>0); }catch(e){return true;}
-    });
+    
+    // 카테고리 변경 시 상태 리셋 (ref로 이전 카테고리 추적)
+    const _prevCat = React.useRef(timingCategory);
+    const loadFromCache = (key) => {
+      try{ const p=JSON.parse(localStorage.getItem(key)||'null'); return Array.isArray(p)&&p.length>0?p:null; }catch(e){return null;}
+    };
+    const [aiSections, setAiSections] = React.useState(()=> loadFromCache(_cacheKey));
+    const [aiLoading, setAiLoading] = React.useState(()=> !loadFromCache(_cacheKey));
     const [aiError, setAiError] = React.useState(false);
     const [timingScore, setTimingScore] = React.useState(()=>{
       try{ return JSON.parse(localStorage.getItem(_cacheKey+'_score')||'null'); }catch(e){return null;}
     });
+    
+    // 카테고리 전환 시 해당 카테고리 캐시 로드 or 로딩 시작
+    React.useEffect(() => {
+      if (_prevCat.current === timingCategory) return;
+      _prevCat.current = timingCategory;
+      const cached = loadFromCache(_cacheKey);
+      if (cached) {
+        setAiSections(cached);
+        setAiLoading(false);
+        try{ setTimingScore(JSON.parse(localStorage.getItem(_cacheKey+'_score')||'null')); }catch(e){}
+      } else {
+        setAiSections(null);
+        setAiError(false);
+        setAiLoading(true);
+      }
+    }, [timingCategory]);
 
     const CATEGORY_PROMPTS = {
       career: `직업·이직·창업·승진 타이밍`,
@@ -6390,20 +6475,39 @@ ${nextDwDesc}
 
 
   // ===== AI 공통 fetch 헬퍼 (/q 엔드포인트 통일) =====
-  const callAI = async (payload, signal) => {
-    const s = JSON.stringify(payload);
-    const b = new TextEncoder().encode(s);
-    let bin = '';
-    b.forEach(ch => bin += String.fromCharCode(ch));
-    const body = JSON.stringify({ b: btoa(bin) });
-    const res = await fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body,
-      signal,
+  // ── AI 요청 직렬화 (동시 요청 방지 → 429 방지) ──
+  const _aiQueue = React.useRef(Promise.resolve());
+  const callAI = React.useCallback((payload, signal) => {
+    const task = _aiQueue.current.then(async () => {
+      const enc = (o) => {
+        const s = JSON.stringify(o);
+        const b = new TextEncoder().encode(s);
+        let bin = '';
+        b.forEach(ch => bin += String.fromCharCode(ch));
+        return JSON.stringify({ b: btoa(bin) });
+      };
+      // 429 재시도 (최대 3회, 지수 백오프)
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+        const res = await fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: enc(payload),
+          signal,
+        });
+        if (res.status === 429) {
+          const wait = (attempt + 1) * 4000; // 4s, 8s, 12s
+          console.warn(`429 Too Many Requests — ${wait/1000}초 후 재시도`);
+          await new Promise(r => setTimeout(r, wait));
+          continue;
+        }
+        return await res.json();
+      }
+      throw new Error('429: 요청 한도 초과, 잠시 후 다시 시도해주세요');
     });
-    return await res.json();
-  };
+    _aiQueue.current = task.catch(() => {});
+    return task;
+  }, []);
 
 
 
@@ -8947,7 +9051,7 @@ ${curDwDesc}
     { id: 'input', icon: '🔮', label: '사주' },
     { id: 'compatibility', icon: '💕', label: '궁합' },
     { id: 'yearly', icon: '🎊', label: '운세' },
-    { id: 'daewoon', icon: '🌊', label: '대운' },
+    { id: 'premium', icon: '✨', label: '프리미엄' },
   ];
 
   return React.createElement('div', { style:{maxWidth:'512px',margin:'0 auto',position:'relative'} },
@@ -8958,14 +9062,14 @@ ${curDwDesc}
         baseNavItems.map(item => {
           const isActive = currentScreen === item.id || 
             (item.id==='input' && ['input','free-result','paid-result'].includes(currentScreen)) ||
-            (item.id==='daewoon' && currentScreen==='daewoon');
+            (item.id==='premium' && ['love','love-result','timing','timing-result','roadmap','roadmap-result'].includes(currentScreen));
           return React.createElement('button', { 
             key: item.id, 
             onClick: () => { 
               if (item.id === 'input') { setForm({ name:'', gender:'여성', calendar:'양력', year:'', month:'', day:'', hour:'', minute:'' }); setScreen('input'); window.scrollTo(0,0); return; }
-              if (item.id === 'daewoon') {
+              if (item.id === 'premium') {
                 if (!isLoggedIn && !DEV_MODE) { setShowLogin(true); return; }
-                setScreen('daewoon'); return;
+                setShowPremiumSheet(true); return;
               }
               setScreen(item.id); 
             }, 
@@ -8975,7 +9079,7 @@ ${curDwDesc}
               style:{width:'32px',height:'32px',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',background:isActive?'linear-gradient(135deg,#7c3aed,#a855f7)':'transparent',transition:'all 0.2s',color:isActive?'white':'rgba(255,255,255,0.3)',position:'relative'}
             }, 
               item.icon,
-              item.id==='daewoon' && React.createElement('span', { style:{position:'absolute',top:'-3px',right:'-3px',width:'7px',height:'7px',borderRadius:'50%',background:'linear-gradient(135deg,#f59e0b,#ef4444)'} })
+              item.id==='premium' && React.createElement('span', { style:{position:'absolute',top:'-4px',right:'-4px',width:'8px',height:'8px',borderRadius:'50%',background:'linear-gradient(135deg,#fbbf24,#f97316)'} })
             ),
             React.createElement('span', { style:{fontSize:'10px',fontWeight:isActive?'700':'400',color:isActive?'#c4b5fd':'rgba(255,255,255,0.3)',letterSpacing:'0.3px'} }, item.label)
           );
@@ -8983,6 +9087,7 @@ ${curDwDesc}
       )
     ),
     React.createElement(OnboardingOverlay),
+    React.createElement(PremiumSheet),
     showLogin && React.createElement(LoginModal),
     React.createElement(ShareToast),
     showSideMenu && React.createElement(SideMenu)
