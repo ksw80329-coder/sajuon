@@ -6568,7 +6568,7 @@ ${nextDwDesc}
               return React.createElement('button',{key:tc.id,
                 onClick:()=>{
                   if(paid){ setTimingCategory(tc.id); }
-                  else{ setTimingCategory(tc.id); openPayment({name:`인생 타이밍 분석 - ${tc.id}`,price:1000,stars:10}); }
+                  else{ openPayment({name:`인생 타이밍 분석 - ${tc.id}`,price:1000,stars:10}); }
                 },
                 style:{flexShrink:0,padding:'5px 10px',borderRadius:'20px',fontSize:'11px',fontWeight:isCur?'700':'400',
                   background:isCur?`${tc.color}25`:'rgba(255,255,255,0.04)',
@@ -6605,7 +6605,7 @@ ${nextDwDesc}
             TIMING_CATS.filter(tc=>tc.id!==timingCategory).map((tc,i)=>{
               const paid = savedTiming.some(t=>String(t.personId)===String(timingPerson)&&t.category===tc.id);
               return React.createElement('button',{key:i,
-                onClick:()=>{ setTimingCategory(tc.id); if(paid) setScreen('timing-result'); else openPayment({name:`인생 타이밍 분석 - ${tc.id}`,price:1000,stars:10}); },
+                onClick:()=>{ if(paid){ setTimingCategory(tc.id); setScreen('timing-result'); } else openPayment({name:`인생 타이밍 분석 - ${tc.id}`,price:1000,stars:10}); },
                 style:{display:'flex',alignItems:'center',gap:'6px',padding:'8px 14px',background:paid?`${tc.color}15`:'rgba(255,255,255,0.04)',border:paid?`1px solid ${tc.color}30`:'1px solid rgba(255,255,255,0.07)',borderRadius:'20px',cursor:'pointer'}
               },
                 React.createElement('span',{style:{fontSize:'14px'}},tc.icon),
