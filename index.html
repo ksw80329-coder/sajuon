@@ -1368,6 +1368,24 @@ function App() {
   };
 
 
+
+  // ===== 면책 Sticky 바 =====
+  const DisclaimerBar = () => React.createElement('div', {
+    style:{
+      position:'sticky', top:0, zIndex:200,
+      background:'rgba(30,20,8,0.95)',
+      backdropFilter:'blur(8px)',
+      borderBottom:'1px solid rgba(251,191,36,0.2)',
+      padding:'7px 16px',
+      display:'flex', alignItems:'center', gap:'7px'
+    }
+  },
+    React.createElement('span', { style:{fontSize:'13px',flexShrink:0} }, '⚠️'),
+    React.createElement('p', {
+      style:{color:'rgba(251,191,36,0.85)',fontSize:'10px',lineHeight:'1.5',letterSpacing:'0.1px'}
+    }, '이 풀이는 재미와 자기 성찰을 위한 참고용입니다. 인생의 중요한 결정은 반드시 본인 판단으로 해주세요.')
+  );
+
   // ===== AI 분석 로딩 컴포넌트 =====
   const AiLoadingCard = ({ message = '사주를 풀이하고 있어요', steps = ['사주 원국을 읽는 중', '대운·세운을 살피는 중', '풀이를 완성하는 중'] }) => {
     const [stepIdx, setStepIdx] = React.useState(0);
@@ -3332,20 +3350,25 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             React.createElement('span', { style:{color:'rgba(255,255,255,0.1)'} }, '·'),
             React.createElement('span', { onClick: () => setScreen('privacy'), style:{color:'rgba(255,255,255,0.25)',fontSize:'11px',cursor:'pointer'} }, '개인정보처리방침')
           ),
-          React.createElement('div', { style:{background:'rgba(255,255,255,0.03)',borderRadius:'14px',padding:'14px 16px',marginBottom:'12px'} },
-            React.createElement('p', { style:{color:'rgba(255,255,255,0.18)',fontSize:'10px',fontWeight:'700',marginBottom:'8px',letterSpacing:'1px'} }, '사업자 정보'),
-            React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'4px'} },
+          React.createElement('div', { style:{background:'rgba(255,255,255,0.06)',borderRadius:'16px',padding:'18px',marginBottom:'12px',border:'1px solid rgba(255,255,255,0.09)'} },
+            React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'14px',paddingBottom:'12px',borderBottom:'1px solid rgba(255,255,255,0.07)'} },
+              React.createElement('span', { style:{fontSize:'16px'} }, '🏢'),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'12px',fontWeight:'800',letterSpacing:'0.5px'} }, '사업자 정보')
+            ),
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'} },
               [
                 ['상호명', '사주ON'],
                 ['대표자', '고승우'],
                 ['사업자등록번호', '294-18-02476'],
+                ['통신판매업신고', '미신고(준비중)'],
                 ['사업장 주소', '경상남도 진주시 도동천로 48, 104-1504'],
-                ['대표전화', '050-6522-1519'],
-                ['이메일', 'godwk15@naver.com']
+                ['고객센터', '050-6522-1519'],
+                ['이메일', 'godwk15@naver.com'],
+                ['운영시간', '평일 10:00~18:00']
               ].map(([label, value], i) =>
-                React.createElement('div', { key: i, style:{display:'flex',gap:'8px',alignItems:'baseline'} },
-                  React.createElement('span', { style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',minWidth:'76px',flexShrink:0} }, label),
-                  React.createElement('span', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px'} }, value)
+                React.createElement('div', { key: i, style:{display:'flex',flexDirection:'column',gap:'3px'} },
+                  React.createElement('span', { style:{color:'rgba(255,255,255,0.28)',fontSize:'10px',fontWeight:'600',letterSpacing:'0.3px'} }, label),
+                  React.createElement('span', { style:{color:'rgba(255,255,255,0.65)',fontSize:'11px',fontWeight:'500'} }, value)
                 )
               )
             )
@@ -3540,6 +3563,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     
     return React.createElement('div', { style:{minHeight:'100vh',padding:'0 16px',paddingBottom:'112px',background:'#070514',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
+      React.createElement(DisclaimerBar),
       React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 12px'} },
         React.createElement('button', { onClick: () => setScreen('home'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
         React.createElement('div', { style:{flex:1} },
@@ -3854,6 +3878,7 @@ ${pillarDesc}
 
     return React.createElement('div', { style:{background:'#070514',minHeight:'100vh',padding:'0 16px',paddingBottom:'112px',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
+      React.createElement(DisclaimerBar),
 
       React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 14px'} },
         React.createElement('button', { onClick: () => setScreen('input'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
@@ -4453,6 +4478,7 @@ Write EXACTLY 10 sections in this order:
     
     return React.createElement('div', { style:{minHeight:'100vh',padding:'16px',paddingBottom:'112px',background:'#070514',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
+      React.createElement(DisclaimerBar),
       // 헤더
       React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 16px 16px'} },
         React.createElement('button', { onClick: () => setScreen('compatibility'), style:{color:'rgba(255,255,255,0.5)',fontSize:'22px',background:'none',border:'none',cursor:'pointer'} }, '←'),
@@ -6538,6 +6564,7 @@ ${nextDwDesc}
 
     return React.createElement('div',{style:{minHeight:'100vh',background:'#070514',paddingBottom:'100px',position:'relative',overflow:'hidden'}},
       React.createElement(StarBg),
+      React.createElement(DisclaimerBar),
       React.createElement('div',{style:{padding:'0 16px',position:'relative',zIndex:1}},
 
         // 헤더
@@ -6956,6 +6983,7 @@ ${sec5}
 
     return React.createElement('div',{style:{minHeight:'100vh',background:'#070514',paddingBottom:'100px',position:'relative',overflow:'hidden'}},
       React.createElement(StarBg),
+      React.createElement(DisclaimerBar),
       React.createElement('div',{style:{padding:'0 16px',position:'relative',zIndex:1}},
 
         React.createElement('div',{style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 14px'}},
@@ -7329,6 +7357,7 @@ ${curDwDesc}
 
     return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'100px',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
+      React.createElement(DisclaimerBar),
 
       // 헤더
       React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
@@ -7639,6 +7668,7 @@ ${curDwDesc}
 
     return React.createElement('div', { style:{minHeight:'100vh',paddingBottom:'112px',background:'#070514',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
+      React.createElement(DisclaimerBar),
 
       // 헤더
       React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'16px 16px 8px',position:'relative',zIndex:1} },
