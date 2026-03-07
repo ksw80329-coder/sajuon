@@ -9006,6 +9006,17 @@ ${curDwDesc}
 
     const doCharge = (pkg, method) => {
       if (processing) return;
+      // DEV_MODE: 실제 결제 없이 즉시 충전
+      if (DEV_MODE) {
+        const newStars = stars + pkg.stars;
+        setStars(newStars);
+        if (userKey) saveUserData(userKey, 'stars', newStars);
+        alert(`[테스트] ⭐ ${pkg.stars}개 충전 완료! (총 ${newStars}개)`);
+        if (pendingProduct && newStars >= pendingStars) {
+          setTimeout(() => { _doPurchase(pendingProduct); }, 100);
+        }
+        return;
+      }
       setProcessing(true);
       // 충전 전용: kakao 또는 toss만 허용
       const payMethod = method === 'kakao' ? 'kakao' : 'toss';
