@@ -115,8 +115,8 @@
 
 
   <!-- Firebase SDK (Compat 버전 - 전역 객체 방식) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAlSPiSJuZGP_rvMCL9uhpzpWhBYjETs3g",
@@ -132,20 +132,22 @@
     console.log('✅ Firebase 초기화 완료');
   </script>
   <!-- 포트원(아임포트) SDK -->
-  <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+  <script defer src="https://cdn.iamport.kr/v1/iamport.js"></script>
   <script>window.addEventListener("load", function(){ if(window.IMP){ window.IMP.init("imp60556156"); console.log("✅ 포트원 초기화 완료"); } else { console.error("❌ 포트원 SDK 로드 실패"); } });</script>
   <!-- 카카오 로그인 SDK -->
-  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
+  <script defer src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
   <script>
     window.KAKAO_APP_KEY = 'f68dda02192f5417b547eb2db8368d3d';
-    if (window.Kakao) {
-      if (!window.Kakao.isInitialized()) {
-        window.Kakao.init(window.KAKAO_APP_KEY);
+    window.addEventListener('load', function() {
+      if (window.Kakao) {
+        if (!window.Kakao.isInitialized()) {
+          window.Kakao.init(window.KAKAO_APP_KEY);
+        }
+        console.log('✅ Kakao SDK 초기화:', window.Kakao.isInitialized());
+      } else {
+        console.error('❌ Kakao SDK 로딩 실패');
       }
-      console.log('✅ Kakao SDK 초기화:', window.Kakao.isInitialized());
-    } else {
-      console.error('❌ Kakao SDK 로딩 실패');
-    }
+    });
   </script>
   <style>
     body { font-family: 'Noto Sans KR', sans-serif; background: #1a1a2e; }
@@ -744,6 +746,15 @@ function App() {
   };
 
   // 브라우저 뒤로가기/앞으로가기 이벤트 처리
+  // ===== Deno 서버 워밍업 핑 (콜드스타트 방지) =====
+  React.useEffect(() => {
+    fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ping: true })
+    }).catch(() => {});
+  }, []);
+
   React.useEffect(() => {
     const handlePopState = (e) => {
       const screen = e.state?.screen || 'home';
@@ -1681,13 +1692,22 @@ function App() {
       };
   const AccordionItem = ({ icon, color, title, subtitle, content, idx }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const itemRef = React.useRef(null);
     const borderColors = ['#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#a78bfa','#f472b6','#fbbf24'];
     const bgColors = ['rgba(139,92,246,0.08)','rgba(236,72,153,0.08)','rgba(245,158,11,0.08)','rgba(16,185,129,0.08)','rgba(59,130,246,0.08)','rgba(167,139,250,0.08)','rgba(244,114,182,0.08)','rgba(251,191,36,0.08)'];
     const bColor = borderColors[idx !== undefined ? idx % borderColors.length : 0];
     const bBg = bgColors[idx !== undefined ? idx % bgColors.length : 0];
-    return React.createElement('div', { style:{borderBottom:'1px solid rgba(255,255,255,0.05)',transition:'all 0.2s'} },
+    return React.createElement('div', { ref: itemRef, style:{borderBottom:'1px solid rgba(255,255,255,0.05)',transition:'all 0.2s'} },
       React.createElement('button', { 
-        onClick: () => setIsOpen(!isOpen),
+        onClick: () => {
+          const next = !isOpen;
+          setIsOpen(next);
+          if (next && itemRef.current) {
+            setTimeout(() => {
+              itemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 50);
+          }
+        },
         style:{width:'100%',display:'flex',alignItems:'center',gap:'14px',padding:'18px 16px',textAlign:'left',background:isOpen?bBg:'none',border:'none',cursor:'pointer',transition:'all 0.2s'}
       },
         subtitle
@@ -3458,6 +3478,19 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             React.createElement('span', { style:{color:'#c4b5fd',fontSize:'10px',fontWeight:'600'} }, '명리 심층 분석')
           )
         ),
+
+        // 시간대별 인사말
+        React.createElement('p', {
+          style:{color:'rgba(255,255,255,0.28)',fontSize:'12px',letterSpacing:'0.5px',marginBottom:'16px',fontWeight:'500'}
+        }, (() => {
+          const h = new Date().getHours();
+          if (h >= 5  && h < 9 )  return '☀️ 오늘 하루의 기운을 살펴보세요';
+          if (h >= 9  && h < 12)  return '🌿 지금 이 순간의 사주를 읽어드려요';
+          if (h >= 12 && h < 14)  return '🌞 점심 시간, 나의 오늘 운세는?';
+          if (h >= 14 && h < 18)  return '🌤️ 오후의 흐름을 사주로 확인해보세요';
+          if (h >= 18 && h < 21)  return '🌆 오늘 하루를 사주로 되돌아봐요';
+          return '🌙 늦은 밤, 내일의 운세를 미리 봐요';
+        })()),
 
         // 메인 타이포
         React.createElement('div', { style:{marginBottom:'28px'} },
@@ -7718,22 +7751,13 @@ ${sec5}
           )
         ),
 
-        // 대운 타임라인
-        dwData && React.createElement('div',{style:{background:'rgba(255,255,255,0.03)',borderRadius:'18px',border:'1px solid rgba(255,255,255,0.06)',padding:'14px',marginBottom:'14px'}},
-          React.createElement('p',{style:{color:'rgba(255,255,255,0.25)',fontSize:'10px',letterSpacing:'1px',fontWeight:'600',marginBottom:'10px'}},'✦  대운 타임라인'),
-          React.createElement('div',{style:{display:'flex',gap:'4px',overflowX:'auto',paddingBottom:'4px'}},
-            dwData.daewoons.slice(0,10).map((dw,i)=>{
-              const isCur = curDw && dw.age===curDw.age;
-              const isPeak = peakInfo?.peak?.age && peakInfo.peak.age.includes(String(dw.age));
-              const color = elColor[dw.el] || '#c4b5fd';
-              return React.createElement('div',{key:i,style:{flexShrink:0,width:'54px',textAlign:'center',padding:'8px 4px',background:isCur?'rgba(167,139,250,0.2)':isPeak?'rgba(251,191,36,0.12)':'rgba(255,255,255,0.03)',borderRadius:'10px',border:isCur?'1px solid rgba(167,139,250,0.5)':isPeak?'1px solid rgba(251,191,36,0.3)':'1px solid rgba(255,255,255,0.05)',position:'relative'}},
-                isPeak && React.createElement('div',{style:{position:'absolute',top:'-6px',left:'50%',transform:'translateX(-50%)',fontSize:'10px'}},'👑'),
-                React.createElement('p',{style:{color:isCur?'#c4b5fd':color,fontWeight:isCur?'800':'400',fontSize:'10px'}},dw.stemKr+dw.branchKr),
-                React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'9px',marginTop:'2px'}},dw.age+'세~')
-              );
-            })
-          )
-        ),
+        // 대운 에너지 곡선
+        dwData && React.createElement(DaewoonCurveChart, {
+          daewoons: dwData.daewoons,
+          currentAge,
+          elColor,
+          currentDaewoonIdx: dwData.daewoons.findIndex((dw,i)=>{ const nx=dwData.daewoons[i+1]; return currentAge>=dw.age&&(!nx||currentAge<nx.age); })
+        }),
 
         // 로딩
         aiLoading && React.createElement(AiLoadingCard, { message: '인생 흐름을 풀어내고 있어요', steps: ['대운 10개를 살피는 중', '전성기·전환기를 읽는 중', '인생 흐름을 완성하는 중'] }),
@@ -7799,6 +7823,191 @@ ${sec5}
     );
   };
 
+
+
+  // ===== 대운 에너지 곡선 그래프 컴포넌트 =====
+  const DaewoonCurveChart = ({ daewoons, currentAge, elColor, currentDaewoonIdx }) => {
+    const canvasRef = React.useRef(null);
+
+    // 십이운성 에너지 점수 매핑
+    const twelveScore = {
+      '장생':68,'목욕':55,'관대':78,'건록':88,'제왕':95,
+      '쇠':62,'병':42,'사':32,'묘':28,'절':38,'태':52,'양':62
+    };
+
+    // 오행 → 헥스 색상 (canvas용)
+    const elHex = { 목:'#4ade80', 화:'#f87171', 토:'#fbbf24', 금:'#d1d5db', 수:'#60a5fa' };
+
+    React.useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas || !daewoons || daewoons.length === 0) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const PAD_L = 36, PAD_R = 16, PAD_T = 16, PAD_B = 36;
+      const chartW = W - PAD_L - PAD_R;
+      const chartH = H - PAD_T - PAD_B;
+
+      const totalSpan = daewoons[daewoons.length-1].endAge - daewoons[0].age;
+
+      // 각 대운 중심 나이 → x 좌표
+      const ageToX = (age) => PAD_L + ((age - daewoons[0].age) / totalSpan) * chartW;
+      const scoreToY = (s) => PAD_T + chartH - ((s - 20) / 80) * chartH;
+
+      // 포인트 생성: 각 대운 중심
+      const points = daewoons.map(dw => {
+        const midAge = (dw.age + dw.endAge) / 2;
+        const score = twelveScore[dw.twelve] || 60;
+        return { x: ageToX(midAge), y: scoreToY(score), score, dw, midAge };
+      });
+
+      // ── 그리드 ──
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      [30, 50, 70, 90].forEach(s => {
+        const y = scoreToY(s);
+        ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+      });
+
+      // ── Y축 레이블 ──
+      ctx.font = '9px sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.textAlign = 'right';
+      [['강', 90], ['보통', 60], ['약', 30]].forEach(([label, s]) => {
+        ctx.fillText(label, PAD_L - 4, scoreToY(s) + 3);
+      });
+
+      // ── 현재 나이 수직선 ──
+      const nowX = ageToX(currentAge);
+      if (nowX >= PAD_L && nowX <= W - PAD_R) {
+        ctx.strokeStyle = 'rgba(251,191,36,0.5)';
+        ctx.setLineDash([3, 4]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(nowX, PAD_T); ctx.lineTo(nowX, H - PAD_B); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillStyle = 'rgba(251,191,36,0.8)';
+        ctx.textAlign = 'center';
+        ctx.fillText('현재', nowX, PAD_T - 3);
+      }
+
+      // ── 부드러운 곡선 (catmull-rom → bezier) ──
+      if (points.length >= 2) {
+        // 그라디언트 채우기
+        const grad = ctx.createLinearGradient(0, PAD_T, 0, H - PAD_B);
+        grad.addColorStop(0, 'rgba(14,165,233,0.25)');
+        grad.addColorStop(1, 'rgba(14,165,233,0)');
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, H - PAD_B);
+        ctx.lineTo(points[0].x, points[0].y);
+
+        for (let i = 0; i < points.length - 1; i++) {
+          const cp1x = points[i].x + (points[i+1].x - points[i].x) * 0.4;
+          const cp1y = points[i].y;
+          const cp2x = points[i+1].x - (points[i+1].x - points[i].x) * 0.4;
+          const cp2y = points[i+1].y;
+          ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, points[i+1].x, points[i+1].y);
+        }
+        ctx.lineTo(points[points.length-1].x, H - PAD_B);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // 곡선 선
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 0; i < points.length - 1; i++) {
+          const cp1x = points[i].x + (points[i+1].x - points[i].x) * 0.4;
+          const cp1y = points[i].y;
+          const cp2x = points[i+1].x - (points[i+1].x - points[i].x) * 0.4;
+          const cp2y = points[i+1].y;
+          ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, points[i+1].x, points[i+1].y);
+        }
+        ctx.strokeStyle = 'rgba(14,165,233,0.7)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // ── 포인트 dots ──
+      points.forEach((p, idx) => {
+        const isCurrent = idx === currentDaewoonIdx;
+        const color = elHex[p.dw.el] || '#a78bfa';
+
+        // 현재 대운 글로우
+        if (isCurrent) {
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 10;
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, isCurrent ? 7 : 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = isCurrent ? color : 'rgba(255,255,255,0.15)';
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = isCurrent ? 2.5 : 1.5;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // 나이 레이블 (X축)
+        if (idx % 2 === 0 || isCurrent) {
+          ctx.font = isCurrent ? 'bold 9px sans-serif' : '8px sans-serif';
+          ctx.fillStyle = isCurrent ? color : 'rgba(255,255,255,0.3)';
+          ctx.textAlign = 'center';
+          ctx.fillText(p.dw.age + '세', p.x, H - PAD_B + 13);
+        }
+
+        // 간지 레이블 (dot 위)
+        if (isCurrent) {
+          ctx.font = 'bold 10px sans-serif';
+          ctx.fillStyle = color;
+          ctx.textAlign = 'center';
+          ctx.fillText(p.dw.stemKr + p.dw.branchKr, p.x, p.y - 12);
+        }
+      });
+
+    }, [daewoons, currentAge, currentDaewoonIdx]);
+
+    return React.createElement('div', {
+      style:{
+        background:'rgba(255,255,255,0.03)',
+        border:'1px solid rgba(255,255,255,0.07)',
+        borderRadius:'20px',
+        padding:'16px',
+        marginBottom:'16px',
+        position:'relative'
+      }
+    },
+      React.createElement('p', {
+        style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',fontWeight:'700',marginBottom:'12px'}
+      }, '대운 에너지 흐름'),
+      React.createElement('canvas', {
+        ref: canvasRef,
+        width: 340,
+        height: 160,
+        style:{width:'100%',height:'auto',display:'block'}
+      }),
+      // 범례
+      React.createElement('div', {
+        style:{display:'flex',gap:'12px',flexWrap:'wrap',marginTop:'10px'}
+      },
+        Object.entries(elHex).map(([el, color]) =>
+          React.createElement('div', {
+            key: el,
+            style:{display:'flex',alignItems:'center',gap:'4px'}
+          },
+            React.createElement('div', {
+              style:{width:'8px',height:'8px',borderRadius:'50%',background:color,flexShrink:0}
+            }),
+            React.createElement('span', {
+              style:{color:'rgba(255,255,255,0.3)',fontSize:'10px'}
+            }, el)
+          )
+        )
+      )
+    );
+  };
 
   // ===== 대운풀이 화면 =====
   const DaewoonScreen = () => {
