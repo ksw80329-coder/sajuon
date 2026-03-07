@@ -3888,7 +3888,7 @@ ${pillarDesc}
 이름: ${currentInput.name} / 성별: ${currentInput.gender} / 생년월일: ${currentInput.year}.${currentInput.month}.${currentInput.day} ${currentInput.hour !== 'unknown' ? currentInput.hour+'시' : ''}
 일간: ${STEMS.names[currentResult.dsi]}(${STEMS.korean[currentResult.dsi]}) — ${STEMS.elements[currentResult.dsi]}오행
 강한 오행: ${strongEl[0]} ${strongEl[1]}% / 약한 오행: ${weakEl[0]} ${weakEl[1]}%
-보유 신살: ${allSinsal.length > 0 ? allSinsal.join(', ') : '없음'}
+보유 신살: ${(currentResult.pillarSinsal ? Object.values(currentResult.pillarSinsal).flat() : []).join(', ') || '없음'}
 
 [톤 & 스타일]
 - MZ세대가 공감하면서도 전문성이 느껴지는 문체
@@ -4017,7 +4017,7 @@ ${pillarDesc}
         strongEl: `${strongEl[0]}(${strongEl[1]}%)`, weakEl: `${weakEl[0]}(${weakEl[1]}%)`,
         yongshin: currentResult.fe.yongshin, gishin: currentResult.fe.gishin,
         feDesc: feFullDesc,
-        sinsal: allSinsal.join(', ') || '없음',
+        sinsal: [...(currentResult.pillarSinsal?.year||[]),...(currentResult.pillarSinsal?.month||[]),...(currentResult.pillarSinsal?.day||[]),...(currentResult.pillarSinsal?.hour||[])].join(', ') || '없음',
         pillarSinsal: JSON.stringify(currentResult.pillarSinsal || {}),
         chungs: chungs.join(', ') || '없음',
         haps: haps.join(', ') || '없음',
@@ -4051,6 +4051,13 @@ ${pillarDesc}
     }, [aiRetryCount]);
 
     if (!currentResult || !currentInput) return React.createElement('div', { style:{padding:'20px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'} }, '데이터 없음');
+
+    const r = currentResult;
+    const inp = currentInput;
+    const dayGan = STEMS.names[r.dsi];
+    const dayGanKr = STEMS.korean[r.dsi];
+    const dayEl = STEMS.elements[r.dsi];
+    const order = ['hour','day','month','year'];
 
     const displaySections = aiSections || null;
 
