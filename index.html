@@ -7294,12 +7294,14 @@ ${nextDwDesc}
       React.createElement('div',{style:{padding:'0 16px',position:'relative',zIndex:1}},
 
         // 헤더
-        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 14px'}},
+        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 8px'}},
           React.createElement('button',{onClick:()=>setScreen('timing'),style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'white',fontSize:'16px',cursor:'pointer'}},'←'),
-          React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{style:{flex:1,minWidth:0,overflow:'hidden'}},
             React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase'}},'TIMING ANALYSIS'),
-            React.createElement('h1',{style:{color:'white',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.5px'}},inp.name+'님의 '+cat.label+' 타이밍')
+            React.createElement('h1',{style:{color:'white',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.5px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},inp.name+'님의 '+cat.label+' 타이밍')
           ),
+        ),
+        React.createElement('div',{style:{paddingBottom:'8px'}},
           React.createElement(ShareButton,{title:shareData.title,desc:shareData.desc,tag:shareData.tag})
         ),
 
@@ -7718,10 +7720,12 @@ ${sec5}
 
         React.createElement('div',{style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 14px'}},
           React.createElement('button',{onClick:()=>setScreen('roadmap'),style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'white',fontSize:'16px',cursor:'pointer'}},'←'),
-          React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{style:{flex:1,minWidth:0,overflow:'hidden'}},
             React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase'}},'LIFE ROADMAP'),
-            React.createElement('h1',{style:{color:'white',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.5px'}},inp.name+'님의 대운 인생 지도')
-          ),
+            React.createElement('h1',{style:{color:'white',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.5px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},inp.name+'님의 대운 인생 지도')
+          )
+        ),
+        React.createElement('div',{style:{paddingBottom:'14px'}},
           React.createElement(ShareButton,{title:shareData.title,desc:shareData.desc,tag:shareData.tag})
         ),
 
