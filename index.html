@@ -6606,17 +6606,16 @@ ${isSangsaeng
   const TimingResultScreen = () => {
     const person = savedSaju.find(s => String(s.id) === String(timingPerson));
     const cat = TIMING_CATS.find(c => c.id === timingCategory) || TIMING_CATS[0];
-    if (!person) return React.createElement('div',{style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'}},'데이터 없음');
 
-    const r = person.result;
-    const inp = person;
-    const dayGan = STEMS.names[r.dsi];
-    const dayGanKr = STEMS.korean[r.dsi];
-    const dayEl = STEMS.elements[r.dsi];
-    const yongshin = r.fe.yongshin;
-    const gishin = r.fe.gishin;
+    const r = person ? person.result : null;
+    const inp = person || {};
+    const dayGan = r ? STEMS.names[r.dsi] : '';
+    const dayGanKr = r ? STEMS.korean[r.dsi] : '';
+    const dayEl = r ? STEMS.elements[r.dsi] : '';
+    const yongshin = r ? r.fe.yongshin : '';
+    const gishin = r ? r.fe.gishin : '';
     const currentYear = new Date().getFullYear();
-    const birthYear = parseInt(inp.year);
+    const birthYear = inp.year ? parseInt(inp.year) : currentYear;
     const currentAge = currentYear - birthYear;
 
     // 대운 현황
@@ -6746,6 +6745,7 @@ ${nextDwDesc}
 
     const shareData = { title:`${inp.name}님의 ${cat.label} 타이밍 — 사주ON`, desc:timingScore?`최적 시기: ${timingScore.peakYear}`:'인생 타이밍 분석', tag:'timing' };
 
+    if (!person || !r) return React.createElement('div',{style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'}},'데이터 없음');
     return React.createElement('div',{style:{minHeight:'100vh',background:'#070514',paddingBottom:'100px',position:'relative',overflow:'hidden'}},
       React.createElement(StarBg),
       React.createElement(DisclaimerBar),
@@ -7046,16 +7046,15 @@ ${nextDwDesc}
   // ===== 대운 인생 지도 결과 =====
   const RoadmapResultScreen = () => {
     const person = savedSaju.find(s => String(s.id) === String(roadmapPerson));
-    if (!person) return React.createElement('div',{style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'}},'데이터 없음');
 
-    const r = person.result;
-    const inp = person;
-    const dayGan = STEMS.names[r.dsi];
-    const dayGanKr = STEMS.korean[r.dsi];
-    const dayEl = STEMS.elements[r.dsi];
-    const yongshin = r.fe.yongshin;
-    const gishin = r.fe.gishin;
-    const birthYear = parseInt(inp.year);
+    const r = person ? person.result : null;
+    const inp = person || {};
+    const dayGan = r ? STEMS.names[r.dsi] : '';
+    const dayGanKr = r ? STEMS.korean[r.dsi] : '';
+    const dayEl = r ? STEMS.elements[r.dsi] : '';
+    const yongshin = r ? r.fe.yongshin : '';
+    const gishin = r ? r.fe.gishin : '';
+    const birthYear = inp.year ? parseInt(inp.year) : currentYear;
     const currentYear = new Date().getFullYear();
     const currentAge = currentYear - birthYear;
 
@@ -7165,6 +7164,7 @@ ${sec5}
     const elColor = {목:'#4ade80',화:'#f87171',토:'#fbbf24',금:'#e2e8f0',수:'#60a5fa'};
     const shareData = { title:`${inp.name}님의 대운 인생 지도 — 사주ON`, desc:peakInfo?.headline||'나의 인생 전체 지도', tag:'roadmap' };
 
+    if (!person || !r) return React.createElement('div',{style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'}},'데이터 없음');
     return React.createElement('div',{style:{minHeight:'100vh',background:'#070514',paddingBottom:'100px',position:'relative',overflow:'hidden'}},
       React.createElement(StarBg),
       React.createElement(DisclaimerBar),
@@ -7419,7 +7419,6 @@ ${sec5}
   // ===== 연애·결혼 타이밍 결과 =====
   const LoveResultScreen = () => {
     const person = savedSaju.find(s => String(s.id) === String(lovePerson));
-    if (!person) return React.createElement('div',{style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'}},'데이터 없음');
 
     const r = person.result;
     const inp = person;
