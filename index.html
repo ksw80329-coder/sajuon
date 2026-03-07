@@ -3200,6 +3200,240 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     return ` 오후 ${h-12}시${m}`;
   };
 
+  // ========== 오늘의 운세 전용 화면 ==========
+  const DailyFortuneScreen = () => {
+    const curPersonId = React.useRef(savedSaju.length > 0 ? savedSaju[0].id : null);
+    const [selId, setSelId] = React.useState(savedSaju.length > 0 ? savedSaju[0].id : null);
+    const [fortune, setFortune] = React.useState(null);
+    const [loading, setLoading] = React.useState(false);
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+
+    React.useEffect(() => {
+      if (!selId) return;
+      const person = savedSaju.find(s => String(s.id) === String(selId));
+      if (!person) return;
+      const dateKey = `daily_${person.id}_${today.getFullYear()}_${today.getMonth()+1}_${today.getDate()}`;
+      try { const c = localStorage.getItem(dateKey); if (c) { setFortune(JSON.parse(c)); return; } } catch(e) {}
+      setLoading(true); setFortune(null);
+      getDailyFortune([person]).then(f => { setFortune(f); }).finally(() => setLoading(false));
+    }, [selId]);
+
+    if (!isLoggedIn && !DEV_MODE) return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'40px 20px'} },
+      React.createElement(StarBg),
+      React.createElement('div', { style:{textAlign:'center',position:'relative',zIndex:1} },
+        React.createElement('div', { style:{fontSize:'48px',marginBottom:'16px'} }, '🌙'),
+        React.createElement('h2', { style:{color:'white',fontWeight:'900',fontSize:'20px',marginBottom:'8px'} }, '오늘의 운세'),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginBottom:'24px'} }, '로그인 후 매일 나만의 운세를 확인하세요'),
+        React.createElement('button', { onClick: () => setShowLogin(true), style:{background:'linear-gradient(135deg,#a78bfa,#7c3aed)',borderRadius:'14px',padding:'14px 32px',color:'white',fontWeight:'800',fontSize:'15px',border:'none',cursor:'pointer'} }, '로그인하고 운세 보기')
+      )
+    );
+
+    if (savedSaju.length === 0) return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'40px 20px'} },
+      React.createElement(StarBg),
+      React.createElement('div', { style:{textAlign:'center',position:'relative',zIndex:1} },
+        React.createElement('div', { style:{fontSize:'48px',marginBottom:'16px'} }, '🔮'),
+        React.createElement('h2', { style:{color:'white',fontWeight:'900',fontSize:'20px',marginBottom:'8px'} }, '사주를 먼저 입력해주세요'),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginBottom:'24px'} }, '내 사주 정보를 저장하면 매일 운세를 볼 수 있어요'),
+        React.createElement('button', { onClick: () => setScreen('input'), style:{background:'linear-gradient(135deg,#a78bfa,#7c3aed)',borderRadius:'14px',padding:'14px 32px',color:'white',fontWeight:'800',fontSize:'15px',border:'none',cursor:'pointer'} }, '사주 입력하기')
+      )
+    );
+
+    const person = savedSaju.find(s => String(s.id) === String(selId)) || savedSaju[0];
+    const f = fortune;
+    const gradeInfo = {
+      great: { emoji:'🌟', label:'최고운', color:'#fbbf24', bg:'linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.08))', border:'rgba(251,191,36,0.3)', accent:'#fbbf24' },
+      good:  { emoji:'✨', label:'좋은운', color:'#34d399', bg:'linear-gradient(135deg,rgba(52,211,153,0.12),rgba(16,185,129,0.06))', border:'rgba(52,211,153,0.3)', accent:'#34d399' },
+      normal:{ emoji:'🌙', label:'평운',   color:'#a78bfa', bg:'linear-gradient(135deg,rgba(139,92,246,0.12),rgba(109,40,217,0.06))', border:'rgba(139,92,246,0.3)', accent:'#a78bfa' },
+      caution:{ emoji:'⚠️', label:'주의운', color:'#f87171', bg:'linear-gradient(135deg,rgba(239,68,68,0.1),rgba(220,38,38,0.05))', border:'rgba(239,68,68,0.3)', accent:'#f87171' },
+    };
+    const gi = f ? (gradeInfo[f.grade] || gradeInfo.normal) : gradeInfo.normal;
+
+    // 카테고리별 운세 점수 계산 (사주 데이터 기반 결정론적)
+    const getCatScores = (person, fortune) => {
+      if (!person?.result || !fortune) return { love:60, money:60, health:60, work:60 };
+      const r = person.result;
+      const dsi = r.dsi;
+      const todayScore = fortune.score;
+      const seed2 = (dsi * 7 + (r.pillars.day?.bi||0) * 3 + today.getDate()) % 20;
+      const elMap = { 목:{love:12,money:5,health:8,work:10}, 화:{love:15,money:8,health:-5,work:12},
+                      토:{love:5,money:12,health:10,work:8},  금:{love:8,money:15,health:12,work:5},
+                      수:{love:10,money:8,health:5,work:15} };
+      const bonus = elMap[fortune.todayEl] || {love:0,money:0,health:0,work:0};
+      const base = todayScore;
+      return {
+        love:   Math.min(99, Math.max(25, base + bonus.love   + seed2 - 10)),
+        money:  Math.min(99, Math.max(25, base + bonus.money  + ((seed2*3)%20) - 10)),
+        health: Math.min(99, Math.max(25, base + bonus.health + ((seed2*7)%18) - 9)),
+        work:   Math.min(99, Math.max(25, base + bonus.work   + ((seed2*11)%22) - 11)),
+      };
+    };
+    const catScores = getCatScores(person, f);
+
+    const catInfo = [
+      { key:'love',   icon:'💕', label:'애정운',  color:'#f9a8d4', score: catScores.love,
+        msg: catScores.love >= 80 ? '오늘 감정 표현이 잘 통하는 날입니다. 먼저 연락해보세요.' :
+             catScores.love >= 60 ? '큰 변화보다 소소한 관심과 배려가 효과적인 날이에요.' :
+             '감정 충돌에 주의하세요. 오늘은 조용히 지내는 것이 낫습니다.' },
+      { key:'money',  icon:'💰', label:'금전운',  color:'#fbbf24', score: catScores.money,
+        msg: catScores.money >= 80 ? '예상치 못한 이익이나 좋은 제안이 들어올 수 있습니다.' :
+             catScores.money >= 60 ? '무리한 투자보다 저축과 관리에 집중하세요.' :
+             '불필요한 지출을 피하고 계획에 없던 큰 결제는 미루세요.' },
+      { key:'health', icon:'💪', label:'건강운',  color:'#34d399', score: catScores.health,
+        msg: catScores.health >= 80 ? '컨디션이 좋은 날, 운동이나 새로운 활동을 시작하기 좋습니다.' :
+             catScores.health >= 60 ? '무리하지 말고 규칙적인 식사와 충분한 수분 섭취를 챙기세요.' :
+             '피로 누적에 주의하세요. 오늘만큼은 충분한 휴식을 취하세요.' },
+      { key:'work',   icon:'💼', label:'직장/학업', color:'#60a5fa', score: catScores.work,
+        msg: catScores.work >= 80 ? '집중력과 추진력이 좋은 날, 중요한 업무를 오전에 처리하세요.' :
+             catScores.work >= 60 ? '꾸준히 진행 중인 일을 마무리하는 데 집중하면 좋습니다.' :
+             '실수가 잦을 수 있으니 중요한 보고나 발표는 내일로 미루는 것이 안전합니다.' },
+    ];
+
+    return React.createElement('div', { style:{background:'#070514',minHeight:'100vh',paddingBottom:'112px',position:'relative'} },
+      React.createElement(StarBg),
+      React.createElement(DisclaimerBar),
+      React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
+
+        // 헤더
+        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 14px'} },
+          React.createElement('div', { style:{flex:1} },
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'3px'} }, 'TODAY\'S FORTUNE'),
+            React.createElement('h1', { style:{color:'white',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px'} }, '오늘의 운세')
+          ),
+          React.createElement('span', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'} }, todayStr)
+        ),
+
+        // 사람 선택 탭 (저장된 사주 2개 이상일 때)
+        savedSaju.length > 1 && React.createElement('div', { style:{display:'flex',gap:'6px',marginBottom:'16px',overflowX:'auto',paddingBottom:'2px'} },
+          savedSaju.slice(0,4).map(s =>
+            React.createElement('button', {
+              key: s.id,
+              onClick: () => setSelId(s.id),
+              style:{
+                flexShrink:0,padding:'6px 14px',borderRadius:'20px',border:'1px solid',cursor:'pointer',
+                background: String(selId)===String(s.id) ? 'linear-gradient(135deg,#a78bfa,#7c3aed)' : 'rgba(255,255,255,0.05)',
+                borderColor: String(selId)===String(s.id) ? 'transparent' : 'rgba(255,255,255,0.1)',
+                color: String(selId)===String(s.id) ? 'white' : 'rgba(255,255,255,0.5)',
+                fontSize:'12px', fontWeight: String(selId)===String(s.id) ? '700' : '400'
+              }
+            }, s.name)
+          )
+        ),
+
+        // 로딩
+        loading && React.createElement('div', { style:{textAlign:'center',padding:'60px 20px'} },
+          React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'50%',background:'linear-gradient(135deg,#a78bfa,#7c3aed)',margin:'0 auto 16px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px'} }, '🌙'),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'13px'} }, '오늘의 운세를 계산하는 중...')
+        ),
+
+        // 운세 카드
+        !loading && f && React.createElement('div', null,
+
+          // 메인 운세 카드
+          React.createElement('div', { style:{background:gi.bg,borderRadius:'24px',border:`1px solid ${gi.border}`,padding:'24px',marginBottom:'14px',position:'relative',overflow:'hidden'} },
+            React.createElement('div', { style:{position:'absolute',top:'-20px',right:'-20px',fontSize:'80px',opacity:0.07,userSelect:'none'} }, gi.emoji),
+            React.createElement('div', { style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'16px'} },
+              React.createElement('div', null,
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'10px',letterSpacing:'1.5px',marginBottom:'4px'} }, '오늘의 일진'),
+                React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'18px'} }, f.todayJinja)
+              ),
+              React.createElement('div', { style:{textAlign:'right'} },
+                React.createElement('p', { style:{color:gi.accent,fontWeight:'900',fontSize:'38px',lineHeight:1} }, f.score),
+                React.createElement('p', { style:{color:gi.color,fontSize:'11px',fontWeight:'700',marginTop:'2px'} }, gi.emoji+' '+gi.label)
+              )
+            ),
+            React.createElement('div', { style:{height:'6px',background:'rgba(255,255,255,0.08)',borderRadius:'3px',marginBottom:'16px'} },
+              React.createElement('div', { style:{height:'100%',width:f.score+'%',background:`linear-gradient(90deg,${gi.accent},${gi.color})`,borderRadius:'3px',transition:'width 0.8s ease'} })
+            ),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.85)',fontSize:'13.5px',lineHeight:'1.85'} }, f.message),
+            React.createElement('div', { style:{display:'flex',gap:'10px',marginTop:'16px',flexWrap:'wrap'} },
+              [
+                { icon:'🎨', label:'행운색', val: f.lc },
+                { icon:'🧭', label:'행운방향', val: f.ld },
+                { icon:'🔢', label:'행운숫자', val: String(f.ln) },
+                { icon:'⚡', label:'일진관계', val: f.relation },
+              ].map((item,i) =>
+                React.createElement('div', { key:i, style:{background:'rgba(255,255,255,0.06)',borderRadius:'10px',padding:'6px 10px',display:'flex',alignItems:'center',gap:'6px'} },
+                  React.createElement('span', { style:{fontSize:'12px'} }, item.icon),
+                  React.createElement('div', null,
+                    React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'9px',letterSpacing:'0.5px'} }, item.label),
+                    React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'11px'} }, item.val)
+                  )
+                )
+              )
+            )
+          ),
+
+          // 카테고리별 운세
+          React.createElement('div', { style:{marginBottom:'14px'} },
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'10px'} }, '분야별 운세'),
+            catInfo.map((cat, i) =>
+              React.createElement('div', { key:cat.key, style:{background:'rgba(255,255,255,0.04)',borderRadius:'16px',border:'1px solid rgba(255,255,255,0.06)',padding:'14px',marginBottom:'8px'} },
+                React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'8px'} },
+                  React.createElement('span', { style:{fontSize:'16px'} }, cat.icon),
+                  React.createElement('div', { style:{flex:1} },
+                    React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'5px'} },
+                      React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'13px'} }, cat.label),
+                      React.createElement('p', { style:{color:cat.color,fontWeight:'800',fontSize:'13px'} }, cat.score+'점')
+                    ),
+                    React.createElement('div', { style:{height:'5px',background:'rgba(255,255,255,0.07)',borderRadius:'3px'} },
+                      React.createElement('div', { style:{height:'100%',width:cat.score+'%',background:`linear-gradient(90deg,${cat.color}88,${cat.color})`,borderRadius:'3px'} })
+                    )
+                  )
+                ),
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.55)',fontSize:'11.5px',lineHeight:'1.7',paddingLeft:'26px'} }, cat.msg)
+              )
+            )
+          ),
+
+          // 오늘의 명리학 한 줄 팁
+          React.createElement('div', { style:{background:'linear-gradient(135deg,rgba(139,92,246,0.12),rgba(109,40,217,0.06))',borderRadius:'16px',border:'1px solid rgba(139,92,246,0.2)',padding:'14px',marginBottom:'14px'} },
+            React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'6px'} },
+              React.createElement('span', { style:{fontSize:'14px'} }, '📖'),
+              React.createElement('p', { style:{color:'#c4b5fd',fontWeight:'700',fontSize:'12px'} }, '오늘의 명리학 포인트')
+            ),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.65)',fontSize:'12px',lineHeight:'1.8'} },
+              '오늘 일진 '+f.todayJinja+'의 '+f.todayEl+'('+({'목':'木','화':'火','토':'土','금':'金','수':'水'}[f.todayEl]||f.todayEl)+') 기운은 '+
+              (f.todayEl==='목' ? '성장과 시작의 에너지입니다. 새로운 아이디어를 실행에 옮기거나 인간관계를 넓히기 좋은 날입니다.' :
+               f.todayEl==='화' ? '열정과 표현의 에너지입니다. 자신을 드러내고 적극적으로 소통하면 좋은 반응을 얻습니다.' :
+               f.todayEl==='토' ? '안정과 신뢰의 에너지입니다. 기초를 다지고 꼼꼼하게 마무리하는 데 집중하세요.' :
+               f.todayEl==='금' ? '결단과 정리의 에너지입니다. 불필요한 것을 덜어내고 핵심에 집중하면 좋습니다.' :
+               '흐름과 지혜의 에너지입니다. 직관을 믿고, 무리하게 밀어붙이기보다 자연스럽게 흘러가세요.')
+            )
+          ),
+
+          // 내일 미리보기 (티저)
+          React.createElement('div', { style:{background:'rgba(255,255,255,0.03)',borderRadius:'16px',border:'1px solid rgba(255,255,255,0.06)',padding:'14px',marginBottom:'14px',display:'flex',alignItems:'center',justifyContent:'space-between'} },
+            React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px'} },
+              React.createElement('span', { style:{fontSize:'16px'} }, '🌅'),
+              React.createElement('div', null,
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'10px',marginBottom:'2px'} }, '내일의 운세'),
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'12px'} }, '내일 이 시간에 다시 확인하세요')
+              )
+            ),
+            React.createElement('div', { style:{display:'flex',gap:'2px'} },
+              [0,1,2,3].map(i => React.createElement('div', { key:i, style:{width:'8px',height:'8px',borderRadius:'50%',background:`rgba(167,139,250,${0.15+i*0.1})`} }))
+            )
+          ),
+
+          // 공유 버튼
+          React.createElement(ShareButton, {
+            title: person.name+'님의 오늘의 운세 — 사주ON',
+            desc: today.toLocaleDateString('ko-KR',{month:'long',day:'numeric'})+'의 운세 '+f.score+'점 | 나의 운세도 확인해보세요!',
+            tag: 'daily'
+          })
+        ),
+
+        // 운세 없을 때 (미로그인 아닌데 데이터 없음)
+        !loading && !f && React.createElement('div', { style:{textAlign:'center',padding:'60px 20px'} },
+          React.createElement('div', { style:{fontSize:'40px',marginBottom:'12px'} }, '🌙'),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'13px'} }, '운세를 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
+        )
+      ),
+      React.createElement(ShareToast)
+    );
+  };
+
   // ========== 화면들 ==========
   const HomeScreen = () => (
     React.createElement('div', { style:{minHeight:'100vh',paddingBottom:'112px',background:'#070514',position:'relative',overflow:'hidden'} },
@@ -4794,6 +5028,207 @@ Write EXACTLY 10 sections in this order:
           )
         )
       ),
+      // ── 일간 궁합 섹션 ──────────────────────────────────────────
+      React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'16px'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'} }, '일간 궁합 (日干)'),
+        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'14px'} },
+          React.createElement('div', { style:{flex:1,textAlign:'center',background:'rgba(255,255,255,0.04)',borderRadius:'14px',padding:'12px 8px'} },
+            React.createElement('p', { style:{fontSize:'24px',fontWeight:'900',color:'white',marginBottom:'2px'} }, stem1),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px'} }, STEMS.korean[r1.dsi]+' · '+el1+'('+({'목':'木','화':'火','토':'土','금':'金','수':'水'}[el1]||el1)+')'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'11px',marginTop:'4px',fontWeight:'600'} }, person1.name)
+          ),
+          React.createElement('div', { style:{textAlign:'center',padding:'0 4px'} },
+            React.createElement('div', { style:{
+              width:'44px',height:'44px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',
+              background: isSangsaeng ? 'linear-gradient(135deg,rgba(52,211,153,0.25),rgba(16,185,129,0.15))' : isSanggeuk ? 'linear-gradient(135deg,rgba(239,68,68,0.2),rgba(220,38,38,0.1))' : 'linear-gradient(135deg,rgba(139,92,246,0.2),rgba(109,40,217,0.1))',
+              border: isSangsaeng ? '1px solid rgba(52,211,153,0.4)' : isSanggeuk ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(139,92,246,0.3)'
+            } },
+              isSangsaeng ? '🌊' : isSanggeuk ? '⚡' : hasStemHap ? '💫' : '☯️'
+            ),
+            React.createElement('p', { style:{color: isSangsaeng ? '#34d399' : isSanggeuk ? '#f87171' : '#a78bfa',fontSize:'9px',fontWeight:'700',marginTop:'4px',letterSpacing:'0.5px'} },
+              isSangsaeng ? '상생(相生)' : isSanggeuk ? '상극(相剋)' : hasStemHap ? '천간합(合)' : '비화(比和)'
+            )
+          ),
+          React.createElement('div', { style:{flex:1,textAlign:'center',background:'rgba(255,255,255,0.04)',borderRadius:'14px',padding:'12px 8px'} },
+            React.createElement('p', { style:{fontSize:'24px',fontWeight:'900',color:'white',marginBottom:'2px'} }, stem2),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px'} }, STEMS.korean[r2.dsi]+' · '+el2+'('+({'목':'木','화':'火','토':'土','금':'金','수':'水'}[el2]||el2)+')'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'11px',marginTop:'4px',fontWeight:'600'} }, person2.name)
+          )
+        ),
+        React.createElement('div', { style:{background: isSangsaeng ? 'rgba(52,211,153,0.07)' : isSanggeuk ? 'rgba(239,68,68,0.07)' : 'rgba(139,92,246,0.07)',borderRadius:'12px',padding:'12px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.8)',fontSize:'12.5px',lineHeight:'1.8'} },
+            hasStemHap
+              ? stem1+'과 '+stem2+'은 천간합(天干合)으로 연결됩니다. 두 일간이 서로를 향해 자연스럽게 당기는 강한 인력이 있어, 처음 만나는 순간부터 묘한 끌림을 느끼는 관계예요. 이 합의 에너지는 두 사람이 함께할 때 하나의 새로운 오행을 만들어내며, 서로의 존재 자체가 에너지가 됩니다.'
+              : isSangsaeng
+              ? el1+'('+stem1+')'+' → '+el2+'('+stem2+')'+(' 상생(相生) 관계입니다. ')+(SANGSAENG[el1+el2] ? person1.name+'님이 '+person2.name+'님에게 에너지를 불어넣는 역할을 합니다.' : person2.name+'님이 '+person1.name+'님의 에너지를 키워주는 관계입니다.')+' 한 쪽이 지치더라도 상대방의 기운이 자연스럽게 채워주는 구조라, 장기적으로 안정적이고 서로 성장시켜주는 인연입니다.'
+              : isSanggeuk
+              ? el1+'과 '+el2+' 일간은 상극(相剋) 관계입니다. 서로의 에너지가 충돌하는 구조이지만, 이것이 반드시 나쁜 것은 아닙니다. 서로 자극하고 긴장감을 주면서 성장하는 관계이기도 해요. 다만 말투나 행동 방식에서 마찰이 생기기 쉬우므로 \'한 발짝 물러서는\' 연습이 필요합니다.'
+              : el1+'과 '+el2+' 일간은 같은 오행(비화·比和) 관계입니다. 서로 잘 이해하고 공감대가 높지만, 비슷한 약점도 함께 갖게 됩니다. 같은 방향을 바라보는 동반자 관계로 발전할 가능성이 크며, 의지가 되는 편안한 사이입니다.'
+          )
+        )
+      ),
+
+      // ── 일지 궁합 섹션 ──────────────────────────────────────────
+      React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'16px'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'} }, '일지 궁합 (日支)'),
+        React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'center',gap:'12px',marginBottom:'14px'} },
+          React.createElement('div', { style:{textAlign:'center'} },
+            React.createElement('p', { style:{fontSize:'26px',fontWeight:'900',color:'white'} }, br1 || '?'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px',marginTop:'2px'} }, br1 ? (BRANCHES.korean[BRANCHES.names.indexOf(br1)]) : ''),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',fontWeight:'600'} }, person1.name)
+          ),
+          React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'4px',alignItems:'center'} },
+            [
+              hasYukhap && React.createElement('span', { key:'yh',style:{background:'rgba(52,211,153,0.15)',border:'1px solid rgba(52,211,153,0.3)',borderRadius:'8px',padding:'3px 10px',color:'#34d399',fontSize:'11px',fontWeight:'700'} }, '육합(六合)'),
+              hasChung && React.createElement('span', { key:'ch',style:{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'8px',padding:'3px 10px',color:'#f87171',fontSize:'11px',fontWeight:'700'} }, '충(冲)'),
+              !hasYukhap && !hasChung && (() => {
+                const samhapGroup = br1 && br2 && Object.entries(SAMHAP).find(([k]) => k.includes(br1) && k.includes(br2));
+                return samhapGroup ? React.createElement('span', { key:'sh',style:{background:'rgba(167,139,250,0.15)',border:'1px solid rgba(167,139,250,0.3)',borderRadius:'8px',padding:'3px 10px',color:'#a78bfa',fontSize:'11px',fontWeight:'700'} }, '삼합(三合)') : React.createElement('span', { key:'nt',style:{background:'rgba(255,255,255,0.06)',borderRadius:'8px',padding:'3px 10px',color:'rgba(255,255,255,0.4)',fontSize:'11px'} }, '무충·무합');
+              })()
+            ].filter(Boolean)
+          ),
+          React.createElement('div', { style:{textAlign:'center'} },
+            React.createElement('p', { style:{fontSize:'26px',fontWeight:'900',color:'white'} }, br2 || '?'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px',marginTop:'2px'} }, br2 ? (BRANCHES.korean[BRANCHES.names.indexOf(br2)]) : ''),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',fontWeight:'600'} }, person2.name)
+          )
+        ),
+        React.createElement('div', { style:{background:'rgba(255,255,255,0.03)',borderRadius:'12px',padding:'12px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.8)',fontSize:'12.5px',lineHeight:'1.8'} },
+            hasYukhap
+              ? (br1||'')+'와 '+(br2||'')+'은 육합(六合) 관계입니다. 일상에서 두 사람이 함께 있을 때 자연스럽게 에너지가 맞아 편안함을 느낍니다. 같은 공간에 있는 것만으로도 서로에게 안정이 되는 관계예요. 생활 패턴이나 리듬이 잘 맞아 함께 살아가기 수월한 구조입니다.'
+              : hasChung
+              ? (br1||'')+'와 '+(br2||'')+'은 충(冲) 관계입니다. 일지의 충은 두 사람의 생활 리듬과 습관이 충돌하기 쉽다는 뜻입니다. 서로의 다른 방식이 불편할 수 있지만, 이 에너지를 잘 활용하면 서로를 변화시키는 강력한 촉매제가 됩니다. 갈등 상황에서 잠깐 물리적 거리를 두면 훨씬 잘 풀립니다.'
+              : (() => {
+                const samhapGroup = br1 && br2 && Object.entries(SAMHAP).find(([k]) => k.includes(br1) && k.includes(br2));
+                return samhapGroup
+                  ? (br1||'')+'와 '+(br2||'')+'는 삼합(三合) '+samhapGroup[1]+'국의 일원입니다. 삼합은 같은 목표를 향해 함께 움직이는 에너지예요. 두 사람이 공통의 꿈이나 프로젝트를 가질 때 특히 강하게 발휘됩니다. 함께 무언가를 만들어나갈 때 시너지가 매우 큽니다.'
+                  : (br1||'')+'와 '+(br2||'')+'는 큰 충돌 없이 무난하게 흘러가는 관계입니다. 극적인 사건은 적지만 안정적으로 쌓아가는 타입의 인연이에요. 처음에는 특별히 강렬한 감정이 없어 보여도 시간이 지날수록 서로에 대한 신뢰가 쌓이는 관계입니다.';
+              })()
+          )
+        )
+      ),
+
+      // ── 신살 궁합 섹션 ──────────────────────────────────────────
+      (allSinsal1.length > 0 || allSinsal2.length > 0) && React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'16px'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'} }, '신살 궁합 분석'),
+        React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'14px'} },
+          React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'12px',padding:'10px'} },
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'10px',marginBottom:'6px',fontWeight:'600'} }, person1.name+'님 주요 신살'),
+            allSinsal1.slice(0,5).map((s,i) => React.createElement('span', { key:i, style:{display:'inline-block',background:'rgba(167,139,250,0.12)',border:'1px solid rgba(167,139,250,0.2)',borderRadius:'6px',padding:'2px 7px',color:'#c4b5fd',fontSize:'10px',margin:'2px 2px 2px 0'} }, s))
+          ),
+          React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'12px',padding:'10px'} },
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'10px',marginBottom:'6px',fontWeight:'600'} }, person2.name+'님 주요 신살'),
+            allSinsal2.slice(0,5).map((s,i) => React.createElement('span', { key:i, style:{display:'inline-block',background:'rgba(244,114,182,0.12)',border:'1px solid rgba(244,114,182,0.2)',borderRadius:'6px',padding:'2px 7px',color:'#f9a8d4',fontSize:'10px',margin:'2px 2px 2px 0'} }, s))
+          )
+        ),
+        React.createElement('div', { style:{background:'rgba(255,255,255,0.03)',borderRadius:'12px',padding:'12px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.8)',fontSize:'12.5px',lineHeight:'1.9'} },
+            (() => {
+              const s1 = allSinsal1;
+              const s2 = allSinsal2;
+              const hasDohwa1 = s1.some(s => s.includes('도화'));
+              const hasDohwa2 = s2.some(s => s.includes('도화'));
+              const hasHongYeom1 = s1.some(s => s.includes('홍염'));
+              const hasHongYeom2 = s2.some(s => s.includes('홍염'));
+              const hasYeokma1 = s1.some(s => s.includes('역마'));
+              const hasYeokma2 = s2.some(s => s.includes('역마'));
+              const hasTeonEul1 = s1.some(s => s.includes('천을귀인'));
+              const hasTeonEul2 = s2.some(s => s.includes('천을귀인'));
+              const hasBaekho1 = s1.some(s => s.includes('백호'));
+              const hasBaekho2 = s2.some(s => s.includes('백호'));
+              let txt = '';
+              if ((hasDohwa1 || hasHongYeom1) && (hasDohwa2 || hasHongYeom2)) {
+                txt += '두 분 모두 도화·홍염살 계열의 신살을 가지고 있어 서로에 대한 매력과 끌림이 매우 강한 조합입니다. 연애 초반 불꽃이 강하게 타오르는 타입이에요. ';
+              } else if (hasDohwa1 || hasDohwa2 || hasHongYeom1 || hasHongYeom2) {
+                const who = (hasDohwa1||hasHongYeom1) ? person1.name : person2.name;
+                txt += who+'님의 도화·홍염 기운이 두 사람의 관계에 화사한 매력을 더해줍니다. ';
+              }
+              if (hasYeokma1 && hasYeokma2) {
+                txt += '양측 모두 역마살이 있어 함께 여행하고 움직이는 것을 즐기는 커플이 될 수 있습니다. 정착보다 새로운 경험을 함께 쌓아가는 스타일이에요. ';
+              } else if (hasYeokma1 || hasYeokma2) {
+                const who = hasYeokma1 ? person1.name : person2.name;
+                txt += who+'님의 역마살로 인해 이동이나 변화가 잦을 수 있으니, 상대방이 유연하게 맞춰주는 자세가 필요합니다. ';
+              }
+              if (hasTeonEul1 || hasTeonEul2) {
+                txt += (hasTeonEul1 ? person1.name : person2.name)+'님의 천을귀인은 관계 전반에 귀인 기운을 더해줍니다. 어렵고 힘든 순간에 서로가 서로의 귀인이 되어주는 특별한 인연의 징표예요. ';
+              }
+              if (hasBaekho1 || hasBaekho2) {
+                txt += (hasBaekho1 ? person1.name : person2.name)+'님의 백호살은 강한 추진력의 상징이지만, 관계에서 다소 강한 언행이 나올 수 있어 주의가 필요합니다. ';
+              }
+              if (!txt) txt = '두 분의 신살 구성은 전반적으로 큰 충돌 없이 무난한 조합입니다. 극적인 신살 작용보다 꾸준히 쌓아가는 안정적인 관계를 만들어가는 타입이에요. 서로에게 편안하고 일상적인 행복을 줄 수 있는 관계입니다.';
+              return txt;
+            })()
+          )
+        )
+      ),
+
+      // ── 대운 타이밍 섹션 ──────────────────────────────────────────
+      React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'16px'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'} }, '관계 타이밍 전망'),
+        (() => {
+          const curYear = new Date().getFullYear();
+          const dw1 = (() => { try { return calcDaewoon(person1.year,person1.month,person1.day,person1.hour!=='unknown'?parseInt(person1.hour):12,0,person1.gender,false); } catch(e){return null;} })();
+          const dw2 = (() => { try { return calcDaewoon(person2.year,person2.month,person2.day,person2.hour!=='unknown'?parseInt(person2.hour):12,0,person2.gender,false); } catch(e){return null;} })();
+          const age1 = curYear - parseInt(person1.year);
+          const age2 = curYear - parseInt(person2.year);
+          const cur1 = dw1 ? dw1.daewoons.find((dw,i)=>{ const nx=dw1.daewoons[i+1]; return dw.age<=age1&&(!nx||nx.age>age1); }) : null;
+          const cur2 = dw2 ? dw2.daewoons.find((dw,i)=>{ const nx=dw2.daewoons[i+1]; return dw.age<=age2&&(!nx||nx.age>age2); }) : null;
+          const next1 = cur1 && dw1 ? dw1.daewoons[dw1.daewoons.indexOf(cur1)+1] : null;
+          const next2 = cur2 && dw2 ? dw2.daewoons[dw2.daewoons.indexOf(cur2)+1] : null;
+          const isBothGoodEl = cur1 && cur2 && (cur1.el === r1.fe.yongshin || cur2.el === r2.fe.yongshin);
+          const isBothChung = cur1 && cur2 && (() => {
+            const CHUNG_D = {'子午':true,'午子':true,'丑未':true,'未丑':true,'寅申':true,'申寅':true,'卯酉':true,'酉卯':true,'辰戌':true,'戌辰':true,'巳亥':true,'亥巳':true};
+            return CHUNG_D[cur1.branch+cur2.branch];
+          })();
+
+          return React.createElement('div', null,
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'14px'} },
+              React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'12px',padding:'10px'} },
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'9px',letterSpacing:'1px',marginBottom:'4px'} }, person1.name+'님 현재 대운'),
+                cur1
+                  ? React.createElement('div', null,
+                      React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'14px'} }, cur1.stem+cur1.branch+'('+cur1.stemKr+cur1.branchKr+')'),
+                      React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'10px',marginTop:'2px'} }, cur1.age+'~'+cur1.endAge+'세 · '+cur1.tenGod+' · '+cur1.el+'오행')
+                    )
+                  : React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '계산불가')
+              ),
+              React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'12px',padding:'10px'} },
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'9px',letterSpacing:'1px',marginBottom:'4px'} }, person2.name+'님 현재 대운'),
+                cur2
+                  ? React.createElement('div', null,
+                      React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'14px'} }, cur2.stem+cur2.branch+'('+cur2.stemKr+cur2.branchKr+')'),
+                      React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'10px',marginTop:'2px'} }, cur2.age+'~'+cur2.endAge+'세 · '+cur2.tenGod+' · '+cur2.el+'오행')
+                    )
+                  : React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '계산불가')
+              )
+            ),
+            React.createElement('div', { style:{background: isBothGoodEl ? 'rgba(52,211,153,0.07)' : isBothChung ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.03)',borderRadius:'12px',padding:'12px',marginBottom:'10px'} },
+              React.createElement('p', { style:{color: isBothGoodEl ? '#34d399' : isBothChung ? '#f87171' : 'rgba(255,255,255,0.45)',fontSize:'10px',fontWeight:'700',marginBottom:'6px',letterSpacing:'1px'} },
+                isBothGoodEl ? '✦ 지금이 관계에 좋은 타이밍' : isBothChung ? '⚡ 현재 서로 부딪히는 대운 흐름' : '◎ 현재 대운 흐름'
+              ),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.75)',fontSize:'12.5px',lineHeight:'1.8'} },
+                cur1 && cur2
+                  ? (isBothGoodEl
+                    ? '현재 두 사람의 대운이 서로에게 긍정적인 방향으로 흐르고 있습니다. 지금이 관계를 발전시키기에 가장 좋은 타이밍입니다. 함께 새로운 단계로 나아가는 결정을 해도 좋을 시기예요.'
+                    : isBothChung
+                    ? '현재 두 사람의 대운이 서로 충돌하는 구간에 있습니다. 이 시기에는 감정적인 결정보다 충분한 대화와 이해를 우선시하는 것이 좋습니다. '+(next1||next2 ? (next1?person1.name:person2.name)+'님의 다음 대운('+(next1||next2).stem+(next1||next2).branch+')이 오면 관계가 더 안정될 가능성이 있습니다.' : '인내의 시간을 지나면 더 단단해집니다.')
+                    : person1.name+'님(현재 '+cur1.el+'오행 대운)과 '+person2.name+'님(현재 '+cur2.el+'오행 대운)의 흐름을 살펴보면, '+(cur1.el===cur2.el ? '두 사람이 같은 오행 운을 타고 있어 공감대와 방향성이 맞는 시기입니다.' : '서로 다른 오행 대운이지만 균형을 이루며 보완할 수 있는 시기예요.')+' 지금 두 사람이 함께하는 경험이 나중에 큰 자산이 됩니다.')
+                  : '대운 데이터를 확인할 수 없습니다. 생년월일을 정확히 입력해주세요.'
+              )
+            ),
+            next1 || next2 ? React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'6px',padding:'8px 10px',background:'rgba(251,191,36,0.07)',borderRadius:'10px',border:'1px solid rgba(251,191,36,0.15)'} },
+              React.createElement('span', { style:{fontSize:'14px'} }, '🔮'),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.55)',fontSize:'11px',lineHeight:'1.6'} },
+                '다음 대운: '+(next1 ? person1.name+'님 '+next1.stem+next1.branch+'('+next1.stemKr+next1.branchKr+') '+next1.age+'세~' : '')+
+                (next1 && next2 ? ' / ' : '')+
+                (next2 ? person2.name+'님 '+next2.stem+next2.branch+'('+next2.stemKr+next2.branchKr+') '+next2.age+'세~' : '')
+              )
+            ) : null
+          );
+        })()
+      ),
+
       // ── AI 기반 조언 + 주의할점 ──────────────────────────────
       aiCompatAdvice && aiCompatAdvice.length > 0 && React.createElement('div', { style:{borderRadius:'24px',border:'1px solid rgba(52,211,153,0.2)',overflow:'hidden',margin:'0 0 12px'} },
         // 헤더
@@ -9550,6 +9985,7 @@ ${curDwDesc}
 
     const renderScreen = () => {
     switch(currentScreen) {
+      case 'daily-fortune': return React.createElement(DailyFortuneScreen);
       case 'home': return React.createElement(HomeScreen);
       case 'input': return React.createElement(InputScreen);
       case 'free-result': return React.createElement(FreeResultScreen);
@@ -9586,7 +10022,7 @@ ${curDwDesc}
     { id: 'home', icon: '🏠', label: '홈' },
     { id: 'input', icon: '🔮', label: '사주' },
     { id: 'compatibility', icon: '💕', label: '궁합' },
-    { id: 'yearly', icon: '🎊', label: '운세' },
+    { id: 'daily-fortune', icon: '🌙', label: '오늘운세' },
     { id: 'premium', icon: '✨', label: '프리미엄' },
   ];
 
@@ -9598,6 +10034,7 @@ ${curDwDesc}
         baseNavItems.map(item => {
           const isActive = currentScreen === item.id || 
             (item.id==='input' && ['input','free-result','paid-result'].includes(currentScreen)) ||
+            (item.id==='daily-fortune' && ['daily-fortune','yearly','yearly-result'].includes(currentScreen)) ||
             (item.id==='premium' && ['love','love-result','timing','timing-result','roadmap','roadmap-result'].includes(currentScreen));
           return React.createElement('button', { 
             key: item.id, 
