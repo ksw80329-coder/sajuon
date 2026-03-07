@@ -7587,6 +7587,10 @@ ${nextDwDesc}
     const feDesc = `목${r.fe.counts['목']||0} 화${r.fe.counts['화']||0} 토${r.fe.counts['토']||0} 금${r.fe.counts['금']||0} 수${r.fe.counts['수']||0}`;
 
     const _cacheKey = `ai_roadmap_v1_${inp.name}_${inp.year}_${inp.month}_${inp.day}`;
+    const _roadmapEntry = savedRoadmap.find(r => String(r.personId) === String(roadmapPerson));
+    const _purchasedYear = _roadmapEntry?.purchasedYear || new Date().getFullYear();
+    const _currentYear = new Date().getFullYear();
+    const _isOldYear = _purchasedYear < _currentYear;
     const [aiSections, setAiSections] = React.useState(()=>{ try{ const p=JSON.parse(localStorage.getItem(_cacheKey)||'null'); return Array.isArray(p)&&p.length>0?p:null; }catch(e){return null;} });
     const [aiLoading, setAiLoading] = React.useState(()=>{ try{ const p=JSON.parse(localStorage.getItem(_cacheKey)||'null'); return !(Array.isArray(p)&&p.length>0); }catch(e){return true;} });
     const [aiError, setAiError] = React.useState(false);
