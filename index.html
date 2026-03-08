@@ -7728,6 +7728,45 @@ ${nextDwDesc}
   };
 
   // ===== 대운 인생 지도 결과 =====
+  const RoadmapTimelineItem = ({ sec, currentAge }) => {
+    const ageStart = parseInt((sec.ageRange||sec.title||'').match(/\d+/)?.[0]||'0');
+    const ageEnd = sec.ageRange ? parseInt((sec.ageRange.split('~')[1]||'').replace(/[^0-9]/g,'')) : ageStart + 9;
+    const isPast = ageEnd < currentAge;
+    const isCurrent = !isPast && ageStart <= currentAge;
+    const stateColor = isPast ? '#6b7280' : isCurrent ? '#a78bfa' : '#c4b5fd';
+    const stateBg = isPast ? 'rgba(107,114,128,0.06)' : isCurrent ? 'rgba(167,139,250,0.12)' : 'rgba(196,181,253,0.05)';
+    const stateBorder = isPast ? 'rgba(107,114,128,0.15)' : isCurrent ? 'rgba(167,139,250,0.4)' : 'rgba(196,181,253,0.12)';
+    const [open, setOpen] = React.useState(isCurrent);
+    return React.createElement('div',{style:{display:'flex',gap:'0',alignItems:'flex-start',marginBottom:'8px',position:'relative',zIndex:1}},
+      React.createElement('div',{style:{flexShrink:0,width:'38px',display:'flex',flexDirection:'column',alignItems:'center',paddingTop:'14px'}},
+        React.createElement('div',{style:{width:'14px',height:'14px',borderRadius:'50%',background:isCurrent?'#a78bfa':isPast?'rgba(107,114,128,0.5)':'rgba(196,181,253,0.3)',border:`2px solid ${isCurrent?'#c4b5fd':isPast?'rgba(107,114,128,0.4)':'rgba(196,181,253,0.25)'}`,boxShadow:isCurrent?'0 0 8px rgba(167,139,250,0.6)':'none',flexShrink:0}})
+      ),
+      React.createElement('div',{style:{flex:1,background:stateBg,borderRadius:'14px',border:`1px solid ${stateBorder}`,overflow:'hidden'}},
+        React.createElement('button',{
+          onClick:()=>setOpen(v=>!v),
+          style:{width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'12px 14px',background:'none',border:'none',cursor:'pointer',textAlign:'left'}
+        },
+          React.createElement('span',{style:{fontSize:'18px',flexShrink:0}},sec.icon||'🔮'),
+          React.createElement('div',{style:{flex:1,minWidth:0}},
+            React.createElement('div',{style:{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}},
+              React.createElement('p',{style:{color:stateColor,fontWeight:'700',fontSize:'13px'}}, sec.title||sec.ageRange),
+              isCurrent && React.createElement('span',{style:{fontSize:'9px',color:'#a78bfa',background:'rgba(167,139,250,0.15)',border:'1px solid rgba(167,139,250,0.3)',borderRadius:'6px',padding:'1px 6px',fontWeight:'700'}},'현재'),
+              isPast && React.createElement('span',{style:{fontSize:'9px',color:'rgba(255,255,255,0.25)',background:'rgba(255,255,255,0.04)',borderRadius:'6px',padding:'1px 6px'}},'지나온 대운')
+            ),
+            !open && React.createElement('p',{style:{color:'rgba(255,255,255,0.25)',fontSize:'10px',marginTop:'1px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},
+              '탭해서 보기'
+            )
+          ),
+          React.createElement('span',{style:{color:'rgba(167,139,250,0.4)',fontSize:'16px',transform:open?'rotate(90deg)':'none',flexShrink:0}},'›')
+        ),
+        open && React.createElement('div',{style:{padding:'0 14px 14px'}},
+          React.createElement('div',{style:{height:'1px',background:'rgba(255,255,255,0.05)',marginBottom:'12px'}}),
+          React.createElement('p',{style:{color:'rgba(255,255,255,0.75)',fontSize:'13px',lineHeight:'1.9',whiteSpace:'pre-wrap'}}, sec.content)
+        )
+      )
+    );
+  };
+
   const RoadmapResultScreen = () => {
     const person = savedSaju.find(s => String(s.id) === String(roadmapPerson));
 
@@ -7946,47 +7985,8 @@ ${dwBlocks}
 
         // AI 섹션 - 나이대별 타임라인
         !aiLoading && !aiError && aiSections && React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:'0',marginBottom:'16px',position:'relative'}},
-          // 좌측 타임라인 세로선
           React.createElement('div',{style:{position:'absolute',left:'19px',top:'20px',bottom:'20px',width:'2px',background:'linear-gradient(to bottom,rgba(167,139,250,0.4),rgba(167,139,250,0.1))',zIndex:0}}),
-          aiSections.map((sec,i)=>{
-            const ageStart = parseInt((sec.ageRange||sec.title||'').match(/\d+/)?.[0]||'0');
-            const isPast = sec.ageRange ? parseInt(sec.ageRange.split('~')[1]) < currentAge : false;
-            const isCurrent = !isPast && sec.ageRange ? ageStart <= currentAge : false;
-            const stateColor = isPast ? '#6b7280' : isCurrent ? '#a78bfa' : '#c4b5fd';
-            const stateBg = isPast ? 'rgba(107,114,128,0.06)' : isCurrent ? 'rgba(167,139,250,0.12)' : 'rgba(196,181,253,0.05)';
-            const stateBorder = isPast ? 'rgba(107,114,128,0.15)' : isCurrent ? 'rgba(167,139,250,0.4)' : 'rgba(196,181,253,0.12)';
-            const [open, setOpen] = React.useState(isCurrent);
-            return React.createElement('div',{key:i,style:{display:'flex',gap:'0',alignItems:'flex-start',marginBottom:'8px',position:'relative',zIndex:1}},
-              // 타임라인 노드
-              React.createElement('div',{style:{flexShrink:0,width:'38px',display:'flex',flexDirection:'column',alignItems:'center',paddingTop:'14px'}},
-                React.createElement('div',{style:{width:'14px',height:'14px',borderRadius:'50%',background:isCurrent?'#a78bfa':isPast?'rgba(107,114,128,0.5)':'rgba(196,181,253,0.3)',border:`2px solid ${isCurrent?'#c4b5fd':isPast?'rgba(107,114,128,0.4)':'rgba(196,181,253,0.25)'}`,boxShadow:isCurrent?'0 0 8px rgba(167,139,250,0.6)':'none',flexShrink:0}})
-              ),
-              // 카드
-              React.createElement('div',{style:{flex:1,background:stateBg,borderRadius:'14px',border:`1px solid ${stateBorder}`,overflow:'hidden'}},
-                React.createElement('button',{
-                  onClick:()=>setOpen(v=>!v),
-                  style:{width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'12px 14px',background:'none',border:'none',cursor:'pointer',textAlign:'left'}
-                },
-                  React.createElement('span',{style:{fontSize:'18px',flexShrink:0}},sec.icon||'🔮'),
-                  React.createElement('div',{style:{flex:1,minWidth:0}},
-                    React.createElement('div',{style:{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}},
-                      React.createElement('p',{style:{color:stateColor,fontWeight:'700',fontSize:'13px'}}, sec.title||sec.ageRange),
-                      isCurrent && React.createElement('span',{style:{fontSize:'9px',color:'#a78bfa',background:'rgba(167,139,250,0.15)',border:'1px solid rgba(167,139,250,0.3)',borderRadius:'6px',padding:'1px 6px',fontWeight:'700'}},'현재'),
-                      isPast && React.createElement('span',{style:{fontSize:'9px',color:'rgba(255,255,255,0.25)',background:'rgba(255,255,255,0.04)',borderRadius:'6px',padding:'1px 6px'}},'지나온 대운')
-                    ),
-                    !open && React.createElement('p',{style:{color:'rgba(255,255,255,0.25)',fontSize:'10px',marginTop:'1px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},
-                      (sec.tenGod||'') + (sec.twelve?' · '+sec.twelve:'') || '탭해서 보기'
-                    )
-                  ),
-                  React.createElement('span',{style:{color:'rgba(167,139,250,0.4)',fontSize:'16px',transition:'transform 0.2s',transform:open?'rotate(90deg)':'none',flexShrink:0}},'›')
-                ),
-                open && React.createElement('div',{style:{padding:'0 14px 14px'}},
-                  React.createElement('div',{style:{height:'1px',background:'rgba(255,255,255,0.05)',marginBottom:'12px'}}),
-                  React.createElement('p',{style:{color:'rgba(255,255,255,0.75)',fontSize:'13px',lineHeight:'1.9',whiteSpace:'pre-wrap'}}, sec.content)
-                )
-              )
-            );
-          })
+          aiSections.map((sec,i)=>React.createElement(RoadmapTimelineItem,{key:i,sec,currentAge}))
         ),
 
         // 공유 + 리뷰
