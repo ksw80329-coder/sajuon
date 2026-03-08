@@ -4236,7 +4236,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     );
   };
 
-  const PaidResultScreen = () => {
+    const PaidResultScreen = () => {
     // ===== AI 해설 캐시 (hooks - early return 앞에 위치해야 함) =====
     const _sajuCacheKey = currentInput ? `ai_saju_v34_${currentInput.name}_${currentInput.year}_${currentInput.month}_${currentInput.day}_${currentInput.hour}` : 'ai_saju_null';
     const [aiSections, setAiSections] = React.useState(() => {
@@ -4445,180 +4445,263 @@ ${pillarDesc}
       .finally(() => setAiLoading(false));
     }, [aiRetryCount]);
 
-    if (!currentResult || !currentInput) return React.createElement('div', { style:{padding:'20px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'} }, '데이터 없음');
+    if (!currentResult || !currentInput)     if (!currentResult || !currentInput) return React.createElement('div', { style:{padding:'20px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'} }, '데이터 없음');
 
     const r = currentResult;
     const inp = currentInput;
-    const dayGan = STEMS.names[r.dsi];
+    const dayGan   = STEMS.names[r.dsi];
     const dayGanKr = STEMS.korean[r.dsi];
-    const dayEl = STEMS.elements[r.dsi];
-    const order = ['hour','day','month','year'];
-    const labels = { hour:'시주', day:'일주', month:'월주', year:'연주' };
+    const dayEl    = STEMS.elements[r.dsi];
+    const order    = ['hour','day','month','year'];
+    const labels   = { hour:'시주', day:'일주', month:'월주', year:'연주' };
+
+    // 신살 설명
+    const SINSAL_DESC = {
+      '도화살':'이성운·매력','역마살':'이동·변화·해외','천을귀인':'귀인운·도움','문창귀인':'학문·글재주',
+      '학당귀인':'학습운·성장','홍염살':'강한 매력·연애운','백호살':'강력한 에너지·돌발','겁살':'승부욕·경쟁',
+      '천살':'예측불허·변수','지살':'이동수·분주함','연살':'인기·끼','월살':'장애·막힘',
+      '망신살':'구설·실수 주의','재고귀인':'재물창고','효신살':'고집·개성','태극귀인':'운명적 기회',
+      '금여':'우아함·귀함','양인살':'강한 의지·극단','나체도화':'관능적 매력','금신':'예리한 직관'
+    };
+    const allSinsalFlat = [...(r.pillarSinsal?.year||[]),...(r.pillarSinsal?.month||[]),...(r.pillarSinsal?.day||[]),...(r.pillarSinsal?.hour||[])].filter((v,i,a)=>a.indexOf(v)===i);
+
+    // 일간 설명
+    const ILGAN_DESC = {
+      '甲':'곧게 뻗은 나무 — 강한 자존심과 리더십, 한 번 정하면 끝까지','乙':'덩굴식물 — 유연한 적응력, 눈치 빠르고 끈기 있는','丙':'태양 — 밝고 즉흥적, 에너지 넘치는 분위기 메이커',
+      '丁':'촛불 — 섬세한 집중력, 조용히 깊게 파고드는','戊':'큰 산 — 듬직하고 포용력 있는, 완고하지만 믿음직한','己':'비옥한 토지 — 꼼꼼한 배려, 걱정이 많고 실용적인',
+      '庚':'강철 — 냉철한 결단력, 의리와 완벽주의','辛':'보석 — 섬세한 자존심, 심미적 감각이 뛰어난','壬':'큰 강 — 넓은 호기심, 즉흥 아이디어의 원천','癸':'이슬비 — 섬세한 감수성, 강한 직관력'
+    };
+
+    // 오행 색상 (헥스)
+    const FE_HEX = { 목:'#4ade80', 화:'#f87171', 토:'#fbbf24', 금:'#e2e8f0', 수:'#60a5fa' };
+    const FE_GLOW = { 목:'rgba(74,222,128,0.4)', 화:'rgba(248,113,113,0.4)', 토:'rgba(251,191,36,0.4)', 금:'rgba(226,232,240,0.4)', 수:'rgba(96,165,250,0.4)' };
 
     const displaySections = aiSections || null;
 
-    return React.createElement('div', { style:{background:'#070514',minHeight:'100vh',padding:'0 16px',paddingBottom:'112px',position:'relative',overflow:'hidden'} },
+    return React.createElement('div', { style:{background:'#070514',minHeight:'100vh',paddingBottom:'112px',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
 
-      React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 14px'} },
-        React.createElement('button', { onClick: () => setScreen('input'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
-        React.createElement('div', { style:{flex:1} },
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'2px'} }, '사주 심층 분석'),
-          React.createElement('h1', { style:{color:'white',fontWeight:'900',fontSize:'18px',letterSpacing:'-0.3px'} }, inp.name+'님의 사주')
-        ),
-        React.createElement('span', { style:{padding:'4px 12px',background:'linear-gradient(135deg,#f59e0b,#ef4444)',borderRadius:'20px',fontSize:'11px',fontWeight:'700',color:'white'} }, '✦ PREMIUM'),
-        React.createElement(ShareButton, {
-          small: true,
-          title: inp.name+'님의 사주 분석 결과 — 사주ON',
-          desc: '일간 '+dayGan+'('+dayGanKr+') · '+dayEl+'오행 · 용신 '+r.fe.yongshin+' | 나의 사주도 확인해보세요!',
-          tag: 'saju'
-        })
+      /* ── 헤더 ── */
+      React.createElement('div', { style:{padding:'0 16px'} },
+        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 14px'} },
+          React.createElement('button', { onClick:()=>setScreen('input'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
+          React.createElement('div', { style:{flex:1} },
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'2px'} }, '사주 심층 분석'),
+            React.createElement('h1', { style:{color:'white',fontWeight:'900',fontSize:'18px',letterSpacing:'-0.5px'} }, inp.name+'님의 사주')
+          ),
+          React.createElement('span', { style:{padding:'5px 12px',background:'linear-gradient(135deg,#f59e0b,#ef4444)',borderRadius:'20px',fontSize:'11px',fontWeight:'800',color:'white',letterSpacing:'0.3px'} }, '✦ PREMIUM'),
+          React.createElement(ShareButton, { small:true, title:inp.name+'님의 사주 분석 결과 — 사주ON', desc:'일간 '+dayGan+'('+dayGanKr+') · '+dayEl+'오행 · 용신 '+r.fe.yongshin+' | 나의 사주도 확인해보세요!', tag:'saju' })
+        )
       ),
+
       React.createElement(DisclaimerBar),
 
-      React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'18px',display:'flex',alignItems:'center',gap:'14px',marginBottom:'12px'} },
-        React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'50%',background:inp.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',fontWeight:'900',flexShrink:0,color:'white'} }, inp.gender === '여성' ? '♀' : '♂'),
-        React.createElement('div', { style:{flex:1} },
-          React.createElement('h2', { style:{color:'white',fontWeight:'800',fontSize:'17px',marginBottom:'3px'} }, inp.name+'님'),
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, inp.year+'.'+inp.month+'.'+inp.day+(inp.hour?(' '+inp.hour+'시'):'')+'  ('+inp.calendar+')'),
-          React.createElement('p', { style:{color:'#c4b5fd',fontSize:'12px',marginTop:'2px',fontWeight:'600'} }, '일간 '+dayGan+'('+dayGanKr+') · '+dayEl+'오행')
-        )
-      ),
+      React.createElement('div', { style:{padding:'0 16px'} },
 
-      React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden',marginBottom:'12px'} },
-        React.createElement('div', { style:{padding:'10px 16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',textAlign:'center',fontWeight:'700',color:'white',fontSize:'13px',letterSpacing:'1px'} }, '🗓️ 만세력'),
-        React.createElement('div', { style:{padding:'16px'} },
-          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'6px'} },
-            order.map(k => React.createElement('div', { key:k, style:{fontSize:'11px',color:'rgba(255,255,255,0.35)',letterSpacing:'1px'} }, labels[k]))
-          ),
-          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'4px'} },
-            order.map(k => {
-              const pl = r.pillars[k];
-              if (!pl) return React.createElement('div', { key:'s'+k, style:{padding:'10px 2px',background:'rgba(255,255,255,0.04)',borderRadius:'10px',color:'rgba(255,255,255,0.2)'} }, '-');
-              const el = STEMS.elements[pl.si];
-              return React.createElement('div', { key:'s'+k, style:{padding:'10px 2px',borderRadius:'10px',color:'white',fontWeight:'800',display:'flex',flexDirection:'column',alignItems:'center',gap:'1px',backgroundColor:COLORS[el]} },
-                React.createElement('span', { style:{fontSize:'20px'} }, pl.stem),
-                React.createElement('span', { style:{fontSize:'10px',opacity:0.75} }, STEMS.korean[pl.si])
-              );
-            })
-          ),
-          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'4px'} },
-            order.map(k => {
-              const pl = r.pillars[k];
-              if (!pl) return React.createElement('div', { key:'tg'+k, style:{fontSize:'11px',color:'rgba(255,255,255,0.2)',padding:'4px'} }, '-');
-              return React.createElement('div', { key:'tg'+k, style:{fontSize:'11px',color:'#c4b5fd',fontWeight:'600',padding:'4px',background:'rgba(124,58,237,0.12)',borderRadius:'6px'} }, k==='day'?'일간':getTenGod(r.dsi,pl.si));
-            })
-          ),
-          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'4px'} },
-            order.map(k => {
-              const pl = r.pillars[k];
-              if (!pl) return React.createElement('div', { key:'b'+k, style:{padding:'10px 2px',background:'rgba(255,255,255,0.04)',borderRadius:'10px',color:'rgba(255,255,255,0.2)'} }, '-');
-              const el = BRANCHES.elements[pl.bi];
-              return React.createElement('div', { key:'b'+k, style:{padding:'10px 2px',borderRadius:'10px',color:'white',fontWeight:'800',display:'flex',flexDirection:'column',alignItems:'center',gap:'1px',backgroundColor:COLORS[el]} },
-                React.createElement('span', { style:{fontSize:'20px'} }, pl.branch),
-                React.createElement('span', { style:{fontSize:'10px',opacity:0.75} }, BRANCHES.korean[pl.bi])
-              );
-            })
-          ),
-          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'4px'} },
-            order.map(k => {
-              const pl = r.pillars[k];
-              const jjg = pl ? JIJANGGAN[pl.branch] : '-';
-              return React.createElement('div', { key:'jg'+k, style:{fontSize:'10px',color:'#fcd34d',padding:'4px',background:'rgba(245,158,11,0.1)',borderRadius:'6px'} }, jjg||'-');
-            })
-          ),
-          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'4px'} },
-            order.map(k => {
-              const pl = r.pillars[k];
-              if (!pl) return React.createElement('div', { key:'12s'+k, style:{fontSize:'10px',color:'rgba(255,255,255,0.2)',padding:'4px'} }, '-');
-              return React.createElement('div', { key:'12s'+k, style:{fontSize:'10px',color:'#6ee7b7',padding:'4px',background:'rgba(16,185,129,0.1)',borderRadius:'6px'} }, getTwelve(dayGan,pl.bi));
-            })
-          ),
-          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'4px'} },
-            order.map(k => React.createElement('div', { key:'ss'+k, style:{fontSize:'10px',color:'#fca5a5',padding:'4px',background:'rgba(239,68,68,0.1)',borderRadius:'6px'} }, r.sinsal12[k]||'-'))
-          ),
-          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center'} },
-            order.map(k => {
-              const ps = r.pillarSinsal[k]||[];
-              return React.createElement('div', { key:'ps'+k, style:{fontSize:'9px',color:'#a5b4fc',lineHeight:'1.5',padding:'4px',background:'rgba(99,102,241,0.1)',borderRadius:'6px',minHeight:'20px'} },
-                ps.length>0 ? ps.join(' ') : '-'
-              );
-            })
+        /* ── 프로필 카드 ── */
+        React.createElement('div', { style:{background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.08))',borderRadius:'24px',border:'1px solid rgba(168,85,247,0.2)',padding:'20px',marginBottom:'14px',display:'flex',alignItems:'center',gap:'16px'} },
+          React.createElement('div', { style:{width:'60px',height:'60px',borderRadius:'50%',background:inp.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',fontWeight:'900',color:'white',flexShrink:0,boxShadow:inp.gender==='여성'?'0 0 20px rgba(236,72,153,0.4)':'0 0 20px rgba(59,130,246,0.4)'} }, inp.gender==='여성'?'♀':'♂'),
+          React.createElement('div', { style:{flex:1} },
+            React.createElement('h2', { style:{color:'white',fontWeight:'800',fontSize:'18px',marginBottom:'4px',letterSpacing:'-0.3px'} }, inp.name+'님'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',marginBottom:'6px'} }, inp.year+'.'+inp.month+'.'+inp.day+(inp.hour&&inp.hour!=='unknown'?(' · '+inp.hour+'시'):'')+'  ('+inp.calendar+')'),
+            React.createElement('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap'} },
+              React.createElement('span', { style:{fontSize:'11px',fontWeight:'700',color:FE_HEX[dayEl]||'#c4b5fd',background:(FE_GLOW[dayEl]||'rgba(196,181,253,0.15)').replace('0.4','0.15'),border:'1px solid '+(FE_HEX[dayEl]||'#c4b5fd')+'44',padding:'3px 9px',borderRadius:'20px'} }, '일간 '+dayGan+'('+dayGanKr+')'),
+              React.createElement('span', { style:{fontSize:'11px',fontWeight:'600',color:'#c4b5fd',background:'rgba(124,58,237,0.12)',border:'1px solid rgba(167,139,250,0.2)',padding:'3px 9px',borderRadius:'20px'} }, dayEl+'행'),
+              React.createElement('span', { style:{fontSize:'11px',fontWeight:'600',color:'#6ee7b7',background:'rgba(16,185,129,0.1)',border:'1px solid rgba(110,231,183,0.2)',padding:'3px 9px',borderRadius:'20px'} }, '용신 '+r.fe.yongshin)
+            )
           )
         ),
-        React.createElement('div', { style:{padding:'8px 16px',background:'rgba(255,255,255,0.03)',borderTop:'1px solid rgba(255,255,255,0.05)',fontSize:'11px',color:'rgba(255,255,255,0.3)',textAlign:'center'} },
-          '공망: '+r.gm[0]+'('+BRANCHES.korean[BRANCHES.names.indexOf(r.gm[0])]+') '+r.gm[1]+'('+BRANCHES.korean[BRANCHES.names.indexOf(r.gm[1])]+')'
-        )
-      ),
 
-      React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'20px',marginBottom:'12px'} },
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'14px'} }, '✦ 오행 분포'),
-        ['목','화','토','금','수'].map(el =>
-          React.createElement('div', { key:el, style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'} },
-            React.createElement('span', { style:{width:'36px',fontSize:'12px',color:'rgba(255,255,255,0.6)',fontWeight:'600'} }, el+(el==='목'?'木':el==='화'?'火':el==='토'?'土':el==='금'?'金':'水')),
-            React.createElement('div', { style:{flex:1,height:'8px',background:'rgba(255,255,255,0.08)',borderRadius:'4px',overflow:'hidden'} },
-              React.createElement('div', { style:{width:r.fe.pct[el]+'%',height:'100%',backgroundColor:COLORS[el],borderRadius:'4px'} })
+        /* ── 일간 기질 카드 ── */
+        React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'18px',marginBottom:'14px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'14px',fontWeight:'600'} }, '✦ 일간 기질'),
+          React.createElement('div', { style:{display:'flex',alignItems:'flex-start',gap:'14px'} },
+            React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'16px',background:(FE_HEX[dayEl]||'#c4b5fd')+'22',border:'2px solid '+(FE_HEX[dayEl]||'#c4b5fd')+'44',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 0 16px '+(FE_GLOW[dayEl]||'rgba(196,181,253,0.3)')} },
+              React.createElement('span', { style:{fontSize:'26px',fontWeight:'900',color:FE_HEX[dayEl]||'#c4b5fd'} }, dayGan)
             ),
-            React.createElement('span', { style:{width:'32px',textAlign:'right',fontSize:'12px',color:'rgba(255,255,255,0.5)'} }, r.fe.pct[el]+'%')
+            React.createElement('div', { style:{flex:1} },
+              React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'15px',marginBottom:'6px',letterSpacing:'-0.3px'} }, dayGanKr+'('+dayGan+') — '+dayEl+'오행'),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'12px',lineHeight:'1.7',marginBottom:'10px'} }, ILGAN_DESC[dayGan]||dayEl+'오행의 기운'),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'12px',lineHeight:'1.75'} },
+                inp.name+'님은 '+dayGanKr+'('+dayGan+') 일간으로 '+dayEl+'오행이 중심입니다. '
+                +'현재 '+r.fe.gishin+'오행('+r.fe.pct[r.fe.gishin]+'%)이 강하게 작용하고, '
+                +r.fe.yongshin+'오행('+r.fe.pct[r.fe.yongshin]+'%)이 보완이 필요한 에너지입니다.'
+              )
+            )
           )
         ),
-        React.createElement('div', { style:{display:'flex',gap:'8px',marginTop:'12px',padding:'10px',background:'rgba(255,255,255,0.03)',borderRadius:'12px'} },
-          React.createElement('span', { style:{fontSize:'12px',color:'rgba(255,255,255,0.4)'} }, '용신(用神):'),
-          React.createElement('span', { style:{fontSize:'12px',color:'#c4b5fd',fontWeight:'700'} }, r.fe.yongshin),
-          React.createElement('span', { style:{fontSize:'12px',color:'rgba(255,255,255,0.3)',margin:'0 4px'} }, '·'),
-          React.createElement('span', { style:{fontSize:'12px',color:'rgba(255,255,255,0.4)'} }, '기신(忌神):'),
-          React.createElement('span', { style:{fontSize:'12px',color:'#fca5a5',fontWeight:'700'} }, r.fe.gishin)
-        )
-      ),
 
-      React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden',marginBottom:'12px'} },
-        React.createElement('div', { style:{padding:'12px 16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'} },
-          React.createElement('span', { style:{color:'white',fontWeight:'700',fontSize:'13px',letterSpacing:'1px'} }, '✨ 사주 심층 풀이'),
-          aiLoading && React.createElement('span', { style:{fontSize:'11px',background:'rgba(255,255,255,0.2)',padding:'2px 8px',borderRadius:'10px',color:'white'} }, '해독 중...')
+        /* ── 만세력 ── */
+        React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden',marginBottom:'14px'} },
+          React.createElement('div', { style:{padding:'12px 16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'} },
+            React.createElement('span', { style:{color:'white',fontWeight:'800',fontSize:'13px',letterSpacing:'1px'} }, '🗓️ 만세력')
+          ),
+          React.createElement('div', { style:{padding:'16px'} },
+            /* 컬럼 라벨 */
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'8px'} },
+              order.map(k => React.createElement('div', { key:'lbl'+k, style:{fontSize:'10px',color:'rgba(255,255,255,0.3)',letterSpacing:'1px',fontWeight:'600'} }, labels[k]))
+            ),
+            /* 천간 */
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'6px'} },
+              order.map(k => {
+                const pl = r.pillars[k];
+                if (!pl) return React.createElement('div', { key:'s'+k, style:{padding:'12px 4px',background:'rgba(255,255,255,0.03)',borderRadius:'10px',color:'rgba(255,255,255,0.15)'} }, '-');
+                const el = STEMS.elements[pl.si];
+                return React.createElement('div', { key:'s'+k, style:{padding:'10px 4px',borderRadius:'10px',color:'white',fontWeight:'800',display:'flex',flexDirection:'column',alignItems:'center',gap:'2px',backgroundColor:COLORS[el],boxShadow:k==='day'?'0 0 12px '+COLORS[el]+'88':''} },
+                  React.createElement('span', { style:{fontSize:'22px',lineHeight:1} }, pl.stem),
+                  React.createElement('span', { style:{fontSize:'9px',opacity:0.8} }, STEMS.korean[pl.si])
+                );
+              })
+            ),
+            /* 십성 */
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'6px'} },
+              order.map(k => {
+                const pl = r.pillars[k];
+                if (!pl) return React.createElement('div', { key:'tg'+k, style:{fontSize:'10px',color:'rgba(255,255,255,0.15)',padding:'4px'} }, '-');
+                return React.createElement('div', { key:'tg'+k, style:{fontSize:'11px',color:'#c4b5fd',fontWeight:'700',padding:'4px 2px',background:'rgba(124,58,237,0.12)',borderRadius:'6px'} }, k==='day'?'일간':getTenGod(r.dsi,pl.si));
+              })
+            ),
+            /* 지지 */
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'6px'} },
+              order.map(k => {
+                const pl = r.pillars[k];
+                if (!pl) return React.createElement('div', { key:'b'+k, style:{padding:'12px 4px',background:'rgba(255,255,255,0.03)',borderRadius:'10px',color:'rgba(255,255,255,0.15)'} }, '-');
+                const el = BRANCHES.elements[pl.bi];
+                return React.createElement('div', { key:'b'+k, style:{padding:'10px 4px',borderRadius:'10px',color:'white',fontWeight:'800',display:'flex',flexDirection:'column',alignItems:'center',gap:'2px',backgroundColor:COLORS[el]} },
+                  React.createElement('span', { style:{fontSize:'22px',lineHeight:1} }, pl.branch),
+                  React.createElement('span', { style:{fontSize:'9px',opacity:0.8} }, BRANCHES.korean[pl.bi])
+                );
+              })
+            ),
+            /* 지장간 */
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'6px'} },
+              order.map(k => {
+                const pl = r.pillars[k];
+                const jjg = pl ? JIJANGGAN[pl.branch] : '-';
+                return React.createElement('div', { key:'jg'+k, style:{fontSize:'10px',color:'#fcd34d',padding:'4px',background:'rgba(245,158,11,0.08)',borderRadius:'6px'} }, jjg||'-');
+              })
+            ),
+            /* 십이운성 */
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'6px'} },
+              order.map(k => {
+                const pl = r.pillars[k];
+                if (!pl) return React.createElement('div', { key:'12s'+k, style:{fontSize:'10px',color:'rgba(255,255,255,0.15)',padding:'4px'} }, '-');
+                return React.createElement('div', { key:'12s'+k, style:{fontSize:'10px',color:'#6ee7b7',padding:'4px',background:'rgba(16,185,129,0.08)',borderRadius:'6px'} }, getTwelve(dayGan,pl.bi));
+              })
+            ),
+            /* 신살12 */
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'6px'} },
+              order.map(k => React.createElement('div', { key:'ss'+k, style:{fontSize:'9px',color:'#fca5a5',padding:'4px',background:'rgba(239,68,68,0.07)',borderRadius:'6px',minHeight:'18px'} }, r.sinsal12[k]||'-'))
+            ),
+            /* 신살 (주별) */
+            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center'} },
+              order.map(k => {
+                const ps = r.pillarSinsal[k]||[];
+                return React.createElement('div', { key:'ps'+k, style:{fontSize:'9px',color:'#a5b4fc',lineHeight:'1.6',padding:'4px',background:'rgba(99,102,241,0.08)',borderRadius:'6px',minHeight:'20px',wordBreak:'keep-all'} }, ps.length>0?ps.join(' '):'-');
+              })
+            )
+          ),
+          /* 공망 */
+          React.createElement('div', { style:{padding:'8px 16px',background:'rgba(255,255,255,0.02)',borderTop:'1px solid rgba(255,255,255,0.05)',fontSize:'11px',color:'rgba(255,255,255,0.3)',textAlign:'center'} },
+            '공망: '+r.gm[0]+'('+BRANCHES.korean[BRANCHES.names.indexOf(r.gm[0])]+') '+r.gm[1]+'('+BRANCHES.korean[BRANCHES.names.indexOf(r.gm[1])]+')'
+          )
         ),
-        aiLoading
-          ? React.createElement(SajuLoadingScreen)
-          : displaySections
-            ? React.createElement(React.Fragment, null,
-                React.createElement('div',{style:{background:'rgba(168,85,247,0.06)',border:'1px solid rgba(168,85,247,0.12)',borderRadius:'12px',padding:'10px 14px',marginBottom:'12px',display:'flex',gap:'8px',alignItems:'flex-start'}},
-                  React.createElement('span',{style:{fontSize:'13px',flexShrink:0}},'ℹ️'),
-                  React.createElement('p',{style:{color:'rgba(196,181,253,0.6)',fontSize:'10px',lineHeight:'1.6'}},
-                    '본 결과는 전통 명리학과 AI를 기반으로 한 참고용 콘텐츠입니다. 실제 인생 결정의 유일한 근거로 삼아서는 안 됩니다. 결과 확인 즉시 청약철회(환불)가 불가합니다.'
-                  )
-                ),
-                React.createElement('p', { style:{padding:'10px',textAlign:'center',color:'rgba(255,255,255,0.3)',fontSize:'12px',borderBottom:'1px solid rgba(255,255,255,0.06)'} }, '각 제목을 클릭하면 풀이가 펼쳐져요'),
-                displaySections.map((section, i) =>
-                  React.createElement(AccordionItem, { key:i, idx:i, icon:section.icon, color:section.color, title:section.title, content:section.content })
-                )
+
+        /* ── 오행 분포 ── */
+        React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'18px',marginBottom:'14px'} },
+          React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'14px'} },
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',fontWeight:'600'} }, '✦ 오행 분포'),
+            React.createElement('div', { style:{display:'flex',gap:'6px'} },
+              React.createElement('span', { style:{fontSize:'10px',color:'#6ee7b7',background:'rgba(16,185,129,0.1)',padding:'2px 8px',borderRadius:'10px'} }, '용신 '+r.fe.yongshin),
+              React.createElement('span', { style:{fontSize:'10px',color:'#fca5a5',background:'rgba(239,68,68,0.1)',padding:'2px 8px',borderRadius:'10px'} }, '기신 '+r.fe.gishin)
+            )
+          ),
+          ['목','화','토','금','수'].map(el =>
+            React.createElement('div', { key:el, style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'} },
+              React.createElement('span', { style:{width:'22px',fontSize:'12px',color:(FE_HEX[el]||'rgba(255,255,255,0.5)'),fontWeight:'700',textAlign:'center'} }, el),
+              React.createElement('div', { style:{flex:1,height:'8px',background:'rgba(255,255,255,0.06)',borderRadius:'4px',overflow:'hidden'} },
+                React.createElement('div', { style:{width:(r.fe.pct[el]||0)+'%',height:'100%',backgroundColor:COLORS[el],borderRadius:'4px',boxShadow:el===r.fe.yongshin?'0 0 8px '+(FE_GLOW[el]||COLORS[el]):''} })
+              ),
+              React.createElement('span', { style:{width:'30px',textAlign:'right',fontSize:'12px',color:el===r.fe.yongshin?'#6ee7b7':el===r.fe.gishin?'#fca5a5':'rgba(255,255,255,0.4)',fontWeight:el===r.fe.yongshin||el===r.fe.gishin?'700':'400'} }, (r.fe.pct[el]||0)+'%')
+            )
+          ),
+          React.createElement('div', { style:{marginTop:'10px',padding:'10px 14px',background:'rgba(255,255,255,0.03)',borderRadius:'12px',fontSize:'11px',color:'rgba(255,255,255,0.35)',lineHeight:'1.8'} },
+            '💡 용신('+r.fe.yongshin+')은 보강이 필요한 에너지 — '+(r.fe.yongshin==='목'?'초록·나무·동쪽이 유리':r.fe.yongshin==='화'?'빨강·밝음·남쪽이 유리':r.fe.yongshin==='토'?'노랑·안정·중앙이 유리':r.fe.yongshin==='금'?'흰색·금속·서쪽이 유리':'파랑·물·북쪽이 유리')+'. 기신('+r.fe.gishin+') 방향은 조심.'
+          )
+        ),
+
+        /* ── 신살 카드 ── */
+        allSinsalFlat.length > 0 && React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'18px',marginBottom:'14px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'14px',fontWeight:'600'} }, '✦ 보유 신살'),
+          React.createElement('div', { style:{display:'flex',flexWrap:'wrap',gap:'8px'} },
+            allSinsalFlat.map((s,i) =>
+              React.createElement('div', { key:i, style:{padding:'9px 13px',background:'rgba(168,85,247,0.1)',border:'1px solid rgba(168,85,247,0.2)',borderRadius:'12px'} },
+                React.createElement('p', { style:{color:'#c4b5fd',fontSize:'12px',fontWeight:'800',marginBottom:'2px'} }, s),
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px'} }, SINSAL_DESC[s]||'신살 영향')
               )
-            : React.createElement('div', { style:{padding:'32px',textAlign:'center',color:'rgba(255,255,255,0.3)',fontSize:'13px'} }, '해설을 불러오는 중...')
-      ),
-
-      // 하단 공유 배너
-      React.createElement('div', {
-        style:{background:'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(168,85,247,0.12))',border:'1px solid rgba(168,85,247,0.2)',borderRadius:'20px',padding:'20px',textAlign:'center',margin:'8px 0 20px'}
-      },
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'12px',marginBottom:'12px'} }, '✨ 결과가 마음에 드셨나요? 친구에게도 알려주세요'),
-        React.createElement(ShareButton, {
-          title: inp.name+'님의 사주 분석 결과 — 사주ON',
-          desc: '일간 '+dayGan+'('+dayGanKr+') · 용신 '+r.fe.yongshin+' | 나의 사주도 확인해보세요!',
-          tag: 'saju'
-        })
-      ),
-      // 리뷰 남기기 CTA
-      React.createElement('div', {
-        style:{background:'rgba(251,191,36,0.06)',border:'1px solid rgba(251,191,36,0.15)',borderRadius:'18px',padding:'16px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',margin:'0 0 20px'}
-      },
-        React.createElement('div', null,
-          React.createElement('p', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px',marginBottom:'2px'} }, '⭐ 결과 어떠셨나요?'),
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'} }, '후기를 남기면 다른 분들께 큰 도움이 됩니다')
+            )
+          )
         ),
-        React.createElement('button', {
-          onClick: () => setScreen('review'),
-          style:{padding:'10px 16px',background:'linear-gradient(135deg,rgba(251,191,36,0.2),rgba(245,158,11,0.15))',border:'1px solid rgba(251,191,36,0.3)',borderRadius:'12px',color:'#fbbf24',fontWeight:'700',fontSize:'12px',cursor:'pointer',flexShrink:0,whiteSpace:'nowrap'}
-        }, '리뷰 쓰기 →')
-      ),
-      React.createElement(ShareToast)
+
+        /* ── AI 심층 풀이 ── */
+        React.createElement('div', { style:{borderRadius:'24px',border:'1px solid rgba(168,85,247,0.25)',overflow:'hidden',marginBottom:'14px'} },
+          /* 헤더 */
+          React.createElement('div', { style:{padding:'16px 20px',background:'linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'space-between'} },
+            React.createElement('div', null,
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'10px',letterSpacing:'2px',marginBottom:'2px'} }, '✦ AI 심층 분석'),
+              React.createElement('p', { style:{color:'white',fontWeight:'900',fontSize:'15px',letterSpacing:'-0.3px'} }, inp.name+'님 전용 사주 풀이')
+            ),
+            aiLoading
+              ? React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'8px',background:'rgba(255,255,255,0.1)',padding:'6px 12px',borderRadius:'20px'} },
+                  React.createElement('div', { style:{width:'7px',height:'7px',borderRadius:'50%',background:'#c4b5fd',animation:'pulse 1s infinite'} }),
+                  React.createElement('span', { style:{color:'white',fontSize:'11px',fontWeight:'600'} }, '해석 중...')
+                )
+              : displaySections
+                ? React.createElement('span', { style:{fontSize:'11px',color:'rgba(255,255,255,0.5)',background:'rgba(255,255,255,0.08)',padding:'4px 10px',borderRadius:'12px'} }, displaySections.length+'개 섹션')
+                : null
+          ),
+          /* 콘텐츠 */
+          aiLoading
+            ? React.createElement(SajuLoadingScreen)
+            : displaySections
+              ? React.createElement(React.Fragment, null,
+                  React.createElement('div', { style:{padding:'10px 14px',background:'rgba(168,85,247,0.05)',borderBottom:'1px solid rgba(168,85,247,0.1)',display:'flex',alignItems:'center',gap:'8px'} },
+                    React.createElement('span', { style:{fontSize:'12px'} }, 'ℹ️'),
+                    React.createElement('p', { style:{color:'rgba(196,181,253,0.5)',fontSize:'10px',lineHeight:'1.6'} }, '전통 명리학 + AI 기반 참고용 콘텐츠 · 결과 확인 즉시 청약철회 불가')
+                  ),
+                  React.createElement('p', { style:{padding:'12px 16px 8px',textAlign:'center',color:'rgba(255,255,255,0.25)',fontSize:'11px'} }, '제목을 눌러 풀이를 펼쳐보세요'),
+                  displaySections.map((section, i) =>
+                    React.createElement(AccordionItem, { key:i, idx:i, icon:section.icon, color:section.color, title:section.title, content:section.content })
+                  )
+                )
+              : aiError
+                ? React.createElement('div', { style:{padding:'32px',textAlign:'center'} },
+                    React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'14px',marginBottom:'16px'} }, '해설을 불러오지 못했습니다'),
+                    React.createElement('button', {
+                      onClick:()=>{ setAiError(false); setAiLoading(true); setAiRetryCount(n=>n+1); },
+                      style:{padding:'10px 24px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'12px',color:'white',fontWeight:'700',fontSize:'13px',border:'none',cursor:'pointer'}
+                    }, '다시 불러오기')
+                  )
+                : React.createElement('div', { style:{padding:'32px',textAlign:'center',color:'rgba(255,255,255,0.3)',fontSize:'13px'} }, '해설을 불러오는 중...')
+        ),
+
+        /* ── 공유 배너 ── */
+        React.createElement('div', { style:{background:'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.1))',border:'1px solid rgba(168,85,247,0.2)',borderRadius:'20px',padding:'20px',textAlign:'center',marginBottom:'12px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',marginBottom:'12px'} }, '✨ 결과가 마음에 드셨나요? 친구에게도 알려주세요'),
+          React.createElement(ShareButton, { title:inp.name+'님의 사주 분석 결과 — 사주ON', desc:'일간 '+dayGan+'('+dayGanKr+') · 용신 '+r.fe.yongshin+' | 나의 사주도 확인해보세요!', tag:'saju' })
+        ),
+
+        /* ── 리뷰 CTA ── */
+        React.createElement('div', { style:{background:'rgba(251,191,36,0.05)',border:'1px solid rgba(251,191,36,0.15)',borderRadius:'18px',padding:'16px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',marginBottom:'12px'} },
+          React.createElement('div', null,
+            React.createElement('p', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px',marginBottom:'2px'} }, '⭐ 결과 어떠셨나요?'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '후기를 남기면 다른 분들께 큰 도움이 됩니다')
+          ),
+          React.createElement('button', { onClick:()=>setScreen('review'), style:{padding:'10px 16px',background:'linear-gradient(135deg,rgba(251,191,36,0.2),rgba(245,158,11,0.15))',border:'1px solid rgba(251,191,36,0.3)',borderRadius:'12px',color:'#fbbf24',fontWeight:'700',fontSize:'12px',cursor:'pointer',flexShrink:0,whiteSpace:'nowrap'} }, '리뷰 쓰기 →')
+        ),
+
+        React.createElement(ShareToast)
+      )
     );
   };
 
@@ -7628,6 +7711,7 @@ ${sinsal ? `${sinsal} 신살이 ${catPrompt} 타이밍에서 어떻게 발현되
           headers: { 'Content-Type': 'text/plain' },
           body: enc(payload),
           signal,
+          mode: 'cors',
         });
         if (res.status === 429) {
           const wait = (attempt + 1) * 4000; // 4s, 8s, 12s
