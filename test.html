@@ -10090,7 +10090,7 @@ JSON만 출력하세요. 각 섹션은 구체적이고 개인화된 내용으로
     { id: 'home', icon: '🏠', label: '홈' },
     { id: 'input', icon: '🔮', label: '사주' },
     { id: 'compatibility', icon: '💕', label: '궁합' },
-    { id: 'daily-fortune', icon: '🌙', label: '오늘운세' },
+    { id: 'yearly', icon: '🎊', label: '신년운세' },
     { id: 'premium', icon: '✨', label: '프리미엄' },
   ];
 
@@ -10102,7 +10102,7 @@ JSON만 출력하세요. 각 섹션은 구체적이고 개인화된 내용으로
         baseNavItems.map(item => {
           const isActive = currentScreen === item.id || 
             (item.id==='input' && ['input','free-result','paid-result'].includes(currentScreen)) ||
-            (item.id==='daily-fortune' && ['daily-fortune','yearly','yearly-result'].includes(currentScreen)) ||
+            (item.id==='yearly' && ['yearly','yearly-result'].includes(currentScreen)) ||
             (item.id==='premium' && ['timing','timing-result','roadmap','roadmap-result'].includes(currentScreen));
           return React.createElement('button', { 
             key: item.id, 
