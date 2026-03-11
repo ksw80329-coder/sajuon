@@ -4299,7 +4299,7 @@ ${pillarDesc}
 - 각 섹션 제목은 이 사람의 사주를 읽고 딱 이 사람한테만 맞는 문장으로 (예: "불꽃을 품은 수, 화려한 척 누구보다 섬세한 사람" / "갑목에 경금이 덮친 팔자 — 자르고 나서야 빛나는 나무")
 
 [깊이 & 분량 기준 - 매우 중요]
-- 각 섹션 반드시 1200자 이상 (줄이면 안 됨, 중요한 내용은 생략 없이 전부 서술)
+- 각 섹션 1000~1200자 (명리학적 근거, 구체적 사례, 실질 조언 포함)
 - 단순 특징 나열이 아닌 "왜 그런지" 명리학적 근거까지 풀어서 설명
 - 실제 삶에서 어떻게 나타나는지 구체적 상황과 예시 포함
 - 조언은 막연하지 않게, 이 사람 사주에 딱 맞는 구체적 행동으로
@@ -4490,7 +4490,7 @@ ${pillarDesc}
     const FE_HEX = { 목:'#4ade80', 화:'#f87171', 토:'#fbbf24', 금:'#e2e8f0', 수:'#60a5fa' };
     const FE_GLOW = { 목:'rgba(74,222,128,0.4)', 화:'rgba(248,113,113,0.4)', 토:'rgba(251,191,36,0.4)', 금:'rgba(226,232,240,0.4)', 수:'rgba(96,165,250,0.4)' };
 
-    const displaySections = aiSections || null;
+    const displaySections = Array.isArray(aiSections) ? aiSections : null;
 
     // ── 충·합·천간합 (render용) ──
     const _CHUNG_MAP = {'子午':true,'丑未':true,'寅申':true,'卯酉':true,'辰戌':true,'巳亥':true};
@@ -4625,14 +4625,33 @@ ${pillarDesc}
             /* 신살12 */
             React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center',marginBottom:'6px'} },
               order.map(k => React.createElement('div', { key:'ss'+k, style:{fontSize:'9px',color:'#fca5a5',padding:'4px',background:'rgba(239,68,68,0.07)',borderRadius:'6px',minHeight:'18px'} }, r.sinsal12[k]||'-'))
-            ),
-            /* 신살 (주별) */
-            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',textAlign:'center'} },
-              order.map(k => {
-                const ps = r.pillarSinsal[k]||[];
-                return React.createElement('div', { key:'ps'+k, style:{fontSize:'9px',color:'#a5b4fc',lineHeight:'1.6',padding:'4px',background:'rgba(99,102,241,0.08)',borderRadius:'6px',minHeight:'20px',wordBreak:'keep-all'} }, ps.length>0?ps.join(' '):'-');
-              })
             )
+          ),
+          /* 신살 (주별 세로 목록) */
+          (() => {
+            const pillarSinsalData = [
+              { key:'year',  label:'연주', color:'#fbbf24', bg:'rgba(245,158,11,0.08)',  border:'rgba(245,158,11,0.2)'  },
+              { key:'month', label:'월주', color:'#6ee7b7', bg:'rgba(16,185,129,0.08)',  border:'rgba(16,185,129,0.2)'  },
+              { key:'day',   label:'일주', color:'#c4b5fd', bg:'rgba(139,92,246,0.08)',  border:'rgba(139,92,246,0.2)'  },
+              { key:'hour',  label:'시주', color:'#93c5fd', bg:'rgba(59,130,246,0.08)',  border:'rgba(59,130,246,0.2)'  },
+            ].filter(d => (r.pillarSinsal?.[d.key]||[]).length > 0);
+            if (!pillarSinsalData.length) return null;
+            return React.createElement('div', { style:{padding:'14px 16px',borderTop:'1px solid rgba(255,255,255,0.06)'} },
+              React.createElement('p', { style:{fontSize:'10px',color:'rgba(255,255,255,0.25)',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px',fontWeight:'600'} }, '✦ 신살'),
+              React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'8px'} },
+                pillarSinsalData.map(d =>
+                  React.createElement('div', { key:d.key, style:{display:'flex',alignItems:'flex-start',gap:'10px'} },
+                    React.createElement('span', { style:{fontSize:'10px',color:d.color,fontWeight:'700',minWidth:'28px',paddingTop:'2px'} }, d.label),
+                    React.createElement('div', { style:{display:'flex',flexWrap:'wrap',gap:'5px'} },
+                      (r.pillarSinsal[d.key]||[]).map((s,i) =>
+                        React.createElement('span', { key:i, style:{fontSize:'11px',color:d.color,background:d.bg,border:'1px solid '+d.border,borderRadius:'8px',padding:'2px 9px',fontWeight:'600'} }, s)
+                      )
+                    )
+                  )
+                )
+              )
+            );
+          })()
           ),
           /* 공망 */
           React.createElement('div', { style:{padding:'8px 16px',background:'rgba(255,255,255,0.02)',borderTop:'1px solid rgba(255,255,255,0.05)',fontSize:'11px',color:'rgba(255,255,255,0.3)',textAlign:'center'} },
@@ -4668,29 +4687,8 @@ ${pillarDesc}
           )
         ),
 
-        /* ── 신살 카드 (주별 구분) ── */
-        allSinsalFlat.length > 0 && React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'18px',marginBottom:'14px'} },
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'14px',fontWeight:'600'} }, '✦ 보유 신살'),
-          React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'12px'} },
-            [['year','연주','#f59e0b'],['month','월주','#10b981'],['day','일주','#8b5cf6'],['hour','시주','#3b82f6']].map(([k, label, color]) => {
-              const ss = r.pillarSinsal?.[k] || [];
-              if (!ss.length) return null;
-              return React.createElement('div', { key:k },
-                React.createElement('p', { style:{fontSize:'10px',color:`${color}`,fontWeight:'700',marginBottom:'6px',letterSpacing:'1px'} }, `◆ ${label}`),
-                React.createElement('div', { style:{display:'flex',flexWrap:'wrap',gap:'6px'} },
-                  ss.map((s,i) =>
-                    React.createElement('div', { key:i, style:{padding:'7px 11px',background:`rgba(${color==='#f59e0b'?'245,158,11':color==='#10b981'?'16,185,129':color==='#8b5cf6'?'139,92,246':'59,130,246'},0.1)`,border:`1px solid rgba(${color==='#f59e0b'?'245,158,11':color==='#10b981'?'16,185,129':color==='#8b5cf6'?'139,92,246':'59,130,246'},0.25)`,borderRadius:'10px'} },
-                      React.createElement('p', { style:{color:color,fontSize:'12px',fontWeight:'800',marginBottom:'1px'} }, s),
-                      React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px'} }, SINSAL_DESC[s]||'신살 영향')
-                    )
-                  )
-                )
-              );
-            }).filter(Boolean)
-          )
-        ),
 
-        /* ── AI 심층 풀이 ── */
+                /* ── AI 심층 풀이 ── */
         React.createElement('div', { style:{borderRadius:'24px',border:'1px solid rgba(168,85,247,0.25)',overflow:'hidden',marginBottom:'14px'} },
           /* 헤더 */
           React.createElement('div', { style:{padding:'16px 20px',background:'linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'space-between'} },
@@ -7750,25 +7748,94 @@ ${sinsal ? `${sinsal} 신살이 ${catPrompt} 타이밍에서 어떻게 발현되
         b.forEach(ch => bin += String.fromCharCode(ch));
         return JSON.stringify({ b: btoa(bin) });
       };
-      // 429 재시도 (최대 3회, 지수 백오프)
+
+      // SSE 스트림 파싱: Anthropic content_block_delta 이벤트에서 텍스트 누적
+      const parseSSEStream = async (res) => {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulated = '';
+        let buffer = '';
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('
+');
+            buffer = lines.pop(); // 마지막 미완성 줄 보류
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') continue;
+              try {
+                const evt = JSON.parse(data);
+                // content_block_delta: 텍스트 누적
+                if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+                  accumulated += evt.delta.text;
+                }
+                // message_stop 또는 error
+                if (evt.type === 'error') throw new Error(evt.error?.message || 'Stream error');
+              } catch(e) {
+                if (e.message === 'Stream error') throw e;
+                // JSON 파싱 실패는 무시
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        // Anthropic 비스트리밍 응답 포맷으로 변환
+        return { content: [{ type: 'text', text: accumulated }] };
+      };
+
+      // 재시도 (최대 3회)
       for (let attempt = 0; attempt < 3; attempt++) {
         if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-        const res = await fetch('https://morning-rice-eb57.godwk15.workers.dev/q', {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: enc(payload),
-          signal,
-          mode: 'cors',
-        });
-        if (res.status === 429) {
-          const wait = (attempt + 1) * 4000; // 4s, 8s, 12s
-          console.warn(`429 Too Many Requests — ${wait/1000}초 후 재시도`);
-          await new Promise(r => setTimeout(r, wait));
-          continue;
+        try {
+          const res = await fetch('https://morning-rice-eb57.godwk15.workers.dev/q', {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: enc(payload),
+            signal,
+            mode: 'cors',
+          });
+          // 429: 속도 제한 → 대기 후 재시도
+          if (res.status === 429) {
+            const wait = (attempt + 1) * 5000;
+            console.warn(`429 Too Many Requests — ${wait/1000}초 후 재시도 (${attempt+1}/3)`);
+            await new Promise(r => setTimeout(r, wait));
+            continue;
+          }
+          // 에러 응답 (4xx/5xx) → JSON 읽고 throw 또는 재시도
+          if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            const msg = errBody?.error || `서버 오류 (${res.status})`;
+            console.error('AI 서버 에러:', res.status, msg);
+            if ((res.status === 500 || res.status === 524) && attempt < 2) {
+              await new Promise(r => setTimeout(r, 3000));
+              continue;
+            }
+            throw new Error(msg);
+          }
+          // SSE 스트림 or JSON 자동 감지
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('text/event-stream')) {
+            return await parseSSEStream(res);
+          } else {
+            return await res.json();
+          }
+        } catch(e) {
+          if (e.name === 'AbortError') throw e;
+          if (attempt < 2) {
+            console.warn(`오류 — 재시도 (${attempt+1}/3):`, e.message);
+            await new Promise(r => setTimeout(r, 3000));
+            continue;
+          }
+          throw e;
         }
-        return await res.json();
       }
-      throw new Error('429: 요청 한도 초과, 잠시 후 다시 시도해주세요');
+      throw new Error('AI 서버 응답 없음 — 잠시 후 다시 시도해주세요');
     });
     _aiQueue.current = task.catch(() => {});
     return task;
