@@ -4492,6 +4492,24 @@ ${pillarDesc}
 
     const displaySections = Array.isArray(aiSections) ? aiSections : null;
 
+    // ── 신살 주별 rows (render용) ──
+    const _sinsalMeta = [
+      { key:'year',  label:'연주', color:'#fbbf24', bg:'rgba(245,158,11,0.08)',  border:'rgba(245,158,11,0.2)'  },
+      { key:'month', label:'월주', color:'#6ee7b7', bg:'rgba(16,185,129,0.08)',  border:'rgba(16,185,129,0.2)'  },
+      { key:'day',   label:'일주', color:'#c4b5fd', bg:'rgba(139,92,246,0.08)',  border:'rgba(139,92,246,0.2)'  },
+      { key:'hour',  label:'시주', color:'#93c5fd', bg:'rgba(59,130,246,0.08)',  border:'rgba(59,130,246,0.2)'  },
+    ];
+    const sinsalRows = _sinsalMeta
+      .filter(d => (r.pillarSinsal?.[d.key]||[]).length > 0)
+      .map(d => React.createElement('div', { key:d.key, style:{display:'flex',alignItems:'flex-start',gap:'10px'} },
+        React.createElement('span', { style:{fontSize:'10px',color:d.color,fontWeight:'700',minWidth:'28px',paddingTop:'2px'} }, d.label),
+        React.createElement('div', { style:{display:'flex',flexWrap:'wrap',gap:'5px'} },
+          (r.pillarSinsal[d.key]||[]).map((s,i) =>
+            React.createElement('span', { key:i, style:{fontSize:'11px',color:d.color,background:d.bg,border:'1px solid '+d.border,borderRadius:'8px',padding:'2px 9px',fontWeight:'600'} }, s)
+          )
+        )
+      ));
+
     // ── 충·합·천간합 (render용) ──
     const _CHUNG_MAP = {'子午':true,'丑未':true,'寅申':true,'卯酉':true,'辰戌':true,'巳亥':true};
     const _HAP6_MAP  = {'子丑':true,'寅亥':true,'卯戌':true,'辰酉':true,'巳申':true,'午未':true};
@@ -4628,30 +4646,11 @@ ${pillarDesc}
             )
           ),
           /* 신살 (주별 세로 목록) */
-          (() => {
-            const pillarSinsalData = [
-              { key:'year',  label:'연주', color:'#fbbf24', bg:'rgba(245,158,11,0.08)',  border:'rgba(245,158,11,0.2)'  },
-              { key:'month', label:'월주', color:'#6ee7b7', bg:'rgba(16,185,129,0.08)',  border:'rgba(16,185,129,0.2)'  },
-              { key:'day',   label:'일주', color:'#c4b5fd', bg:'rgba(139,92,246,0.08)',  border:'rgba(139,92,246,0.2)'  },
-              { key:'hour',  label:'시주', color:'#93c5fd', bg:'rgba(59,130,246,0.08)',  border:'rgba(59,130,246,0.2)'  },
-            ].filter(d => (r.pillarSinsal?.[d.key]||[]).length > 0);
-            if (!pillarSinsalData.length) return null;
-            return React.createElement('div', { style:{padding:'14px 16px',borderTop:'1px solid rgba(255,255,255,0.06)'} },
-              React.createElement('p', { style:{fontSize:'10px',color:'rgba(255,255,255,0.25)',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px',fontWeight:'600'} }, '✦ 신살'),
-              React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'8px'} },
-                pillarSinsalData.map(d =>
-                  React.createElement('div', { key:d.key, style:{display:'flex',alignItems:'flex-start',gap:'10px'} },
-                    React.createElement('span', { style:{fontSize:'10px',color:d.color,fontWeight:'700',minWidth:'28px',paddingTop:'2px'} }, d.label),
-                    React.createElement('div', { style:{display:'flex',flexWrap:'wrap',gap:'5px'} },
-                      (r.pillarSinsal[d.key]||[]).map((s,i) =>
-                        React.createElement('span', { key:i, style:{fontSize:'11px',color:d.color,background:d.bg,border:'1px solid '+d.border,borderRadius:'8px',padding:'2px 9px',fontWeight:'600'} }, s)
-                      )
-                    )
-                  )
-                )
-              )
-            );
-          })()
+          sinsalRows.length > 0 && React.createElement('div', { style:{padding:'14px 16px',borderTop:'1px solid rgba(255,255,255,0.06)'} },
+            React.createElement('p', { style:{fontSize:'10px',color:'rgba(255,255,255,0.25)',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px',fontWeight:'600'} }, '✦ 신살'),
+            React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'8px'} },
+              sinsalRows
+            )
           ),
           /* 공망 */
           React.createElement('div', { style:{padding:'8px 16px',background:'rgba(255,255,255,0.02)',borderTop:'1px solid rgba(255,255,255,0.05)',fontSize:'11px',color:'rgba(255,255,255,0.3)',textAlign:'center'} },
@@ -7761,8 +7760,7 @@ ${sinsal ? `${sinsal} 신살이 ${catPrompt} 타이밍에서 어떻게 발현되
             if (done) break;
             if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('
-');
+            const lines = buffer.split('\n');
             buffer = lines.pop(); // 마지막 미완성 줄 보류
             for (const line of lines) {
               if (!line.startsWith('data: ')) continue;
