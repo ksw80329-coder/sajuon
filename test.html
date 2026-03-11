@@ -4492,6 +4492,25 @@ ${pillarDesc}
 
     const displaySections = aiSections || null;
 
+    // ── 충·합·천간합 (render용) ──
+    const _CHUNG_MAP = {'子午':true,'丑未':true,'寅申':true,'卯酉':true,'辰戌':true,'巳亥':true};
+    const _HAP6_MAP  = {'子丑':true,'寅亥':true,'卯戌':true,'辰酉':true,'巳申':true,'午未':true};
+    const _STEM_HAP  = {'甲己':true,'乙庚':true,'丙辛':true,'丁壬':true,'戊癸':true};
+    const _pillarKeys = ['year','month','day','hour'].filter(k => r.pillars?.[k]);
+    const _brList = _pillarKeys.map(k => r.pillars[k].branch);
+    const _stList = _pillarKeys.map(k => r.pillars[k].stem);
+    const _kn = {year:'연주',month:'월주',day:'일주',hour:'시주'};
+    const chungs = [], haps = [], stemHaps = [];
+    for (let i=0;i<_brList.length;i++) for (let j=i+1;j<_brList.length;j++) {
+      const p=[_brList[i],_brList[j]].sort().join('');
+      if (_CHUNG_MAP[p]||_CHUNG_MAP[_brList[i]+_brList[j]]) chungs.push(`${_kn[_pillarKeys[i]]}·${_kn[_pillarKeys[j]]} 충`);
+      if (_HAP6_MAP[p]||_HAP6_MAP[_brList[i]+_brList[j]]) haps.push(`${_brList[i]}${_brList[j]} 합`);
+    }
+    for (let i=0;i<_stList.length;i++) for (let j=i+1;j<_stList.length;j++) {
+      const p=[_stList[i],_stList[j]].sort().join('');
+      if (_STEM_HAP[p]||_STEM_HAP[_stList[i]+_stList[j]]) stemHaps.push(`${_stList[i]}${_stList[j]} 합`);
+    }
+
     return React.createElement('div', { style:{background:'#070514',minHeight:'100vh',paddingBottom:'112px',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
 
