@@ -1421,6 +1421,26 @@ function App() {
   // ===== 프리미엄 바텀 시트 =====
   const PremiumSheet = () => {
     if (!showPremiumSheet) return null;
+    const [dragY, setDragY] = React.useState(0);
+    const [dragging, setDragging] = React.useState(false);
+    const startYRef = React.useRef(0);
+
+    const onTouchStart = (e) => {
+      startYRef.current = e.touches[0].clientY;
+      setDragging(true);
+    };
+    const onTouchMove = (e) => {
+      const dy = Math.max(0, e.touches[0].clientY - startYRef.current);
+      setDragY(dy);
+    };
+    const onTouchEnd = () => {
+      setDragging(false);
+      if (dragY > 100) {
+        setShowPremiumSheet(false);
+      }
+      setDragY(0);
+    };
+
     const items = [
       { icon:'📊', label:'인생 타이밍 분석', sub:'이직 · 창업 · 투자 · 이사 최적 시기', screen:'timing', color:'#60a5fa', price:'⭐10/개' },
       { icon:'🗺️', label:'대운 인생 지도', sub:'대운 10개 완전 분석 · 전성기·취약기 특정', screen:'roadmap', color:'#c4b5fd', price:'⭐10', badge:'BEST' },
@@ -1428,16 +1448,19 @@ function App() {
     return React.createElement(React.Fragment, null,
       React.createElement('div', {
         onClick: () => setShowPremiumSheet(false),
-        style:{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:500}
+        style:{position:'fixed',inset:0,background:`rgba(0,0,0,${Math.max(0.2, 0.7 - dragY/300)})`,zIndex:500,transition:dragging?'none':'background 0.3s'}
       }),
       React.createElement('div', {
-        style:{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',
+        onTouchStart, onTouchMove, onTouchEnd,
+        style:{position:'fixed',bottom:0,left:'50%',
+          transform:`translateX(-50%) translateY(${dragY}px)`,
+          transition: dragging ? 'none' : 'transform 0.35s cubic-bezier(0.32,0.72,0,1)',
           width:'100%',maxWidth:'512px',zIndex:501,
           background:'#0d0b1e',borderRadius:'24px 24px 0 0',
           border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',paddingBottom:'32px'}
       },
-        React.createElement('div',{style:{display:'flex',justifyContent:'center',padding:'12px 0 8px'}},
-          React.createElement('div',{style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.15)'}})
+        React.createElement('div',{style:{display:'flex',justifyContent:'center',padding:'12px 0 8px',cursor:'grab'}},
+          React.createElement('div',{style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.3)'}})
         ),
         React.createElement('div',{style:{padding:'4px 20px 14px',borderBottom:'1px solid rgba(255,255,255,0.06)'}},
           React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'4px'}},'PREMIUM SERVICES'),
