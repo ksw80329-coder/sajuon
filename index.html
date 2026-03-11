@@ -1075,11 +1075,13 @@ function App() {
   const resetEmailForm = () => { emailRef.current=''; pwRef.current=''; pw2Ref.current=''; setEmailMsg({ type:'', text:'' }); };
 
   const loginWithEmail = async () => {
-    if (!emailRef.current || !pwRef.current) { setEmailMsg({ type:'err', text:'이메일과 비밀번호를 입력해주세요.' }); return; }
+    const _email = (document.getElementById('login-email-input')||{}).value||emailRef.current||'';
+    const _pw    = (document.getElementById('login-pw-input')||{}).value||pwRef.current||'';
+    if (!_email || !_pw) { setEmailMsg({ type:'err', text:'이메일과 비밀번호를 입력해주세요.' }); return; }
     setEmailLoading(true); setEmailMsg({ type:'', text:'' });
     try {
       const auth = window._firebaseAuth;
-      const result = await auth.signInWithEmailAndPassword(emailRef.current.trim(), pwRef.current);
+      const result = await auth.signInWithEmailAndPassword(_email.trim(), _pw);
       const user = result.user;
       // 이메일 인증 여부와 무관하게 로그인 허용
       handleLogin('email', user.email, user.displayName || user.email.split('@')[0]);
@@ -1095,14 +1097,17 @@ function App() {
   };
 
   const signUpWithEmail = async () => {
-    if (!emailRef.current || !pwRef.current || !pw2Ref.current) { setEmailMsg({ type:'err', text:'모든 항목을 입력해주세요.' }); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRef.current.trim())) { setEmailMsg({ type:'err', text:'올바른 이메일 형식이 아닙니다.' }); return; }
-    if (pwRef.current.length < 6) { setEmailMsg({ type:'err', text:'비밀번호는 6자 이상이어야 합니다.' }); return; }
-    if (pwRef.current !== pw2Ref.current) { setEmailMsg({ type:'err', text:'비밀번호가 일치하지 않습니다.' }); return; }
+    const _email = (document.getElementById('signup-email-input')||{}).value||emailRef.current||'';
+    const _pw    = (document.getElementById('signup-pw-input')||{}).value||pwRef.current||'';
+    const _pw2   = (document.getElementById('signup-pw2-input')||{}).value||pw2Ref.current||'';
+    if (!_email || !_pw || !_pw2) { setEmailMsg({ type:'err', text:'모든 항목을 입력해주세요.' }); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(_email.trim())) { setEmailMsg({ type:'err', text:'올바른 이메일 형식이 아닙니다.' }); return; }
+    if (_pw.length < 6) { setEmailMsg({ type:'err', text:'비밀번호는 6자 이상이어야 합니다.' }); return; }
+    if (_pw !== _pw2) { setEmailMsg({ type:'err', text:'비밀번호가 일치하지 않습니다.' }); return; }
     setEmailLoading(true); setEmailMsg({ type:'', text:'' });
     try {
       const auth = window._firebaseAuth;
-      const result = await auth.createUserWithEmailAndPassword(emailRef.current.trim(), pwRef.current);
+      const result = await auth.createUserWithEmailAndPassword(_email.trim(), _pw);
       await result.user.sendEmailVerification();
       setEmailView('verify');
       setEmailMsg({ type:'ok', text: emailRef.current.trim() + '으로 인증 메일을 발송했습니다.' });
@@ -1116,10 +1121,11 @@ function App() {
   };
 
   const sendPasswordReset = async () => {
-    if (!emailRef.current) { setEmailMsg({ type:'err', text:'이메일을 입력해주세요.' }); return; }
+    const _email = (document.getElementById('reset-email-input')||{}).value||emailRef.current||'';
+    if (!_email) { setEmailMsg({ type:'err', text:'이메일을 입력해주세요.' }); return; }
     setEmailLoading(true); setEmailMsg({ type:'', text:'' });
     try {
-      await window._firebaseAuth.sendPasswordResetEmail(emailRef.current.trim());
+      await window._firebaseAuth.sendPasswordResetEmail(_email.trim());
       setEmailMsg({ type:'ok', text:'비밀번호 재설정 메일을 발송했습니다. 받은 편지함을 확인해주세요.' });
     } catch (err) {
       setEmailMsg({ type:'err', text: err.code === 'auth/user-not-found' ? '등록되지 않은 이메일입니다.' : '메일 발송에 실패했습니다.' });
@@ -9294,14 +9300,14 @@ ${allSinsal.length > 0 ? `신살(${allSinsal.join(', ')})이 올해 어떻게 �
             React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'10px'} },
               // 카카오페이
               React.createElement('button', {
-                onClick: () => !processing && doCharge(selPkg, 'kakao'),
-                style:{width:'100%',padding:'18px 20px',background:'#FEE500',borderRadius:'18px',border:'none',cursor:processing?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',opacity:processing?0.6:1,boxShadow:'0 4px 20px rgba(254,229,0,0.25)',transition:'all 0.2s'}
+                onClick: () => alert('카카오페이는 현재 준비 중입니다. 토스페이를 이용해 주세요.'),
+                style:{width:'100%',padding:'18px 20px',background:'rgba(254,229,0,0.4)',borderRadius:'18px',border:'none',cursor:'default',display:'flex',alignItems:'center',justifyContent:'space-between',opacity:0.55,boxShadow:'0 4px 20px rgba(254,229,0,0.25)',transition:'all 0.2s'}
               },
                 React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'14px'} },
                   React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'12px',background:'rgba(60,30,30,0.1)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px'} }, '💛'),
                   React.createElement('div', { style:{textAlign:'left'} },
-                    React.createElement('p', { style:{fontWeight:'800',fontSize:'15px',color:'#3C1E1E',letterSpacing:'-0.3px'} }, '카카오페이'),
-                    React.createElement('p', { style:{fontSize:'11px',color:'rgba(60,30,30,0.45)',marginTop:'1px'} }, '카카오 간편결제')
+                    React.createElement('div', {style:{display:'flex',alignItems:'center',gap:'8px'}}, React.createElement('p', { style:{fontWeight:'800',fontSize:'15px',color:'rgba(60,30,30,0.5)',letterSpacing:'-0.3px'} }, '카카오페이'), React.createElement('span',{style:{fontSize:'9px',background:'rgba(60,30,30,0.15)',color:'rgba(60,30,30,0.5)',padding:'2px 6px',borderRadius:'6px',fontWeight:'700'}},'준비중')),
+                    React.createElement('p', { style:{fontSize:'11px',color:'rgba(60,30,30,0.3)',marginTop:'1px'} }, '카카오 간편결제')
                   )
                 ),
                 React.createElement('div', { style:{textAlign:'right'} },
@@ -9577,10 +9583,12 @@ ${allSinsal.length > 0 ? `신살(${allSinsal.join(', ')})이 올해 어떻게 �
     const msgStyle = (type) => ({fontSize:'12px',padding:'10px 14px',borderRadius:'10px',marginBottom:'10px',background: type==='ok' ? 'rgba(52,211,153,0.12)' : 'rgba(239,68,68,0.12)',color: type==='ok' ? '#34d399' : '#fca5a5',lineHeight:'1.5'});
 
     return React.createElement('div', {
-      style:{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'},
-      onClick: () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); }
+      style:{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'}
     },
-      React.createElement('div', { style:{position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(8px)'} }),
+      React.createElement('div', {
+        style:{position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(8px)'},
+        onClick: () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); }
+      }),
       React.createElement('div', {
         style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',overflow:'hidden'},
         onClick: e => e.stopPropagation()
@@ -9644,8 +9652,8 @@ ${allSinsal.length > 0 ? `신살(${allSinsal.join(', ')})이 올해 어떻게 �
           // ── 이메일 로그인 뷰 ──
           emailView === 'login' && React.createElement(React.Fragment, null,
             emailMsg.text && React.createElement('div', { style:msgStyle(emailMsg.type) }, emailMsg.text),
-            React.createElement('input', { type:'email', placeholder:'이메일', onChange:e=>{emailRef.current=e.target.value;}, style:inputStyle }),
-            React.createElement('input', { type:'password', placeholder:'비밀번호', onChange:e=>{pwRef.current=e.target.value;}, onKeyDown:e=>e.key==='Enter'&&loginWithEmail(), style:{...inputStyle,marginBottom:'6px'} }),
+            React.createElement('input', { id:'login-email-input', type:'email', placeholder:'이메일', onChange:e=>{emailRef.current=e.target.value;}, style:inputStyle }),
+            React.createElement('input', { id:'login-pw-input', type:'password', placeholder:'비밀번호', onChange:e=>{pwRef.current=e.target.value;}, onKeyDown:e=>e.key==='Enter'&&loginWithEmail(), style:{...inputStyle,marginBottom:'6px'} }),
             React.createElement('div', { style:{textAlign:'right',marginBottom:'14px'} },
               React.createElement('button', { onClick:()=>{ resetEmailForm(); setEmailView('reset'); }, style:{background:'none',border:'none',color:'rgba(255,255,255,0.35)',fontSize:'12px',cursor:'pointer'} }, '비밀번호를 잊으셨나요?')
             ),
@@ -9660,9 +9668,9 @@ ${allSinsal.length > 0 ? `신살(${allSinsal.join(', ')})이 올해 어떻게 �
           // ── 이메일 회원가입 뷰 ──
           emailView === 'signup' && React.createElement(React.Fragment, null,
             emailMsg.text && React.createElement('div', { style:msgStyle(emailMsg.type) }, emailMsg.text),
-            React.createElement('input', { type:'email', placeholder:'이메일', onChange:e=>{emailRef.current=e.target.value;}, style:inputStyle }),
-            React.createElement('input', { type:'password', placeholder:'비밀번호 (6자 이상)', onChange:e=>{pwRef.current=e.target.value;}, style:inputStyle }),
-            React.createElement('input', { type:'password', placeholder:'비밀번호 확인', onChange:e=>{pw2Ref.current=e.target.value;}, onKeyDown:e=>e.key==='Enter'&&signUpWithEmail(), style:{...inputStyle,marginBottom:'14px'} }),
+            React.createElement('input', { id:'signup-email-input', type:'email', placeholder:'이메일', onChange:e=>{emailRef.current=e.target.value;}, style:inputStyle }),
+            React.createElement('input', { id:'signup-pw-input', type:'password', placeholder:'비밀번호 (6자 이상)', onChange:e=>{pwRef.current=e.target.value;}, style:inputStyle }),
+            React.createElement('input', { id:'signup-pw2-input', type:'password', placeholder:'비밀번호 확인', onChange:e=>{pw2Ref.current=e.target.value;}, onKeyDown:e=>e.key==='Enter'&&signUpWithEmail(), style:{...inputStyle,marginBottom:'14px'} }),
             React.createElement('div',{style:{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'12px',padding:'12px 14px',marginBottom:'12px'}},
               React.createElement('div',{style:{display:'flex',gap:'8px',marginBottom:'6px',alignItems:'flex-start'}},
                 React.createElement('span',{style:{color:'#c4b5fd',fontSize:'10px',fontWeight:'700',flexShrink:0}},'[필수]'),
@@ -9702,7 +9710,7 @@ ${allSinsal.length > 0 ? `신살(${allSinsal.join(', ')})이 올해 어떻게 �
           emailView === 'reset' && React.createElement(React.Fragment, null,
             emailMsg.text && React.createElement('div', { style:msgStyle(emailMsg.type) }, emailMsg.text),
             React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'13px',lineHeight:'1.6',marginBottom:'14px'} }, '가입하신 이메일을 입력하시면 비밀번호 재설정 링크를 보내드립니다.'),
-            React.createElement('input', { type:'email', placeholder:'가입한 이메일', onChange:e=>{emailRef.current=e.target.value;}, onKeyDown:e=>e.key==='Enter'&&sendPasswordReset(), style:inputStyle }),
+            React.createElement('input', { id:'reset-email-input', type:'email', placeholder:'가입한 이메일', onChange:e=>{emailRef.current=e.target.value;}, onKeyDown:e=>e.key==='Enter'&&sendPasswordReset(), style:inputStyle }),
             React.createElement('button', {
               onClick: sendPasswordReset, disabled: emailLoading,
               style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'800',fontSize:'15px',color:'white',marginBottom:'10px',opacity:emailLoading?0.6:1}
