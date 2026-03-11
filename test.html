@@ -1081,11 +1081,7 @@ function App() {
       const auth = window._firebaseAuth;
       const result = await auth.signInWithEmailAndPassword(emailRef.current.trim(), pwRef.current);
       const user = result.user;
-      if (!user.emailVerified) {
-        await auth.signOut();
-        setEmailMsg({ type:'err', text:'이메일 인증이 필요합니다. 받은 편지함을 확인해주세요.' });
-        setEmailLoading(false); return;
-      }
+      // 이메일 인증 여부와 무관하게 로그인 허용
       handleLogin('email', user.email, user.displayName || user.email.split('@')[0]);
       setShowLogin(false); resetEmailForm(); setEmailView('social');
     } catch (err) {
