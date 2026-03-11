@@ -118,18 +118,23 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAlSPiSJuZGP_rvMCL9uhpzpWhBYjETs3g",
-      authDomain: "sajuon-2b7ba.firebaseapp.com",
-      projectId: "sajuon-2b7ba",
-      storageBucket: "sajuon-2b7ba.firebasestorage.app",
-      messagingSenderId: "928917378459",
-      appId: "1:928917378459:web:af2b3d8866a95822067d3e"
-    };
-    firebase.initializeApp(firebaseConfig);
-    window._firebaseAuth = firebase.auth();
-    window._googleProvider = new firebase.auth.GoogleAuthProvider();
-    console.log('✅ Firebase 초기화 완료');
+    window.addEventListener('load', function() {
+      if (!window.firebase) { console.error('❌ Firebase SDK 로드 실패'); return; }
+      const firebaseConfig = {
+        apiKey: "AIzaSyAlSPiSJuZGP_rvMCL9uhpzpWhBYjETs3g",
+        authDomain: "sajuon-2b7ba.firebaseapp.com",
+        projectId: "sajuon-2b7ba",
+        storageBucket: "sajuon-2b7ba.firebasestorage.app",
+        messagingSenderId: "928917378459",
+        appId: "1:928917378459:web:af2b3d8866a95822067d3e"
+      };
+      try {
+        firebase.initializeApp(firebaseConfig);
+        window._firebaseAuth = firebase.auth();
+        window._googleProvider = new firebase.auth.GoogleAuthProvider();
+        console.log('✅ Firebase 초기화 완료');
+      } catch(e) { console.error('Firebase 초기화 오류:', e); }
+    });
   </script>
   <!-- 포트원(아임포트) SDK -->
   <script defer src="https://cdn.iamport.kr/v1/iamport.js"></script>
@@ -748,7 +753,7 @@ function App() {
   // 브라우저 뒤로가기/앞으로가기 이벤트 처리
   // ===== Deno 서버 워밍업 핑 (콜드스타트 방지) =====
   React.useEffect(() => {
-    fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
+    fetch('https://morning-rice-eb57.godwk15.workers.dev/q', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ping: true })
@@ -1081,16 +1086,20 @@ function App() {
     setEmailLoading(true); setEmailMsg({ type:'', text:'' });
     try {
       const auth = window._firebaseAuth;
+      if (!auth) { setEmailMsg({ type:'err', text:'로그인 모듈 초기화 중입니다. 잠시 후 다시 시도해주세요.' }); setEmailLoading(false); return; }
       const result = await auth.signInWithEmailAndPassword(_email.trim(), _pw);
       const user = result.user;
       // 이메일 인증 여부와 무관하게 로그인 허용
       handleLogin('email', user.email, user.displayName || user.email.split('@')[0]);
       setShowLogin(false); resetEmailForm(); setEmailView('social');
     } catch (err) {
+      console.error('로그인 오류:', err.code, err.message);
       const msg = err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
         ? '이메일 또는 비밀번호가 올바르지 않습니다.'
         : err.code === 'auth/too-many-requests' ? '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.'
-        : '로그인에 실패했습니다. 다시 시도해주세요.';
+        : err.code === 'auth/operation-not-allowed' ? '이메일 로그인이 비활성화 상태입니다.'
+        : err.code === 'auth/network-request-failed' ? '네트워크 오류입니다.'
+        : `로그인에 실패했습니다. (${err.code})`;
       setEmailMsg({ type:'err', text:msg });
     }
     setEmailLoading(false);
@@ -1107,14 +1116,18 @@ function App() {
     setEmailLoading(true); setEmailMsg({ type:'', text:'' });
     try {
       const auth = window._firebaseAuth;
+      if (!auth) { setEmailMsg({ type:'err', text:'로그인 모듈 초기화 중입니다. 잠시 후 다시 시도해주세요.' }); setEmailLoading(false); return; }
       const result = await auth.createUserWithEmailAndPassword(_email.trim(), _pw);
       await result.user.sendEmailVerification();
       setEmailView('verify');
-      setEmailMsg({ type:'ok', text: emailRef.current.trim() + '으로 인증 메일을 발송했습니다.' });
+      setEmailMsg({ type:'ok', text: _email.trim() + '으로 인증 메일을 발송했습니다.' });
     } catch (err) {
+      console.error('회원가입 오류:', err.code, err.message);
       const msg = err.code === 'auth/email-already-in-use' ? '이미 가입된 이메일입니다. 로그인을 시도해보세요.'
         : err.code === 'auth/invalid-email' ? '올바른 이메일 형식이 아닙니다.'
-        : '회원가입에 실패했습니다. 다시 시도해주세요.';
+        : err.code === 'auth/operation-not-allowed' ? '이메일 로그인이 비활성화 상태입니다. 관리자에게 문의하세요.'
+        : err.code === 'auth/network-request-failed' ? '네트워크 오류입니다. 인터넷 연결을 확인해주세요.'
+        : `회원가입에 실패했습니다. (${err.code})`;
       setEmailMsg({ type:'err', text:msg });
     }
     setEmailLoading(false);
@@ -7707,7 +7720,7 @@ ${sinsal ? `${sinsal} 신살이 ${catPrompt} 타이밍에서 어떻게 발현되
       // 429 재시도 (최대 3회, 지수 백오프)
       for (let attempt = 0; attempt < 3; attempt++) {
         if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-        const res = await fetch('https://comfortable-heron-18.ksw80329-coder.deno.net/q', {
+        const res = await fetch('https://morning-rice-eb57.godwk15.workers.dev/q', {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: enc(payload),
