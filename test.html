@@ -1425,6 +1425,7 @@ function App() {
     const [dragging, setDragging] = React.useState(false);
     const startYRef = React.useRef(0);
 
+    // 터치 이벤트 (모바일)
     const onTouchStart = (e) => {
       startYRef.current = e.touches[0].clientY;
       setDragging(true);
@@ -1435,10 +1436,28 @@ function App() {
     };
     const onTouchEnd = () => {
       setDragging(false);
-      if (dragY > 100) {
-        setShowPremiumSheet(false);
-      }
+      if (dragY > 100) setShowPremiumSheet(false);
       setDragY(0);
+    };
+
+    // 마우스 이벤트 (데스크탑)
+    const onMouseDown = (e) => {
+      startYRef.current = e.clientY;
+      setDragging(true);
+      const onMouseMove = (ev) => {
+        const dy = Math.max(0, ev.clientY - startYRef.current);
+        setDragY(dy);
+      };
+      const onMouseUp = (ev) => {
+        setDragging(false);
+        const dy = Math.max(0, ev.clientY - startYRef.current);
+        if (dy > 100) setShowPremiumSheet(false);
+        setDragY(0);
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
     };
 
     const items = [
@@ -1452,6 +1471,7 @@ function App() {
       }),
       React.createElement('div', {
         onTouchStart, onTouchMove, onTouchEnd,
+        onMouseDown,
         style:{position:'fixed',bottom:0,left:'50%',
           transform:`translateX(-50%) translateY(${dragY}px)`,
           transition: dragging ? 'none' : 'transform 0.35s cubic-bezier(0.32,0.72,0,1)',
@@ -1459,7 +1479,7 @@ function App() {
           background:'#0d0b1e',borderRadius:'24px 24px 0 0',
           border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',paddingBottom:'32px'}
       },
-        React.createElement('div',{style:{display:'flex',justifyContent:'center',padding:'12px 0 8px',cursor:'grab'}},
+        React.createElement('div',{style:{display:'flex',justifyContent:'center',padding:'12px 0 8px',cursor:dragging?'grabbing':'grab'}},
           React.createElement('div',{style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.3)'}})
         ),
         React.createElement('div',{style:{padding:'4px 20px 14px',borderBottom:'1px solid rgba(255,255,255,0.06)'}},
@@ -4303,7 +4323,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 
 
 
-      const minLoad = new Promise(resolve => setTimeout(resolve, 60000));
+      const minLoad = new Promise(resolve => setTimeout(resolve, 1500));
       // ── 십성 계산 ──
       const tenGodMap = {};
       ['year','month','hour'].forEach(k => {
@@ -4460,25 +4480,20 @@ ${curDwPayload}
         prompt,
         max_tokens: 8192
       };
-      const aiFetch = callAI(sajuPayload);
-      aiFetch.then(data => {
+      const aiFetchParsed = callAI(sajuPayload)
+      .then(data => {
         const text = (data.content||[]).map(x=>x.text||'').join('');
-        console.log('===== AI 사주 응답 =====');
-        console.log('data 전체:', JSON.stringify(data).slice(0,500));
-        console.log('text 길이:', text.length, '| text:', text.slice(0,200));
-        let sections = null;
-        try {
-          sections = robustParseAI(text);
-        } catch(e) { console.error('사주 JSON 파싱 실패:', e.message, text.slice(0,200)); }
+        console.log('AI 사주 응답 길이:', text.length);
+        const sections = robustParseAI(text);
         if (sections) {
           try { localStorage.setItem(cacheKey, JSON.stringify(sections)); } catch(e) {}
         }
-        return sections;
+        return sections || null;
       })
       .catch(err => { console.error('AI 사주 fetch 오류:', err); return null; });
-      Promise.all([aiFetch, minLoad])
+      Promise.all([aiFetchParsed, minLoad])
       .then(([sections]) => {
-        if (sections) setAiSections(sections);
+        if (sections && sections.length > 0) setAiSections(sections);
         else setAiError(true);
       })
       .finally(() => setAiLoading(false));
@@ -5033,8 +5048,8 @@ ${curDwPayload}
         prompt,
         max_tokens: 8192
       };
-      const aiFetchC = callAI(compatPayload);
-      aiFetchC.then(data => {
+      const aiFetchCParsed = callAI(compatPayload)
+      .then(data => {
         const text = (data.content||[]).map(x=>x.text||'').join('');
         console.log('AI 궁합 응답 길이:', text.length);
         let result = null;
@@ -5058,7 +5073,7 @@ ${curDwPayload}
         return null;
       })
       .catch(e => { console.error('궁합 AI fetch 오류:', e); return null; });
-      Promise.all([aiFetchC, minLoadC])
+      Promise.all([aiFetchCParsed, minLoadC])
       .then(([result]) => {
         if (result && result.sections && result.sections.length > 0) {
           setAiCompatSections(result.sections);
