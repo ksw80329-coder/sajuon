@@ -714,6 +714,7 @@ const IMP_CODE        = 'imp60556156';                                   // 포�
 const CHANNEL_KAKAO   = 'channel-key-75ce192f-2096-4d4b-af96-a53da4e69b13'; // 카카오페이 채널키
 const CHANNEL_TOSS    = 'channel-key-30262341-2209-4aab-93f3-805737438ec0';  // 토스페이 채널키
 const PAYMENT_WORKER  = 'https://api.sajuon.kr';
+const AI_WORKER       = 'https://morning-rice-eb57.godwk15.workers.dev';
 const DEV_MODE = false; // 프로덕션 — 항상 false
 
 // 카카오 SDK는 <head>에서 이미 초기화됨 (중복 방지)
@@ -753,7 +754,7 @@ function App() {
   // 브라우저 뒤로가기/앞으로가기 이벤트 처리
   // ===== Deno 서버 워밍업 핑 (콜드스타트 방지) =====
   React.useEffect(() => {
-    fetch('https://morning-rice-eb57.godwk15.workers.dev/q', {
+    fetch(`${AI_WORKER}/q`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ping: true })
@@ -8254,7 +8255,7 @@ ${isSangsaeng
       for (let attempt = 0; attempt < 3; attempt++) {
         if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
         try {
-          const res = await fetch('https://morning-rice-eb57.godwk15.workers.dev/q', {
+          const res = await fetch(`${AI_WORKER}/q`, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
             body: enc(payload),
@@ -9969,14 +9970,14 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
             React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'10px'} },
               // 카카오페이
               React.createElement('button', {
-                onClick: () => alert('카카오페이는 현재 준비 중입니다. 토스페이를 이용해 주세요.'),
-                style:{width:'100%',padding:'18px 20px',background:'rgba(254,229,0,0.4)',borderRadius:'18px',border:'none',cursor:'default',display:'flex',alignItems:'center',justifyContent:'space-between',opacity:0.55,boxShadow:'0 4px 20px rgba(254,229,0,0.25)',transition:'all 0.2s'}
+                onClick: () => !processing && doCharge(selPkg, 'kakao'),
+                style:{width:'100%',padding:'18px 20px',background:'linear-gradient(135deg,#FEE500,#F5DC00)',borderRadius:'18px',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',opacity:0.55,boxShadow:'0 4px 20px rgba(254,229,0,0.25)',transition:'all 0.2s'}
               },
                 React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'14px'} },
-                  React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'12px',background:'rgba(60,30,30,0.1)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px'} }, '💛'),
+                  React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'12px',background:'rgba(60,30,30,0.12)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px'} }, '💛'),
                   React.createElement('div', { style:{textAlign:'left'} },
-                    React.createElement('div', {style:{display:'flex',alignItems:'center',gap:'8px'}}, React.createElement('p', { style:{fontWeight:'800',fontSize:'15px',color:'rgba(60,30,30,0.5)',letterSpacing:'-0.3px'} }, '카카오페이'), React.createElement('span',{style:{fontSize:'9px',background:'rgba(60,30,30,0.15)',color:'rgba(60,30,30,0.5)',padding:'2px 6px',borderRadius:'6px',fontWeight:'700'}},'준비중')),
-                    React.createElement('p', { style:{fontSize:'11px',color:'rgba(60,30,30,0.3)',marginTop:'1px'} }, '카카오 간편결제')
+                    React.createElement('p', { style:{fontWeight:'800',fontSize:'15px',color:'#3C1E1E',letterSpacing:'-0.3px'} }, '카카오페이'),
+                    React.createElement('p', { style:{fontSize:'11px',color:'rgba(60,30,30,0.6)',marginTop:'1px'} }, '카카오 간편결제')
                   )
                 ),
                 React.createElement('div', { style:{textAlign:'right'} },
