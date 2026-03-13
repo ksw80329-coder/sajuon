@@ -4158,8 +4158,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           React.createElement('p', { style:{fontSize:'11px',color:'rgba(255,255,255,0.25)',marginTop:'8px'} }, '시간을 모르면 비워두세요 — 일주까지만 분석됩니다')
         )
       ),
-      React.createElement('button', { onClick: startAnalysis, style:{width:'100%',marginTop:'16px',padding:'18px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'20px',fontWeight:'800',fontSize:'16px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 4px 40px rgba(139,92,246,0.5)',letterSpacing:'0.5px',position:'relative',zIndex:1} }, '✦ 무료 사주 보기'),
-    )
+      React.createElement('button', { onClick: startAnalysis, style:{width:'100%',marginTop:'16px',padding:'18px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'20px',fontWeight:'800',fontSize:'16px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 4px 40px rgba(139,92,246,0.5)',letterSpacing:'0.5px',position:'relative',zIndex:1} }, '✦ 무료 사주 보기')
   );
 
   const FreeResultScreen = () => {
@@ -7725,24 +7724,31 @@ ${isSangsaeng
               React.createElement('p', { style:{color:`${cat.color}99`,fontSize:'11px',fontWeight:'600',letterSpacing:'1px'} }, '✦ 분석할 사주 선택'),
               React.createElement('button', { onClick:()=>{ setForm({name:'',gender:'여성',calendar:'양력',year:'',month:'',day:'',hour:'',minute:''}); setReturnScreen('timing'); setScreen('input'); }, style:{fontSize:'10px',color:cat.color,background:`${cat.color}15`,border:`1px solid ${cat.color}30`,padding:'4px 10px',borderRadius:'20px',cursor:'pointer'} }, '+ 새 사주')
             ),
-            React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'6px'} },
+            React.createElement('select', {
+              value: selPerson || '',
+              onChange: e => setSelPerson(e.target.value || null),
+              style:{width:'100%',padding:'13px 16px',background:'rgba(255,255,255,0.05)',border:`1px solid ${cat.color}40`,borderRadius:'16px',color:'white',fontSize:'13px',outline:'none',cursor:'pointer',appearance:'none',WebkitAppearance:'none'}
+            },
+              React.createElement('option',{value:'',style:{background:'#1a0533'}},'— 사주를 선택하세요 —'),
               savedSaju.map((s,i) => {
-                const isSel = String(selPerson)===String(s.id);
                 const paid = savedTiming.some(t=>String(t.personId)===String(s.id)&&t.category===selCat);
-                return React.createElement('button',{key:i,onClick:()=>setSelPerson(s.id),
-                  style:{display:'flex',alignItems:'center',gap:'12px',padding:'13px',background:isSel?`${cat.color}18`:'rgba(255,255,255,0.04)',borderRadius:'16px',border:isSel?`1px solid ${cat.color}50`:'1px solid rgba(255,255,255,0.06)',cursor:'pointer'}
-                },
-                  React.createElement('div',{style:{width:'34px',height:'34px',borderRadius:'50%',background:s.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',color:'white',fontWeight:'900',flexShrink:0}},s.gender==='여성'?'♀':'♂'),
-                  React.createElement('div',{style:{flex:1,textAlign:'left'}},
-                    React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'13px'}},s.name),
-                    React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'}},s.year+'.'+s.month+'.'+s.day+' · '+s.gender)
-                  ),
-                  paid
-                    ? React.createElement('span',{style:{fontSize:'10px',color:cat.color,background:`${cat.color}20`,border:`1px solid ${cat.color}40`,padding:'3px 8px',borderRadius:'10px',fontWeight:'700'}},'열람 완료')
-                    : isSel && React.createElement('div',{style:{width:'18px',height:'18px',borderRadius:'50%',background:cat.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'10px',color:'white'}},'✓')
-                );
+                const label = `${s.gender==='여성'?'♀':'♂'} ${s.name}  ${s.year}.${String(s.month).padStart(2,'0')}.${String(s.day).padStart(2,'0')}${paid?' ✓열람':'' }`;
+                return React.createElement('option',{key:i,value:String(s.id),style:{background:'#1a0533'}}, label);
               })
-            )
+            ),
+            selPerson && (() => {
+              const s = savedSaju.find(x=>String(x.id)===String(selPerson));
+              if (!s) return null;
+              const paid = savedTiming.some(t=>String(t.personId)===String(s.id)&&t.category===selCat);
+              return React.createElement('div',{style:{marginTop:'10px',padding:'13px 16px',background:`${cat.color}12`,borderRadius:'14px',border:`1px solid ${cat.color}25`,display:'flex',alignItems:'center',gap:'12px'}},
+                React.createElement('div',{style:{width:'36px',height:'36px',borderRadius:'50%',background:s.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'15px',color:'white',fontWeight:'900',flexShrink:0}},s.gender==='여성'?'♀':'♂'),
+                React.createElement('div',{style:{flex:1}},
+                  React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'13px',marginBottom:'2px'}},s.name),
+                  React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'}},s.year+'.'+String(s.month).padStart(2,'0')+'.'+String(s.day).padStart(2,'0')+' · '+s.gender)
+                ),
+                paid && React.createElement('span',{style:{fontSize:'10px',color:cat.color,background:`${cat.color}20`,border:`1px solid ${cat.color}40`,padding:'3px 8px',borderRadius:'10px',fontWeight:'700'}},'✓ 열람완료')
+              );
+            })()
           ),
 
           // 분석 범위 미리보기
@@ -8356,29 +8362,31 @@ ${isSangsaeng
               React.createElement('p', { style:{color:'rgba(196,181,253,0.6)',fontSize:'11px',fontWeight:'600',letterSpacing:'1px'} }, '✦ 분석할 사주 선택'),
               React.createElement('button', { onClick:()=>{ setForm({name:'',gender:'여성',calendar:'양력',year:'',month:'',day:'',hour:'',minute:''}); setReturnScreen('roadmap'); setScreen('input'); }, style:{fontSize:'10px',color:'#c4b5fd',background:'rgba(167,139,250,0.12)',border:'1px solid rgba(167,139,250,0.25)',padding:'4px 10px',borderRadius:'20px',cursor:'pointer'} }, '+ 새 사주')
             ),
-            React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'6px'} },
-              savedSaju.map((s,i)=>{
-                const isSel = String(selPerson)===String(s.id);
+            React.createElement('select', {
+              value: selPerson || '',
+              onChange: e => setSelPerson(e.target.value || null),
+              style:{width:'100%',padding:'13px 16px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(167,139,250,0.35)',borderRadius:'16px',color:'white',fontSize:'13px',outline:'none',cursor:'pointer',appearance:'none',WebkitAppearance:'none'}
+            },
+              React.createElement('option',{value:'',style:{background:'#1a0533'}},'— 사주를 선택하세요 —'),
+              savedSaju.map((s,i) => {
                 const paid = savedRoadmap.some(r=>String(r.personId)===String(s.id));
-                return React.createElement('button',{key:i,onClick:()=>setSelPerson(s.id),
-                  style:{display:'flex',alignItems:'center',gap:'12px',padding:'13px',background:isSel?'rgba(167,139,250,0.1)':'rgba(255,255,255,0.04)',borderRadius:'16px',border:isSel?'1px solid rgba(167,139,250,0.4)':'1px solid rgba(255,255,255,0.06)',cursor:'pointer'}
-                },
-                  React.createElement('div',{style:{width:'34px',height:'34px',borderRadius:'50%',background:s.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',color:'white',fontWeight:'900',flexShrink:0}},s.gender==='여성'?'♀':'♂'),
-                  React.createElement('div',{style:{flex:1,textAlign:'left'}},
-                    React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'13px'}},s.name),
-                    React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'}},s.year+'.'+s.month+'.'+s.day+' · '+s.gender)
-                  ),
-                  React.createElement('div',{style:{display:'flex',alignItems:'center',gap:'6px'}},
-                    paid ? React.createElement('span',{style:{fontSize:'10px',color:'#c4b5fd',background:'rgba(167,139,250,0.15)',border:'1px solid rgba(167,139,250,0.3)',padding:'3px 8px',borderRadius:'10px',fontWeight:'700'}},'열람 완료')
-                         : isSel ? React.createElement('div',{style:{width:'18px',height:'18px',borderRadius:'50%',background:'#a78bfa',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'10px',color:'white'}},'✓') : null,
-                    paid && React.createElement('button',{
-                      onClick:(e)=>{e.stopPropagation();if(window.confirm(s.name+'님의 인생 지도 분석을 삭제할까요?')){setSavedRoadmap(prev=>prev.filter(r=>String(r.personId)!==String(s.id)));if(String(selPerson)===String(s.id))setSelPerson(null);}},
-                      style:{flexShrink:0,width:'28px',height:'28px',borderRadius:'8px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',color:'#f87171',fontSize:'13px',fontWeight:'700',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0}
-                    },'✕')
-                  )
-                );
+                const label = `${s.gender==='여성'?'♀':'♂'} ${s.name}  ${s.year}.${String(s.month).padStart(2,'0')}.${String(s.day).padStart(2,'0')}${paid?' ✓열람':''}`;
+                return React.createElement('option',{key:i,value:String(s.id),style:{background:'#1a0533'}}, label);
               })
-            )
+            ),
+            selPerson && (() => {
+              const s = savedSaju.find(x=>String(x.id)===String(selPerson));
+              if (!s) return null;
+              const paid = savedRoadmap.some(r=>String(r.personId)===String(s.id));
+              return React.createElement('div',{style:{marginTop:'10px',padding:'13px 16px',background:'rgba(167,139,250,0.1)',borderRadius:'14px',border:'1px solid rgba(167,139,250,0.25)',display:'flex',alignItems:'center',gap:'12px'}},
+                React.createElement('div',{style:{width:'36px',height:'36px',borderRadius:'50%',background:s.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'15px',color:'white',fontWeight:'900',flexShrink:0}},s.gender==='여성'?'♀':'♂'),
+                React.createElement('div',{style:{flex:1}},
+                  React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'13px',marginBottom:'2px'}},s.name),
+                  React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'}},s.year+'.'+String(s.month).padStart(2,'0')+'.'+String(s.day).padStart(2,'0')+' · '+s.gender)
+                ),
+                paid && React.createElement('span',{style:{fontSize:'10px',color:'#c4b5fd',background:'rgba(167,139,250,0.15)',border:'1px solid rgba(167,139,250,0.3)',padding:'3px 8px',borderRadius:'10px',fontWeight:'700'}},'✓ 열람완료')
+              );
+            })()
           ),
 
           // 분석 미리보기
