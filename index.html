@@ -8251,6 +8251,17 @@ ${isSangsaeng
         return { content: [{ type: 'text', text: accumulated }] };
       };
 
+      // 구형 포맷 { t, prompt, max_tokens } → Anthropic API 포맷 변환
+      let apiPayload = payload;
+      if (payload.prompt && !payload.messages) {
+        apiPayload = {
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: payload.max_tokens || 8192,
+          stream: true,
+          messages: [{ role: 'user', content: payload.prompt }]
+        };
+      }
+
       // 재시도 (최대 3회)
       for (let attempt = 0; attempt < 3; attempt++) {
         if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
@@ -8258,7 +8269,7 @@ ${isSangsaeng
           const res = await fetch(`${AI_WORKER}/q`, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
-            body: enc(payload),
+            body: enc(apiPayload),
             signal,
             mode: 'cors',
           });
