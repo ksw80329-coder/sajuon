@@ -1769,8 +1769,8 @@ function App() {
 
       // 소요시간 안내 배너
       React.createElement('div', { style:{position:'relative',zIndex:1,marginBottom:'20px',background:'rgba(139,92,246,0.12)',border:'1px solid rgba(139,92,246,0.25)',borderRadius:'20px',padding:'10px 20px',textAlign:'center'} },
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'0.5px'} }, '✦ AI가 13개 섹션 · 10,000자 풀이를 직접 작성 중'),
-        React.createElement('p', { style:{color:'rgba(196,181,253,0.9)',fontSize:'12px',fontWeight:'700',marginTop:'3px'} }, '⏱️ 분석 완료까지 약 2~3분 소요됩니다'),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'0.5px'} }, '✦ 사주 원국 · 신살 · 대운을 심층 해석하고 있습니다'),
+        React.createElement('p', { style:{color:'rgba(196,181,253,0.9)',fontSize:'12px',fontWeight:'700',marginTop:'3px'} }, '⏱️ 완전한 풀이 완성까지 약 2~3분 소요됩니다'),
         elapsed >= 300 && React.createElement('p', { style:{color:'rgba(251,191,36,0.9)',fontSize:'11px',fontWeight:'700',marginTop:'6px',padding:'4px 10px',background:'rgba(251,191,36,0.1)',borderRadius:'8px'} }, '⚠️ 5분 이상 결과가 없으면 새로고침 해주세요')
       ),
 
@@ -8707,7 +8707,12 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
 - 앞선 12개 섹션을 꿰뚫는 올해 핵심 과제
 - 지금 당장 써먹을 수 있는 행동 1~3가지 (구체적으로)
 - 올해 안에 반드시 결정해야 할 것 하나
-- 마지막 문장: 이 사주가 ${person.name}님의 ${currentYear}년에 전하고 싶은 한마디.`;
+- 마지막 문장: 이 사주가 ${person.name}님의 ${currentYear}년에 전하고 싶은 한마디.
+
+▌출력 형식 (JSON만, 다른 텍스트 금지)
+{"sections":[{"icon":"이모지","color":"tailwind색상클래스","title":"제목","content":"800자 내용"}]}
+- sections 배열에 S1~S13 순서대로 13개 객체
+- color 예시: text-amber-400, text-yellow-400, text-orange-400, text-rose-400, text-purple-400`;
 
           const payload = { t: '4', prompt, max_tokens: 16000 };
           const data = await callAI(payload, ctrl.signal);
@@ -9108,6 +9113,10 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
       onClick: () => { setPaymentProduct(null); setScreen('charge'); },
       style:{width:'100%',padding:'15px',background:'linear-gradient(135deg,#f59e0b,#fbbf24)',borderRadius:'16px',fontWeight:'800',fontSize:'14px',color:'black',border:'none',cursor:'pointer',marginBottom:'20px',boxShadow:'0 4px 20px rgba(251,191,36,0.2)'}
     }, '⭐ 별 충전하기'),
+    moons >= 10 && React.createElement('button', {
+      onClick: exchangeMoonsForStars,
+      style:{width:'100%',padding:'13px',background:'linear-gradient(135deg,rgba(59,130,246,0.15),rgba(29,78,216,0.1))',borderRadius:'16px',fontWeight:'700',fontSize:'13px',color:'#93c5fd',border:'1px solid rgba(59,130,246,0.3)',cursor:'pointer',marginTop:'-8px',marginBottom:'4px'}
+    }, `🌙 달 ${moons}개 보유 · 10개 = ⭐1별 교환 가능`),
 
     // 구분선
     React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'14px'} },
@@ -9318,7 +9327,7 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
         )
       ),
 
-      React.createElement('div', { style:{padding:'8px 16px 20px',maxWidth:'512px',margin:'0 auto',display:'flex',flexDirection:'column',gap:'16px',position:'relative',zIndex:1} },
+      React.createElement('div', { style:{padding:'72px 16px 20px',maxWidth:'512px',margin:'0 auto',display:'flex',flexDirection:'column',gap:'16px',position:'relative',zIndex:1} },
 
         // 결제 대기 안내
         pendingProduct && React.createElement('div', { style:{background:'rgba(124,58,237,0.06)',borderRadius:'18px',border:'1px solid rgba(124,58,237,0.3)',padding:'16px'} },
