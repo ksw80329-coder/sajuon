@@ -8257,7 +8257,7 @@ ${isSangsaeng
         apiPayload = {
           model: 'claude-sonnet-4-6',
           max_tokens: payload.max_tokens || 16000,
-          stream: false,
+          stream: true,
           messages: [{ role: 'user', content: payload.prompt }]
         };
       }
