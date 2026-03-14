@@ -1770,7 +1770,13 @@ function App() {
       // 소요시간 안내 배너
       React.createElement('div', { style:{position:'relative',zIndex:1,marginBottom:'20px',background:'rgba(139,92,246,0.12)',border:'1px solid rgba(139,92,246,0.25)',borderRadius:'20px',padding:'10px 20px',textAlign:'center'} },
         React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'0.5px'} }, '✦ 사주 원국 · 신살 · 대운을 심층 해석하고 있습니다'),
-        React.createElement('p', { style:{color:'rgba(196,181,253,0.9)',fontSize:'12px',fontWeight:'700',marginTop:'3px'} }, '⏱️ 완전한 풀이 완성까지 약 2~3분 소요됩니다'),
+        React.createElement('p', { style:{color:'rgba(196,181,253,0.9)',fontSize:'12px',fontWeight:'700',marginTop:'3px'} },
+          elapsed < 30 ? '⏱️ 완전한 풀이 완성까지 약 2~3분 소요됩니다' :
+          elapsed < 90 ? `⏱️ 완성까지 약 ${Math.max(10, 150 - elapsed)}초 남았습니다` :
+          elapsed < 150 ? `⏱️ 거의 다 됐어요 — 약 ${Math.max(5, 160 - elapsed)}초 남았습니다` :
+          elapsed < 240 ? '⏱️ 내용이 많아 조금 더 걸리고 있어요, 거의 완성됐습니다' :
+          '⏱️ 풀이 마무리 중입니다 — 잠시만 더 기다려주세요'
+        ),
         elapsed >= 300 && React.createElement('p', { style:{color:'rgba(251,191,36,0.9)',fontSize:'11px',fontWeight:'700',marginTop:'6px',padding:'4px 10px',background:'rgba(251,191,36,0.1)',borderRadius:'8px'} }, '⚠️ 5분 이상 결과가 없으면 새로고침 해주세요')
       ),
 
@@ -8030,7 +8036,7 @@ ${pillarsDesc}
           if(e.name!=='AbortError') setAiError(true);
         }finally{ setAiLoading(false); }
       })();
-      return ()=>ctrl.abort();
+      clearTimeout(_timeout); return ()=>{ ctrl.abort(); clearTimeout(_timeout); };
     },[]);
 
     // 대운 타임라인 렌더
@@ -8565,6 +8571,8 @@ ${pillarsDesc}
     React.useEffect(()=>{
       if (aiSections) { setAiLoading(false); return; }
       const ctrl = new AbortController();
+      // 180초 타임아웃
+      const timeout = setTimeout(() => { /* 타임아웃 무시 */ }, 999000);
       (async()=>{
         try{
           const prompt = `당신은 한국 최고의 사주 명리학 전문가입니다. 아래 만세력 데이터를 보고 ${person.name}님의 ${currentYear}년 신년운세를 작성하세요.
@@ -8739,7 +8747,7 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
       React.createElement(StarBg),
 
       // 헤더 (사주/궁합과 동일한 sticky 헤더)
-      React.createElement('div', { style:{position:'sticky',top:0,zIndex:20,background:'rgba(7,5,20,0.95)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(252,211,77,0.1)'} },
+      React.createElement('div', { style:{position:'sticky',top:56,zIndex:20,background:'rgba(7,5,20,0.95)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(252,211,77,0.1)'} },
         React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',maxWidth:'512px',margin:'0 auto'} },
           React.createElement('button', { onClick:()=>setScreen('yearly'), style:{width:'36px',height:'36px',borderRadius:'12px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
           React.createElement('div', { style:{flex:1,minWidth:0} },
@@ -8750,7 +8758,7 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
         )
       ),
 
-      React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
+      React.createElement('div', { style:{padding:'16px 16px 0',position:'relative',zIndex:1} },
 
         // 기본 정보 카드
         React.createElement('div', { style:{background:'linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.05))',borderRadius:'20px',border:'1px solid rgba(251,191,36,0.2)',padding:'16px',margin:'12px 0'} },
