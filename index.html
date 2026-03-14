@@ -773,6 +773,109 @@ function App() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+
+  const _aiQueue = React.useRef(Promise.resolve());
+  const callAI = React.useCallback((payload, signal) => {
+    const task = _aiQueue.current.then(async () => {
+      const enc = (o) => {
+        const s = JSON.stringify(o);
+        const b = new TextEncoder().encode(s);
+        let bin = '';
+        b.forEach(ch => bin += String.fromCharCode(ch));
+        return JSON.stringify({ b: btoa(bin) });
+      };
+
+      const parseSSEStream = async (res) => {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulated = '';
+        let buffer = '';
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') continue;
+              try {
+                const evt = JSON.parse(data);
+                if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+                  accumulated += evt.delta.text;
+                }
+                if (evt.type === 'error') throw new Error(evt.error?.message || 'Stream error');
+              } catch(e) {
+                if (e.message === 'Stream error') throw e;
+              }
+            }
+          }
+        } finally { reader.releaseLock(); }
+        return { content: [{ type: 'text', text: accumulated }] };
+      };
+
+      // 구형 포맷 { t, prompt, max_tokens } → Anthropic API 포맷 변환
+      let apiPayload = payload;
+      if (payload.prompt && !payload.messages) {
+        apiPayload = {
+          model: 'claude-sonnet-4-6',
+          max_tokens: payload.max_tokens || 16000,
+          stream: true,
+          messages: [{ role: 'user', content: payload.prompt }]
+        };
+      }
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+        try {
+          const res = await fetch(`${AI_WORKER}/q`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: enc(apiPayload),
+            signal,
+            mode: 'cors',
+          });
+          if (res.status === 429) {
+            const wait = (attempt + 1) * 5000;
+            await new Promise(r => setTimeout(r, wait));
+            continue;
+          }
+          if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            const msg = errBody?.error || errBody?.message || `서버 오류 (${res.status})`;
+            console.error('AI 서버 에러:', res.status, msg);
+            if ((res.status === 500 || res.status === 524) && attempt < 2) {
+              await new Promise(r => setTimeout(r, 3000));
+              continue;
+            }
+            throw new Error(msg);
+          }
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('text/event-stream')) {
+            return await parseSSEStream(res);
+          } else {
+            return await res.json();
+          }
+        } catch(e) {
+          if (e.name === 'AbortError') throw e;
+          if (attempt < 2) {
+            console.warn(`오류 — 재시도 (${attempt+1}/3):`, e.message);
+            await new Promise(r => setTimeout(r, 3000));
+            continue;
+          }
+          throw e;
+        }
+      }
+      throw new Error('AI 서버 응답 없음 — 잠시 후 다시 시도해주세요');
+    });
+    _aiQueue.current = task.catch(() => {});
+    return task;
+  }, []);
+
   // ========== 계정별 localStorage 유틸 ==========
   // 키 형식: sajuon::{userKey}::{dataType}
   const storageKey = (userKey, type) => `sajuon::${userKey}::${type}`;
@@ -1452,7 +1555,7 @@ function App() {
     };
 
     const items = [
-      { icon:'🗺️', label:'대운 인생 지도', sub:'대운 10개 완전 분석 · 전성기·취약기 특정', screen:'roadmap', color:'#c4b5fd', price:'⭐10', badge:'BEST' },
+      { icon:'🗺️', label:'대운 인생 지도', sub:'10년 단위 대운 완전 분석 · 전성기·취약기 특정 · 지금 내 시간의 위치', screen:'roadmap', color:'#c4b5fd', price:'⭐10', badge:'BEST' },
     ];
     return React.createElement(React.Fragment, null,
       React.createElement('div', {
@@ -8231,7 +8334,7 @@ ${pillarsDesc}
     return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'112px',position:'relative'} },
       React.createElement(StarBg),
       React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
-        React.createElement(PageHeader, { label:'2026 신년운세', title:'올 한 해의 운명', backTarget:'home' }),
+        React.createElement(PageHeader, { label:'YEARLY FORTUNE', title:'2026 신년운세', backTarget:'home' }),
 
         // 히어로
         React.createElement('div', { style:{textAlign:'center',padding:'16px 0 24px',position:'relative'} },
@@ -8351,11 +8454,39 @@ ${pillarsDesc}
             )
           ),
 
+          // 가격 안내 카드
+          React.createElement('div', { style:{background:'linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.06))',borderRadius:'20px',border:'1px solid rgba(251,191,36,0.25)',padding:'16px',marginBottom:'12px'} },
+            React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'} },
+              React.createElement('div', null,
+                React.createElement('p', { style:{color:'rgba(252,211,77,0.6)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'4px'} }, '2026 신년운세'),
+                React.createElement('p', { style:{color:'white',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px'} }, '₩1,900')
+              ),
+              React.createElement('div', { style:{textAlign:'right'} },
+                React.createElement('div', { style:{background:'rgba(251,191,36,0.15)',borderRadius:'10px',padding:'4px 10px',marginBottom:'4px'} },
+                  React.createElement('span', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px'} }, '⭐ 19별')
+                ),
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px'} }, '별 충전 시 할인 가능')
+              )
+            ),
+            React.createElement('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap'} },
+              ['📖 13개 섹션','📅 월별 운세','💡 즉시 열람','🔒 청약철회 불가'].map((t,i)=>
+                React.createElement('span',{key:i,style:{fontSize:'10px',color:'rgba(251,191,36,0.7)',background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.15)',borderRadius:'20px',padding:'3px 8px'}},t)
+              )
+            )
+          ),
+
           // CTA 버튼
           React.createElement('button',{
             onClick: handleStart,
-            style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'16px',fontWeight:'900',fontSize:'16px',letterSpacing:'-0.5px',border:'none',cursor:'pointer',color:'#1a0a00'}
-          }, savedYearly.some(y=>String(y.personId)===String(selPerson)) ? '🎊 2026 신년운세 보기' : '🎊 2026 신년운세 보기  ⭐ 19별')
+            style:{width:'100%',padding:'18px',background: savedYearly.some(y=>String(y.personId)===String(selPerson)) ? 'linear-gradient(135deg,#4ade80,#22c55e)' : 'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'20px',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.3px',border:'none',cursor:'pointer',color:'#1a0a00',boxShadow:'0 4px 30px rgba(251,191,36,0.4)',position:'relative'}
+          },
+            savedYearly.some(y=>String(y.personId)===String(selPerson))
+              ? '🎊 2026 신년운세 결과 보기'
+              : React.createElement(React.Fragment, null,
+                  '🎊 2026 신년운세 분석받기',
+                  React.createElement('span', { style:{display:'block',fontSize:'11px',fontWeight:'600',marginTop:'2px',opacity:0.7} }, '₩1,900 · 즉시 열람 · 13개 섹션 완전 분석')
+                )
+          )
         )
       )
     )
