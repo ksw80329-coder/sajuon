@@ -4678,7 +4678,7 @@ ${curDwPayload}
       const sajuPayload = {
         t: '4',
         prompt,
-        max_tokens: 8192
+        max_tokens: 16000
       };
       const aiFetchParsed = callAI(sajuPayload)
       .then(data => {
@@ -5404,7 +5404,7 @@ ${p2PillarDesc}
       const compatPayload = {
         t: '4',
         prompt,
-        max_tokens: 8192
+        max_tokens: 16000
       };
       const aiFetchCParsed = callAI(compatPayload)
       .then(data => {
@@ -8037,7 +8037,7 @@ ${isSangsaeng
       (async()=>{
         try{
           // 검증된 /q 엔드포인트 사용
-          const payload = { t: '4', prompt, max_tokens: 8192 };
+          const payload = { t: '4', prompt, max_tokens: 16000 };
           const data = await callAI(payload, ctrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
           const clean = text.replace(/```json|```/g,'').trim();
@@ -8255,8 +8255,8 @@ ${isSangsaeng
       let apiPayload = payload;
       if (payload.prompt && !payload.messages) {
         apiPayload = {
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: payload.max_tokens || 8192,
+          model: 'claude-sonnet-4-6',
+          max_tokens: payload.max_tokens || 16000,
           stream: true,
           messages: [{ role: 'user', content: payload.prompt }]
         };
@@ -8631,7 +8631,7 @@ ${pillarsDesc}
       const ctrl = new AbortController();
       (async()=>{
         try{
-          const payload = { t: '4', prompt, max_tokens: 8192 };
+          const payload = { t: '4', prompt, max_tokens: 16000 };
           const data = await callAI(payload, ctrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
           const clean = text.replace(/```json|```/g,'').trim();
@@ -9299,7 +9299,7 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
 - 올해 안에 반드시 결정해야 할 것 하나
 - 마지막 문장: 이 사주가 ${person.name}님의 ${currentYear}년에 전하고 싶은 한마디.`;
 
-          const payload = { t: '4', prompt, max_tokens: 8192 };
+          const payload = { t: '4', prompt, max_tokens: 16000 };
           const data = await callAI(payload, ctrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
           const clean = text.replace(/```json|```/g,'').trim();
