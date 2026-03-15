@@ -1429,7 +1429,7 @@ function App() {
           ),
           React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
             React.createElement('span',{style:{color:'rgba(255,255,255,0.5)',fontSize:'11px'}},'결제 금액'),
-            React.createElement('span',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'16px'}}, `⭐${product.stars}별 (₩${(product.price||0).toLocaleString()})`)
+            React.createElement('span',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'16px'}}, `⭐${product.stars}별`)
           )
         ),
         // 체크박스 1: 청약철회 불가
@@ -8504,7 +8504,7 @@ ${pillarsDesc}
             React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'} },
               React.createElement('div', null,
                 React.createElement('p', { style:{color:'rgba(252,211,77,0.6)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'4px'} }, '2026 신년운세'),
-                React.createElement('p', { style:{color:'white',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px'} }, '₩1,900')
+                React.createElement('p', { style:{color:'white',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px'} }, '⭐ 2별')
               ),
               React.createElement('div', { style:{textAlign:'right'} },
                 React.createElement('div', { style:{background:'rgba(251,191,36,0.15)',borderRadius:'10px',padding:'4px 10px',marginBottom:'4px'} },
@@ -8529,7 +8529,7 @@ ${pillarsDesc}
               ? '🎊 2026 신년운세 결과 보기'
               : React.createElement(React.Fragment, null,
                   '🎊 2026 신년운세 분석받기',
-                  React.createElement('span', { style:{display:'block',fontSize:'11px',fontWeight:'600',marginTop:'2px',opacity:0.7} }, '₩1,900 · 즉시 열람 · 13개 섹션 완전 분석')
+                  React.createElement('span', { style:{display:'block',fontSize:'11px',fontWeight:'600',marginTop:'2px',opacity:0.7} }, '⭐ 2별 · 즉시 열람 · 13개 섹션 완전 분석')
                 )
           )
         )
@@ -9280,7 +9280,7 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
                   React.createElement('div', { style:{width:'42px',height:'42px',borderRadius:'14px',background:isSelected?'linear-gradient(135deg,#7c3aed,#a855f7)':'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',flexShrink:0} }, '⭐'),
                   React.createElement('div', null,
                     React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'16px',letterSpacing:'-0.3px'} }, '⭐ '+pkg.stars+'별'+(pkg.moons>0?' + 🌙 '+pkg.moons+'달':'')),
-                    React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'11px',marginTop:'2px'} }, pkg.price.toLocaleString()+'원')
+                    React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'11px',marginTop:'2px'} }, '₩'+pkg.price.toLocaleString())
                   )
                 ),
                 React.createElement('div', { style:{textAlign:'right'} },
@@ -9315,7 +9315,7 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
                 ),
                 React.createElement('div', { style:{textAlign:'right'} },
                   React.createElement('p', { style:{fontWeight:'900',fontSize:'20px',color:'#3C1E1E',letterSpacing:'-0.5px'} }, '⭐'+selPkg.stars+'별'),
-                  React.createElement('p', { style:{fontSize:'10px',color:'rgba(60,30,30,0.4)',marginTop:'1px'} }, selPkg.price.toLocaleString()+'원')
+                  React.createElement('p', { style:{fontSize:'10px',color:'rgba(60,30,30,0.4)',marginTop:'1px'} }, '₩'+selPkg.price.toLocaleString())
                 )
               ),
               // 토스페이
@@ -9332,7 +9332,7 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
                 ),
                 React.createElement('div', { style:{textAlign:'right'} },
                   React.createElement('p', { style:{fontWeight:'900',fontSize:'20px',color:'white',letterSpacing:'-0.5px'} }, '⭐'+selPkg.stars+'별'),
-                  React.createElement('p', { style:{fontSize:'10px',color:'rgba(255,255,255,0.35)',marginTop:'1px'} }, selPkg.price.toLocaleString()+'원')
+                  React.createElement('p', { style:{fontSize:'10px',color:'rgba(255,255,255,0.35)',marginTop:'1px'} }, '₩'+selPkg.price.toLocaleString())
                 )
               )
             ),
