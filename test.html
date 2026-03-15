@@ -808,7 +808,7 @@ function App() {
             }
           }
         } finally { reader.releaseLock(); }
-        return { content: [{ type: 'text', text: accumulated }] };
+        console.log('[callAI] SSE 완료, 길이:', accumulated.length); return { content: [{ type: 'text', text: accumulated }] };
       };
       let apiPayload = payload;
       if (payload.prompt && !payload.messages) {
@@ -817,14 +817,15 @@ function App() {
       for (let attempt = 0; attempt < 3; attempt++) {
         if (signal?.aborted) throw new DOMException('Aborted','AbortError');
         try {
-          const res = await fetch(`${AI_WORKER}/q`, { method:'POST', headers:{'Content-Type':'text/plain'}, body:enc(apiPayload), signal, mode:'cors' });
+          console.log('[callAI] Worker 호출, attempt:', attempt); const res = await fetch(`${AI_WORKER}/q`, { method:'POST', headers:{'Content-Type':'text/plain'}, body:enc(apiPayload), signal, mode:'cors' });
           if (res.status === 429) { await new Promise(r => setTimeout(r, (attempt+1)*5000)); continue; }
           if (!res.ok) {
             const eb = await res.json().catch(()=>({}));
+            console.error('[callAI] 서버에러:', res.status, JSON.stringify(eb).slice(0,300));
             if ((res.status===500||res.status===524) && attempt<2) { await new Promise(r=>setTimeout(r,3000)); continue; }
             throw new Error(eb?.message||`서버 오류 (${res.status})`);
           }
-          if ((res.headers.get('content-type')||'').includes('text/event-stream')) return await parseSSEStream(res);
+          if ((res.headers.get('content-type')||'').includes('text/event-stream')) { console.log('[callAI] SSE 스트림 시작'); return await parseSSEStream(res); }
           return await res.json();
         } catch(e) {
           if (e.name==='AbortError') throw e;
@@ -5215,7 +5216,7 @@ ${curDwPayload}
     const person1 = savedSaju.find(s => String(s.id) === String(compatPerson1));
     const person2 = savedSaju.find(s => String(s.id) === String(compatPerson2));
 
-    const _compatCacheKey = (person1 && person2) ? `ai_compat_v38_${person1.id}_${person2.id}_${compatRelation||'couple'}` : 'ai_compat_null';
+    const _compatCacheKey = (person1 && person2) ? `ai_compat_v39_${person1.id}_${person2.id}_${compatRelation||'couple'}` : 'ai_compat_null';
     const [aiCompatSections, setAiCompatSections] = React.useState(() => {
       try { const c = localStorage.getItem(_compatCacheKey); const p = c ? JSON.parse(c) : null; return p && Array.isArray(p.sections) && p.sections.length > 0 ? p.sections : null; } catch(e) { return null; }
     });
