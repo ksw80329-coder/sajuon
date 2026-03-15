@@ -9572,6 +9572,14 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
     const inputStyle = {width:'100%',padding:'14px 16px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'14px',color:'white',fontSize:'15px',outline:'none',marginBottom:'10px',boxSizing:'border-box'};
     const msgStyle = (type) => ({fontSize:'12px',padding:'10px 14px',borderRadius:'10px',marginBottom:'10px',background: type==='ok' ? 'rgba(52,211,153,0.12)' : 'rgba(239,68,68,0.12)',color: type==='ok' ? '#34d399' : '#fca5a5',lineHeight:'1.5'});
 
+    const [dragY, setDragY] = React.useState(0);
+    const startYRef = React.useRef(0);
+    const close = () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); };
+
+    const onTouchStart = e => { startYRef.current = e.touches[0].clientY; };
+    const onTouchMove = e => { const dy = e.touches[0].clientY - startYRef.current; if (dy > 0) setDragY(dy); };
+    const onTouchEnd = () => { if (dragY > 100) close(); setDragY(0); };
+
     return React.createElement('div', {
       style:{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'}
     },
@@ -9580,7 +9588,8 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
         onClick: () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); }
       }),
       React.createElement('div', {
-        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',overflow:'hidden'},
+        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',overflow:'hidden',transform:`translateY(${dragY}px)`,transition:dragY===0?'transform 0.3s cubic-bezier(0.32,0.72,0,1)':'none'},
+        onTouchStart, onTouchMove, onTouchEnd,
         onClick: e => e.stopPropagation()
       },
         React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.15)',margin:'12px auto 0'} }),
