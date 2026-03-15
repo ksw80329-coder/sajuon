@@ -815,7 +815,7 @@ function App() {
       };
       let apiPayload = payload;
       if (payload.prompt && !payload.messages) {
-        apiPayload = { model: 'claude-sonnet-4-6', max_tokens: payload.max_tokens || 16000, stream: true, messages: [{ role: 'user', content: payload.prompt }] };
+        apiPayload = { model: 'claude-sonnet-4-6', max_tokens: payload.max_tokens || 16000, stream: false, messages: [{ role: 'user', content: payload.prompt }] };
       }
       for (let attempt = 0; attempt < 3; attempt++) {
         if (signal?.aborted) throw new DOMException('Aborted','AbortError');
@@ -828,7 +828,7 @@ function App() {
             if ((res.status===500||res.status===524) && attempt<2) { await new Promise(r=>setTimeout(r,3000)); continue; }
             throw new Error(eb?.message||`서버 오류 (${res.status})`);
           }
-          if ((res.headers.get('content-type')||'').includes('text/event-stream')) { console.log('[callAI] SSE 스트림 시작'); return await parseSSEStream(res); }
+          return await res.json();
           return await res.json();
         } catch(e) {
           if (e.name==='AbortError') throw e;
