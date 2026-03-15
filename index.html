@@ -5149,7 +5149,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                   React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'50%',background:s.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',color:'white',fontWeight:'900',flexShrink:0} }, s.gender==='여성'?'♀':'♂'),
                   React.createElement('span', { style:{color:'white',fontWeight:'700',fontSize:'13px'} }, s.name),
                   React.createElement('span', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'} }, s.year+'.'+String(s.month).padStart(2,'0')+'.'+String(s.day).padStart(2,'0')),
-                  isPaid && React.createElement('span', { style:{marginLeft:'auto',background:'rgba(74,222,128,0.12)',border:'1px solid rgba(74,222,128,0.3)',color:'#4ade80',fontSize:'10px',fontWeight:'700',padding:'2px 7px',borderRadius:'10px'} }, '✓ 열람가능')
                 );
               })()
             )
@@ -5180,7 +5179,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                   React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'50%',background:s.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',color:'white',fontWeight:'900',flexShrink:0} }, s.gender==='여성'?'♀':'♂'),
                   React.createElement('span', { style:{color:'white',fontWeight:'700',fontSize:'13px'} }, s.name),
                   React.createElement('span', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'} }, s.year+'.'+String(s.month).padStart(2,'0')+'.'+String(s.day).padStart(2,'0')),
-                  isPaid && React.createElement('span', { style:{marginLeft:'auto',background:'rgba(74,222,128,0.12)',border:'1px solid rgba(74,222,128,0.3)',color:'#4ade80',fontSize:'10px',fontWeight:'700',padding:'2px 7px',borderRadius:'10px'} }, '✓ 열람가능')
                 );
               })()
             )
@@ -8657,69 +8655,141 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
       return () => ctrl.abort();
     }, [_cacheKey]);
 
-    return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'120px',position:'relative'} },
+    // 오행 기반 테마 색상
+    const elTheme = {
+      목: { primary:'#4ade80', secondary:'#86efac', bg:'rgba(74,222,128,0.08)', grad:'135deg,rgba(22,101,52,0.6),rgba(5,46,22,0.9)', accent:'#16a34a' },
+      화: { primary:'#f87171', secondary:'#fca5a5', bg:'rgba(248,113,113,0.08)', grad:'135deg,rgba(153,27,27,0.6),rgba(69,10,10,0.9)', accent:'#dc2626' },
+      토: { primary:'#fbbf24', secondary:'#fde68a', bg:'rgba(251,191,36,0.08)', grad:'135deg,rgba(146,64,14,0.6),rgba(69,26,3,0.9)', accent:'#d97706' },
+      금: { primary:'#e2e8f0', secondary:'#f1f5f9', bg:'rgba(226,232,240,0.08)', grad:'135deg,rgba(30,58,95,0.6),rgba(15,23,42,0.9)', accent:'#94a3b8' },
+      수: { primary:'#60a5fa', secondary:'#93c5fd', bg:'rgba(96,165,250,0.08)', grad:'135deg,rgba(30,58,138,0.6),rgba(15,23,69,0.9)', accent:'#2563eb' },
+    };
+    const theme = elTheme[dayEl] || elTheme['토'];
+
+    // 월별 운세 요약 (섹션에서 파싱)
+    const monthEmojis = ['❄️','🌸','🌿','🌧️','☀️','🌊','🍃','🌻','🍂','🎃','🍁','🎄'];
+
+    return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'120px',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
 
-      // ── 헤더 ──
-      React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
-        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 12px'} },
-          React.createElement('button', { onClick:()=>setScreen('yearly'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',color:'white',fontSize:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'} }, '←'),
+      // ── 히어로 헤더 (그라디언트 배경) ──
+      React.createElement('div', { style:{position:'relative',overflow:'hidden',paddingBottom:'28px'} },
+        // 배경 그라디언트
+        React.createElement('div', { style:{position:'absolute',inset:0,background:`linear-gradient(${theme.grad})`,opacity:0.9} }),
+        React.createElement('div', { style:{position:'absolute',bottom:0,left:0,right:0,height:'60px',background:'linear-gradient(to bottom, transparent, #070514)'} }),
+
+        // 헤더 바
+        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'16px 16px 0',position:'relative',zIndex:1} },
+          React.createElement('button', { onClick:()=>setScreen('yearly'), style:{width:'36px',height:'36px',borderRadius:'12px',background:'rgba(255,255,255,0.1)',border:'none',cursor:'pointer',color:'white',fontSize:'16px',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(8px)'} }, '←'),
           React.createElement('div', { style:{flex:1} },
-            React.createElement('p', { style:{color:'rgba(252,211,77,0.6)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase',marginBottom:'2px'} }, 'YEARLY FORTUNE'),
-            React.createElement('h1', { style:{color:'white',fontWeight:'800',fontSize:'17px',letterSpacing:'-0.5px'} }, `${person.name}님의 ${currentYear}년 신년운세`)
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase'} }, 'YEARLY FORTUNE'),
+            React.createElement('h1', { style:{color:'white',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.5px',margin:0} }, `${person.name}님의 ${currentYear}년 신년운세`)
           ),
           React.createElement('button', {
-            onClick: () => { if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`, text:`사주ON에서 분석한 ${person.name}님의 ${currentYear}년 운세입니다.`, url:window.location.href}).catch(()=>{}); } else { navigator.clipboard.writeText(window.location.href).catch(()=>{}); alert('링크가 복사되었습니다'); } },
-            style:{padding:'8px 14px',borderRadius:'12px',background:'rgba(251,191,36,0.1)',border:'1px solid rgba(251,191,36,0.25)',color:'#fbbf24',fontSize:'12px',fontWeight:'700',cursor:'pointer'}
+            onClick: () => { if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`}); } },
+            style:{padding:'8px 14px',borderRadius:'12px',background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.2)',color:'white',fontSize:'12px',fontWeight:'700',cursor:'pointer',backdropFilter:'blur(8px)'}
           }, '🔗 공유')
+        ),
+
+        // 프로필 + 핵심 정보
+        React.createElement('div', { style:{padding:'20px 16px 0',position:'relative',zIndex:1} },
+          React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'16px',marginBottom:'20px'} },
+            React.createElement('div', { style:{width:'64px',height:'64px',borderRadius:'50%',background:`linear-gradient(135deg,${theme.primary},${theme.accent})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px',boxShadow:`0 0 20px ${theme.primary}50`,flexShrink:0} },
+              person.gender==='여성' ? '♀' : '♂'
+            ),
+            React.createElement('div', null,
+              React.createElement('h2', { style:{color:'white',fontWeight:'900',fontSize:'20px',margin:'0 0 4px'} }, person.name),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'12px',margin:'0 0 6px'} }, `${person.year}.${String(person.month).padStart(2,'0')}.${String(person.day).padStart(2,'0')} · 만 ${new Date().getFullYear()-parseInt(person.year)}세`),
+              React.createElement('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap'} },
+                React.createElement('span', { style:{background:theme.bg,border:`1px solid ${theme.primary}40`,color:theme.primary,padding:'3px 10px',borderRadius:'20px',fontSize:'11px',fontWeight:'700'} }, `${dayGanKr}(${dayEl})`),
+                React.createElement('span', { style:{background:'rgba(255,255,255,0.08)',color:'rgba(255,255,255,0.6)',padding:'3px 10px',borderRadius:'20px',fontSize:'11px'} }, `용신 ${r.fe.yongshin}`)
+              )
+            )
+          ),
+
+          // 올해의 키워드 태그
+          React.createElement('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap'} },
+            ['총운 분석','월별 흐름','재물·연애','건강운'].map((tag,i) =>
+              React.createElement('span', { key:i, style:{background:'rgba(255,255,255,0.1)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.15)',color:'white',padding:'5px 12px',borderRadius:'20px',fontSize:'11px',fontWeight:'600'} }, tag)
+            )
+          )
         )
       ),
 
       React.createElement(DisclaimerBar),
 
+      // ── 본문 ──
       React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
 
-        // ── 기본 정보 카드 ──
-        React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'16px',marginBottom:'12px',display:'flex',alignItems:'center',gap:'14px'} },
-          React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'50%',background:person.gender==='여성'?'linear-gradient(135deg,#ec4899,#f472b6)':'linear-gradient(135deg,#3b82f6,#60a5fa)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0} }, person.gender==='여성'?'♀':'♂'),
-          React.createElement('div', { style:{flex:1} },
-            React.createElement('h2', { style:{color:'white',fontWeight:'800',fontSize:'17px',marginBottom:'3px'} }, person.name),
-            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, `${person.year}.${String(person.month).padStart(2,'0')}.${String(person.day).padStart(2,'0')} · ${person.gender} · 만 ${currentYear - parseInt(person.year)}세`),
-            React.createElement('p', { style:{color:'rgba(252,211,77,0.8)',fontSize:'12px',marginTop:'3px',fontWeight:'600'} }, `일간 ${dayGanKr}(${dayEl}행) · 용신 ${r.fe.yongshin} · ${sewoonDesc}`)
-          )
+        // 안내 배너
+        React.createElement('div', { style:{display:'flex',gap:'10px',alignItems:'flex-start',padding:'10px 14px',background:'rgba(251,191,36,0.05)',borderRadius:'14px',border:'1px solid rgba(251,191,36,0.1)',marginBottom:'16px',marginTop:'12px'} },
+          React.createElement('span', { style:{fontSize:'12px',flexShrink:0} }, 'ℹ️'),
+          React.createElement('p', { style:{color:'rgba(252,211,77,0.5)',fontSize:'10px',lineHeight:'1.6',margin:0} }, '전통 명리학 기반 참고용 콘텐츠 · 결과 확인 즉시 청약철회 불가')
         ),
 
-        // ── 로딩 ──
+        // 로딩
         aiLoading && React.createElement(SajuLoadingScreen),
 
-        // ── 에러 ──
-        aiError && React.createElement('div', { style:{background:'rgba(239,68,68,0.1)',borderRadius:'16px',border:'1px solid rgba(239,68,68,0.2)',padding:'20px',textAlign:'center',marginTop:'8px'} },
+        // 에러
+        aiError && React.createElement('div', { style:{background:'rgba(239,68,68,0.1)',borderRadius:'16px',border:'1px solid rgba(239,68,68,0.2)',padding:'20px',textAlign:'center',marginBottom:'16px'} },
           React.createElement('p', { style:{color:'#f87171',fontSize:'14px',marginBottom:'12px'} }, '분석 중 오류가 발생했습니다'),
           React.createElement('button', {
             onClick:()=>{ setAiError(false); setAiLoading(true); localStorage.removeItem(_cacheKey);
-              (async()=>{ try{ const data=await callAI({t:'4',prompt,max_tokens:16000}); const text=(data.content||[]).map(x=>x.text||'').join(''); const clean=text.replace(/```json|```/g,'').trim(); const j=clean.indexOf('{'); if(j===-1) throw new Error('no JSON'); const parsed=JSON.parse(clean.slice(j)); if(parsed.sections&&parsed.sections.length>0){ localStorage.setItem(_cacheKey,JSON.stringify({sections:parsed.sections})); setAiSections(parsed.sections); } else throw new Error('empty'); }catch(e){ setAiError(true); }finally{ setAiLoading(false); } })();
+              (async()=>{ try{ const data=await callAI({t:'4',prompt,max_tokens:16000}); const text=(data.content||[]).map(x=>x.text||'').join(''); const clean=text.replace(/\`\`\`json|\`\`\`/g,'').trim(); const j=clean.indexOf('{'); if(j===-1) throw new Error('no JSON'); const parsed=JSON.parse(clean.slice(j)); if(parsed.sections&&parsed.sections.length>0){ localStorage.setItem(_cacheKey,JSON.stringify({sections:parsed.sections})); setAiSections(parsed.sections); } else throw new Error('empty'); }catch(e){ setAiError(true); }finally{ setAiLoading(false); } })();
             },
-            style:{padding:'10px 28px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'12px',border:'none',cursor:'pointer',color:'#1a0a00',fontWeight:'700',fontSize:'14px'}
+            style:{padding:'10px 28px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:'700',fontSize:'14px',color:'#1c1917'}
           }, '다시 풀이받기')
         ),
 
         // ── AI 결과 ──
         !aiLoading && aiSections && React.createElement(React.Fragment, null,
-          React.createElement('div', { style:{padding:'10px 14px',background:'rgba(251,191,36,0.05)',borderRadius:'14px',border:'1px solid rgba(251,191,36,0.1)',display:'flex',alignItems:'flex-start',gap:'8px',marginBottom:'8px'} },
-            React.createElement('span', { style:{fontSize:'12px'} }, 'ℹ️'),
-            React.createElement('p', { style:{color:'rgba(252,211,77,0.5)',fontSize:'10px',lineHeight:'1.6'} }, '전통 명리학 기반 참고용 콘텐츠 · 결과 확인 즉시 청약철회 불가')
+
+          // 섹션 헤더
+          React.createElement('p', { style:{textAlign:'center',color:'rgba(255,255,255,0.15)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase',marginBottom:'12px'} },
+            `✦ ${currentYear} 신년운세 — ${aiSections.length}개 섹션`
           ),
-          React.createElement('p', { style:{textAlign:'center',color:'rgba(255,255,255,0.15)',fontSize:'10px',letterSpacing:'2px',padding:'4px 0 10px'} }, `✦ ${currentYear} 신년운세 — ${aiSections.length}개 섹션`),
-          aiSections.map((sec,i) =>
-            React.createElement(AccordionItem, { key:i, idx:i, icon:sec.icon||'🌟', color:sec.color||'text-amber-400', title:sec.title, content:sec.content })
+
+          // 섹션 카드들
+          React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'16px'} },
+            aiSections.map((sec,i) => {
+              const isOpen = openIdx === i;
+              const sectionColor = sec.color ? sec.color.replace('text-','').replace('-400','') : 'amber';
+              const colorMap = { purple:'#c4b5fd', pink:'#f9a8d4', amber:'#fcd34d', emerald:'#6ee7b7', blue:'#93c5fd', red:'#fca5a5', yellow:'#fde68a', green:'#86efac', indigo:'#a5b4fc', rose:'#fda4af', orange:'#fdba74', teal:'#5eead4' };
+              const cHex = colorMap[sectionColor] || theme.primary;
+              return React.createElement('div', {
+                key:i,
+                style:{borderRadius:'18px',border:`1px solid ${isOpen ? cHex+'50' : 'rgba(255,255,255,0.07)'}`,background:isOpen?`rgba(${cHex==='#c4b5fd'?'196,181,253':cHex==='#fcd34d'?'252,211,77':cHex==='#f9a8d4'?'249,168,212':cHex==='#93c5fd'?'147,197,253':'255,255,255'},0.05)`:'rgba(255,255,255,0.03)',overflow:'hidden',transition:'all 0.3s',boxShadow:isOpen?`0 4px 24px ${cHex}20`:'none'}
+              },
+                // 아코디언 헤더
+                React.createElement('div', {
+                  onClick:()=>setOpenIdx(isOpen?null:i),
+                  style:{display:'flex',alignItems:'center',gap:'14px',padding:'16px',cursor:'pointer'}
+                },
+                  React.createElement('div', { style:{width:'42px',height:'42px',borderRadius:'14px',background:`linear-gradient(135deg,${cHex}25,${cHex}10)`,border:`1px solid ${cHex}30`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0} },
+                    sec.icon || '🌟'
+                  ),
+                  React.createElement('div', { style:{flex:1,minWidth:0} },
+                    React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'9px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'3px'} }, `S${i+1}`),
+                    React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'14px',letterSpacing:'-0.3px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'} }, sec.title || `섹션 ${i+1}`)
+                  ),
+                  React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'8px',background:isOpen?`${cHex}20`:'rgba(255,255,255,0.05)',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.3s',transform:isOpen?'rotate(180deg)':'none',flexShrink:0} },
+                    React.createElement('span', { style:{color:isOpen?cHex:'rgba(255,255,255,0.3)',fontSize:'12px'} }, '▼')
+                  )
+                ),
+                // 아코디언 본문
+                isOpen && React.createElement('div', { style:{padding:'0 16px 20px'} },
+                  React.createElement('div', { style:{height:'1px',background:`linear-gradient(to right, ${cHex}30, transparent)`,marginBottom:'16px'} }),
+                  React.createElement('p', { style:{color:'rgba(255,255,255,0.75)',fontSize:'14px',lineHeight:'1.9',whiteSpace:'pre-wrap'} }, sec.content || '')
+                )
+              );
+            })
           ),
 
           // ── CTA ──
-          React.createElement('div', { style:{display:'flex',gap:'8px',margin:'12px 0 4px'} },
-            React.createElement('button', { onClick:()=>setScreen('review'), style:{flex:1,padding:'13px',background:'rgba(255,255,255,0.05)',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',color:'rgba(255,255,255,0.6)',fontSize:'13px',fontWeight:'600',cursor:'pointer'} }, '⭐ 후기 남기기'),
+          React.createElement('div', { style:{display:'flex',gap:'8px',margin:'4px 0 8px'} },
+            React.createElement('button', { onClick:()=>setScreen('review'), style:{flex:1,padding:'14px',background:'rgba(255,255,255,0.06)',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',color:'white',fontSize:'13px',fontWeight:'700',cursor:'pointer'} }, '⭐ 리뷰 남기기'),
             React.createElement('button', {
-              onClick:()=>{ if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`,text:`사주ON에서 분석한 ${person.name}님의 ${currentYear}년 운세입니다.`,url:window.location.href}).catch(()=>{}); } else { navigator.clipboard.writeText(window.location.href).catch(()=>{}); alert('링크가 복사되었습니다'); } },
-              style:{flex:1,padding:'13px',background:'rgba(251,191,36,0.08)',borderRadius:'14px',border:'1px solid rgba(251,191,36,0.2)',color:'#fbbf24',fontSize:'13px',fontWeight:'600',cursor:'pointer'}
+              onClick:()=>{ if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`}); } },
+              style:{flex:1,padding:'14px',background:'rgba(251,191,36,0.08)',borderRadius:'14px',border:'1px solid rgba(251,191,36,0.2)',color:'#fbbf24',fontSize:'13px',fontWeight:'700',cursor:'pointer'}
             }, '🔗 공유하기')
           )
         )
