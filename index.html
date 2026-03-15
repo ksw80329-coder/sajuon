@@ -4735,7 +4735,8 @@ ${curDwPayload}
         prompt,
         max_tokens: 16000
       };
-      const aiFetchParsed = callAI(sajuPayload)
+      const sajuCtrl = new AbortController();
+      const aiFetchParsed = callAI(sajuPayload, sajuCtrl.signal)
       .then(data => {
         const text = (data.content||[]).map(x=>x.text||'').join('');
         console.log('AI 사주 응답 길이:', text.length);
@@ -4752,9 +4753,10 @@ ${curDwPayload}
         else setAiError(true);
       })
       .finally(() => setAiLoading(false));
+      return () => sajuCtrl.abort();
     }, [_sajuCacheKey, aiRetryCount]);
 
-    if (!currentResult || !currentInput)     if (!currentResult || !currentInput) return React.createElement('div', { style:{padding:'20px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'} }, '데이터 없음');
+    if (!currentResult || !currentInput) return React.createElement('div', { style:{padding:'20px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'} }, '데이터 없음');
 
     const r = currentResult;
     const inp = currentInput;
@@ -5471,7 +5473,8 @@ ${p2PillarDesc}
         prompt,
         max_tokens: 16000
       };
-      const aiFetchCParsed = callAI(compatPayload)
+      const compatCtrl = new AbortController();
+      const aiFetchCParsed = callAI(compatPayload, compatCtrl.signal)
       .then(data => {
         const text = (data.content||[]).map(x=>x.text||'').join('');
         console.log('AI 궁합 응답 길이:', text.length);
@@ -5505,6 +5508,7 @@ ${p2PillarDesc}
         } else setAiCompatError(true);
       })
       .finally(() => setAiCompatLoading(false));
+      return () => { compatCtrl.abort(); };
     }, [_compatCacheKey]);
 
     if (!person1 || !person2) return React.createElement('div', { style:{padding:'16px',textAlign:'center',color:'rgba(255,255,255,0.4)'} }, '데이터 없음');
@@ -7891,7 +7895,7 @@ ${isSangsaeng
     const weakEl   = r ? Object.entries(r.fe.pct).sort((a,b)=>a[1]-b[1])[0]  : ['?','?'];
     const sinsal   = allSinsal.join(', ') || '없음';
     const feDesc = `목${r.fe.counts['목']||0} 화${r.fe.counts['화']||0} 토${r.fe.counts['토']||0} 금${r.fe.counts['금']||0} 수${r.fe.counts['수']||0}`;
-    const dwListStr = allDws.map(dw=>`${dw.age}세 ${dw.stem}${dw.branch}(${dw.tenGod})`).join(' / ');
+    const dwListStr = (dwData ? dwData.daewoons.slice(0,10) : []).map(dw=>`${dw.age}세 ${dw.stem}${dw.branch}(${dw.tenGod})`).join(' / ');
     const currentDw = curDw;
 
     const _cacheKey = `ai_roadmap_v8_${inp.name}_${inp.year}_${inp.month}_${inp.day}`;
