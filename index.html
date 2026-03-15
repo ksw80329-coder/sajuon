@@ -8087,8 +8087,11 @@ ${pillarsDesc}
           React.createElement(ShareButton,{title:shareData.title,desc:shareData.desc,tag:shareData.tag})
         ),
 
-        // 헤드라인 + 전성기 카드
-        React.createElement('div',{style:{background:'linear-gradient(135deg,rgba(167,139,250,0.15),rgba(124,58,237,0.08))',border:'1px solid rgba(167,139,250,0.25)',borderRadius:'20px',padding:'18px',marginBottom:'14px'}},
+        // 로딩
+        aiLoading && React.createElement(SajuLoadingScreen),
+
+        // 에러
+        aiError && React.createElement('div',{style:{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,))',border:'1px solid rgba(167,139,250,0.25)',borderRadius:'20px',padding:'18px',marginBottom:'14px'}},
           React.createElement('p',{style:{color:'rgba(196,181,253,0.7)',fontSize:'11px',fontWeight:'600',marginBottom:'6px'}},'🌟 인생 테마'),
           React.createElement('p',{style:{color:'white',fontWeight:'800',fontSize:'15px',lineHeight:'1.5',marginBottom:'14px'}},peakInfo?.headline||(aiLoading?'분석 중…':'나만의 인생 지도')),
           React.createElement('div',{style:{display:'flex',gap:'10px'}},
@@ -8106,7 +8109,7 @@ ${pillarsDesc}
         ),
 
         // 안내 문구
-        React.createElement('div',{style:{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)',borderRadius:'14px',padding:'10px 14px',marginBottom:'12px',display:'flex',gap:'8px',alignItems:'flex-start'}},
+        !aiLoading && React.createElement('div',{style:{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)',borderRadius:'14px',padding:'10px 14px',marginBottom:'12px',display:'flex',gap:'8px',alignItems:'flex-start'}},
           React.createElement('span',{style:{fontSize:'14px',flexShrink:0}},'ℹ️'),
           React.createElement('p',{style:{color:'rgba(196,181,253,0.7)',fontSize:'11px',lineHeight:'1.6'}},
             `이 풀이는 대운(大運) 10개를 기반으로 한 명리학적 해석이에요. 대운은 약 ${dwData?.daewoons[0]?.age||1}세부터 10년 단위로 흘러가며, 현재(${currentAge}세) 기준으로 지나온 길은 회고, 앞으로의 길은 전략으로 풀어드립니다. 재미와 성찰을 위해 활용하세요. 😊`
@@ -8114,7 +8117,7 @@ ${pillarsDesc}
         ),
 
         // 대운 에너지 곡선
-        dwData && React.createElement(DaewoonCurveChart, {
+        !aiLoading && dwData && React.createElement(DaewoonCurveChart, {
           daewoons: dwData.daewoons,
           currentAge,
           elColor,
@@ -8128,6 +8131,24 @@ ${pillarsDesc}
         aiError && React.createElement('div',{style:{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'16px',padding:'20px',textAlign:'center',marginBottom:'16px'}},
           React.createElement('p',{style:{color:'#fca5a5',fontSize:'14px',marginBottom:'12px'}},'풀이를 완성하는 중 오류가 발생했습니다'),
           React.createElement('button',{onClick:()=>{setAiError(false);setAiLoading(true);},style:{padding:'10px 20px',background:'rgba(239,68,68,0.2)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'10px',color:'#fca5a5',fontSize:'12px',fontWeight:'700',cursor:'pointer'}},'다시 풀이받기')
+        ),
+
+        // 헤드라인 + 전성기 카드
+        !aiLoading && React.createElement('div',{style:{background:'linear-gradient(135deg,rgba(167,139,250,0.15),rgba(124,58,237,0.08)',borderRadius:'20px',padding:'20px',marginBottom:'14px'}},
+          React.createElement('p',{style:{color:'rgba(196,181,253,0.7)',fontSize:'11px',fontWeight:'600',marginBottom:'6px',letterSpacing:'0.5px'}},'✦ 인생 테마'),
+          React.createElement('p',{style:{color:'white',fontWeight:'800',fontSize:'15px',lineHeight:'1.5',marginBottom:'14px'}},peakInfo?.headline||`${inp.name}님의 대운 인생 지도`),
+          React.createElement('div',{style:{display:'flex',gap:'10px'}},
+            React.createElement('div',{style:{flex:1,background:'rgba(255,255,255,0.05)',borderRadius:'12px',padding:'12px',textAlign:'center'}},
+              React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'9px',letterSpacing:'1px',marginBottom:'4px'}},'전성기'),
+              React.createElement('p',{style:{color:'#c4b5fd',fontWeight:'900',fontSize:'16px',lineHeight:1}},peakInfo?.peak?.age||peakInfo?.peak?.daewoon||(aiLoading?'…':'?')),
+              React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',marginTop:'3px'}},peakInfo?.peak?.daewoon||'')
+            ),
+            React.createElement('div',{style:{flex:1,background:'rgba(255,255,255,0.05)',borderRadius:'12px',padding:'12px',textAlign:'center'}},
+              React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'9px',letterSpacing:'1px',marginBottom:'4px'}},'현재 대운'),
+              React.createElement('p',{style:{color:'white',fontWeight:'700',fontSize:'13px',lineHeight:1.3}},curDw?`${curDw.stemKr}${curDw.branchKr}`:'—'),
+              React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',marginTop:'3px'}},curDw?`${curDw.age}~${curDw.endAge}세`:'')
+            )
+          )
         ),
 
         // ── 구연도 분석 배너 ──
