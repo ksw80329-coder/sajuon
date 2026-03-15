@@ -803,12 +803,15 @@ function App() {
               try {
                 const evt = JSON.parse(data);
                 if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') accumulated += evt.delta.text;
-                if (evt.type === 'error') throw new Error(evt.error?.message || 'Stream error');
-              } catch(e) { if (e.message === 'Stream error') throw e; }
+                if (evt.type === 'error') { const msg = evt.error?.message || JSON.stringify(evt.error) || 'Stream error'; console.error('[SSE] Anthropic 에러:', msg); throw new Error(msg); }
+              } catch(e) { if (!(e instanceof SyntaxError)) throw e; }
             }
           }
         } finally { reader.releaseLock(); }
-        console.log('[callAI] SSE 완료, 길이:', accumulated.length); return { content: [{ type: 'text', text: accumulated }] };
+        const accLen = accumulated.length;
+        console.log('[callAI] SSE 완료, 길이:', accLen);
+        if (accLen === 0) throw new Error('SSE 응답이 비어있음 - 모델/API 오류 가능성');
+        return { content: [{ type: 'text', text: accumulated }] };
       };
       let apiPayload = payload;
       if (payload.prompt && !payload.messages) {
@@ -829,6 +832,7 @@ function App() {
           return await res.json();
         } catch(e) {
           if (e.name==='AbortError') throw e;
+          console.error('[callAI] attempt', attempt, '에러:', e.message);
           if (attempt<2) { await new Promise(r=>setTimeout(r,3000)); continue; }
           throw e;
         }
