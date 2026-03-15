@@ -774,8 +774,9 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  const _aiQueue = React.useRef(Promise.resolve());
   const callAI = React.useCallback((payload, signal) => {
-    const task = (async () => {
+    const task = _aiQueue.current.then(async () => {
       const enc = (o) => {
         const s = JSON.stringify(o);
         const b = new TextEncoder().encode(s);
@@ -837,7 +838,8 @@ function App() {
         }
       }
       throw new Error('AI 서버 응답 없음');
-    })();
+    });
+    _aiQueue.current = task.catch(()=>{});
     return task;
   }, []);
 
