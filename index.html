@@ -8433,7 +8433,6 @@ ${pillarsDesc}
                 React.createElement('option', {value:'', style:{background:'#1a0d3e',color:'rgba(255,255,255,0.4)'}}, '— 선택하세요 —'),
                 savedSaju.map((s,i) => {
                   const paid = savedYearly.some(y=>String(y.personId)===String(s.id));
-                  const isPaidSaju = savedPaidSaju.some(p => p.name===s.name && String(p.year)===String(s.year) && String(p.month)===String(s.month) && String(p.day)===String(s.day));
                   return React.createElement('option', {
                     key:i, value:s.id,
                     style:{background:'#1a0d3e',color:'white'}
@@ -8445,13 +8444,11 @@ ${pillarsDesc}
                 const s = savedSaju.find(x=>String(x.id)===String(selPerson));
                 if (!s) return null;
                 const paid = savedYearly.some(y=>String(y.personId)===String(s.id));
-                const isPaidSaju = savedPaidSaju.some(p => p.name===s.name && String(p.year)===String(s.year) && String(p.month)===String(s.month) && String(p.day)===String(s.day));
                 return React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px',marginTop:'8px',padding:'10px 14px',background:'rgba(251,191,36,0.06)',borderRadius:'12px',border:'1px solid rgba(251,191,36,0.15)'} },
                   React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'50%',background:s.gender==='여성'?'linear-gradient(135deg,#ec4899,#db2777)':'linear-gradient(135deg,#3b82f6,#1d4ed8)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',color:'white',fontWeight:'900',flexShrink:0} }, s.gender==='여성'?'♀':'♂'),
                   React.createElement('span', { style:{color:'white',fontWeight:'700',fontSize:'13px'} }, s.name),
                   React.createElement('span', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'} }, s.year+'.'+String(s.month).padStart(2,'0')+'.'+String(s.day).padStart(2,'0')),
-                  isPaidSaju && React.createElement('span', { style:{marginLeft:'auto',background:'rgba(74,222,128,0.12)',border:'1px solid rgba(74,222,128,0.3)',color:'#4ade80',fontSize:'10px',fontWeight:'700',padding:'2px 7px',borderRadius:'10px'} }, '✓ 열람가능'),
-                  paid && React.createElement('span', { style:{marginLeft: isPaidSaju ? '4px' : 'auto',background:'rgba(251,191,36,0.1)',border:'1px solid rgba(251,191,36,0.3)',color:'#fbbf24',fontSize:'10px',fontWeight:'700',padding:'2px 7px',borderRadius:'20px'} }, '✓ 열람')
+                  paid && React.createElement('span', { style:{marginLeft:'auto',background:'rgba(251,191,36,0.1)',border:'1px solid rgba(251,191,36,0.3)',color:'#fbbf24',fontSize:'10px',fontWeight:'700',padding:'2px 7px',borderRadius:'20px'} }, '✓ 열람')
                 );
               })()
             ),
