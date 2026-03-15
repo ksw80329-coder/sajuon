@@ -774,7 +774,6 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-
   const _aiQueue = React.useRef(Promise.resolve());
   const callAI = React.useCallback((payload, signal) => {
     const task = _aiQueue.current.then(async () => {
@@ -785,7 +784,6 @@ function App() {
         b.forEach(ch => bin += String.fromCharCode(ch));
         return JSON.stringify({ b: btoa(bin) });
       };
-
       const parseSSEStream = async (res) => {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -795,86 +793,53 @@ function App() {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+            if (signal?.aborted) throw new DOMException('Aborted','AbortError');
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
-            for (const line of lines) {
+            const ls = buffer.split('\n'); buffer = ls.pop();
+            for (const line of ls) {
               if (!line.startsWith('data: ')) continue;
               const data = line.slice(6).trim();
               if (data === '[DONE]') continue;
               try {
                 const evt = JSON.parse(data);
-                if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-                  accumulated += evt.delta.text;
-                }
+                if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') accumulated += evt.delta.text;
                 if (evt.type === 'error') throw new Error(evt.error?.message || 'Stream error');
-              } catch(e) {
-                if (e.message === 'Stream error') throw e;
-              }
+              } catch(e) { if (e.message === 'Stream error') throw e; }
             }
           }
         } finally { reader.releaseLock(); }
         return { content: [{ type: 'text', text: accumulated }] };
       };
-
-      // 구형 포맷 { t, prompt, max_tokens } → Anthropic API 포맷 변환
       let apiPayload = payload;
       if (payload.prompt && !payload.messages) {
-        apiPayload = {
-          model: 'claude-sonnet-4-6',
-          max_tokens: payload.max_tokens || 16000,
-          stream: true,
-          messages: [{ role: 'user', content: payload.prompt }]
-        };
+        apiPayload = { model: 'claude-sonnet-4-6', max_tokens: payload.max_tokens || 16000, stream: true, messages: [{ role: 'user', content: payload.prompt }] };
       }
-
       for (let attempt = 0; attempt < 3; attempt++) {
-        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+        if (signal?.aborted) throw new DOMException('Aborted','AbortError');
         try {
-          const res = await fetch(`${AI_WORKER}/q`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: enc(apiPayload),
-            signal,
-            mode: 'cors',
-          });
-          if (res.status === 429) {
-            const wait = (attempt + 1) * 5000;
-            await new Promise(r => setTimeout(r, wait));
-            continue;
-          }
+          const res = await fetch(`${AI_WORKER}/q`, { method:'POST', headers:{'Content-Type':'text/plain'}, body:enc(apiPayload), signal, mode:'cors' });
+          if (res.status === 429) { await new Promise(r => setTimeout(r, (attempt+1)*5000)); continue; }
           if (!res.ok) {
-            const errBody = await res.json().catch(() => ({}));
-            const msg = errBody?.error || errBody?.message || `서버 오류 (${res.status})`;
-            console.error('AI 서버 에러:', res.status, msg);
-            if ((res.status === 500 || res.status === 524) && attempt < 2) {
-              await new Promise(r => setTimeout(r, 3000));
-              continue;
-            }
-            throw new Error(msg);
+            const eb = await res.json().catch(()=>({}));
+            if ((res.status===500||res.status===524) && attempt<2) { await new Promise(r=>setTimeout(r,3000)); continue; }
+            throw new Error(eb?.message||`서버 오류 (${res.status})`);
           }
-          const ct = res.headers.get('content-type') || '';
-          if (ct.includes('text/event-stream')) {
-            return await parseSSEStream(res);
-          } else {
-            return await res.json();
-          }
+          if ((res.headers.get('content-type')||'').includes('text/event-stream')) return await parseSSEStream(res);
+          return await res.json();
         } catch(e) {
-          if (e.name === 'AbortError') throw e;
-          if (attempt < 2) {
-            console.warn(`오류 — 재시도 (${attempt+1}/3):`, e.message);
-            await new Promise(r => setTimeout(r, 3000));
-            continue;
-          }
+          if (e.name==='AbortError') throw e;
+          if (attempt<2) { await new Promise(r=>setTimeout(r,3000)); continue; }
           throw e;
         }
       }
-      throw new Error('AI 서버 응답 없음 — 잠시 후 다시 시도해주세요');
+      throw new Error('AI 서버 응답 없음');
     });
-    _aiQueue.current = task.catch(() => {});
+    _aiQueue.current = task.catch(()=>{});
     return task;
   }, []);
+
+
+
 
   // ========== 계정별 localStorage 유틸 ==========
   // 키 형식: sajuon::{userKey}::{dataType}
@@ -959,7 +924,7 @@ function App() {
       tag: '전통 명리학',
       title: '나를 가장 잘 아는\n사주 분석',
       desc: '생년월일시로 계산하는 만세력·신살·오행.\n단순 운세가 아닌, 내 본질적인 성향과\n삶의 패턴을 깊게 풀어드립니다.',
-      points: ['만세력 자동 계산', '신살 · 충합 포함', '13섹션 심층 해설'],
+      points: ['만세력 자동 계산', '신살 · 충합 포함', '12섹션 심층 해설'],
     },
     {
       emoji: '💕',
@@ -1769,15 +1734,21 @@ function App() {
 
       // 소요시간 안내 배너
       React.createElement('div', { style:{position:'relative',zIndex:1,marginBottom:'20px',background:'rgba(139,92,246,0.12)',border:'1px solid rgba(139,92,246,0.25)',borderRadius:'20px',padding:'10px 20px',textAlign:'center'} },
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'0.5px'} }, '✦ 사주 원국 · 신살 · 대운을 심층 해석하고 있습니다'),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'0.5px'} }, '✦ AI가 13개 섹션 · 10,000자 풀이를 직접 작성 중'),
+        React.createElement('p', { style:{color:'rgba(196,181,253,0.9)',fontSize:'12px',fontWeight:'700',marginTop:'3px'} }, '⏱️ 분석 완료까지 약 2~3분 소요됩니다'),
+        elapsed >= 300 && React.createElement('p', { style:{color:'rgba(251,191,36,0.9)',fontSize:'11px',fontWeight:'700',marginTop:'6px',padding:'4px 10px',background:'rgba(251,191,36,0.1)',borderRadius:'8px'} }, '⚠️ 5분 이상 결과가 없으면 새로고침 해주세요')
+      ),
+
+      React.createElement('div', { style:{position:'relative',zIndex:1,marginBottom:'20px',background:'rgba(139,92,246,0.12)',border:'1px solid rgba(139,92,246,0.25)',borderRadius:'20px',padding:'10px 20px',textAlign:'center'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px'} }, '✦ 사주 원국 · 신살 · 대운을 심층 해석하고 있습니다'),
         React.createElement('p', { style:{color:'rgba(196,181,253,0.9)',fontSize:'12px',fontWeight:'700',marginTop:'3px'} },
           elapsed < 30 ? '⏱️ 완전한 풀이 완성까지 약 2~3분 소요됩니다' :
-          elapsed < 90 ? `⏱️ 완성까지 약 ${Math.max(10, 150 - elapsed)}초 남았습니다` :
-          elapsed < 150 ? `⏱️ 거의 다 됐어요 — 약 ${Math.max(5, 160 - elapsed)}초 남았습니다` :
-          elapsed < 240 ? '⏱️ 내용이 많아 조금 더 걸리고 있어요, 거의 완성됐습니다' :
-          '⏱️ 풀이 마무리 중입니다 — 잠시만 더 기다려주세요'
+          elapsed < 90 ? `⏱️ 완성까지 약 ${Math.max(10,150-elapsed)}초 남았습니다` :
+          elapsed < 150 ? `⏱️ 거의 다 됐어요 — 약 ${Math.max(5,160-elapsed)}초 남았습니다` :
+          elapsed < 240 ? '⏱️ 내용이 많아 조금 더 걸리고 있어요' :
+          '⏱️ 풀이 마무리 중 — 잠시만 더 기다려주세요'
         ),
-        elapsed >= 300 && React.createElement('p', { style:{color:'rgba(251,191,36,0.9)',fontSize:'11px',fontWeight:'700',marginTop:'6px',padding:'4px 10px',background:'rgba(251,191,36,0.1)',borderRadius:'8px'} }, '⚠️ 5분 이상 결과가 없으면 새로고침 해주세요')
+        elapsed >= 300 && React.createElement('p', { style:{color:'rgba(251,191,36,0.9)',fontSize:'11px',fontWeight:'700',marginTop:'6px'} }, '⚠️ 5분 이상 결과가 없으면 새로고침 해주세요')
       ),
 
       // 중앙 로고 심볼
@@ -3309,21 +3280,14 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   // 하위 호환성 유지
   const requestKakaoPay = (product, onSuccess) => requestPortonePayment(product, 'kakao', onSuccess);
 
-  // 달 10개 → 별 1개 교환
   const exchangeMoonsForStars = () => {
-    const exchangeable = Math.floor(moons / 10);
-    if (exchangeable === 0) { alert('달이 10개 이상 있어야 교환할 수 있어요.\n현재 달: ' + moons + '개'); return; }
-    const ok = window.confirm(`🌙 달 ${exchangeable * 10}개 → ⭐ 별 ${exchangeable}개로 교환할까요?`);
-    if (!ok) return;
-    const newMoons = moons - exchangeable * 10;
-    const newStars = stars + exchangeable;
-    setMoons(newMoons);
-    setStars(newStars);
-    if (userKey) {
-      saveUserData(userKey, 'moons', newMoons);
-      saveUserData(userKey, 'stars', newStars);
-    }
-    alert(`✅ 교환 완료!\n⭐ 별 ${exchangeable}개가 지급됐어요.`);
+    const n = Math.floor(moons / 10);
+    if (n === 0) { alert('달이 10개 이상 있어야 교환할 수 있어요.'); return; }
+    if (!window.confirm(`🌙 달 ${n*10}개 → ⭐ 별 ${n}개로 교환할까요?`)) return;
+    const nm = moons - n*10, ns = stars + n;
+    setMoons(nm); setStars(ns);
+    if (userKey) { saveUserData(userKey,'moons',nm); saveUserData(userKey,'stars',ns); }
+    alert(`✅ 교환 완료! ⭐ 별 ${n}개 지급됐어요.`);
   };
 
   const handlePaymentComplete = (productArg) => {
@@ -3936,7 +3900,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',gap:'8px'} },
           [
             { emoji:'🗓️', title:'절기 정밀', sub:'만세력 계산', color:'#a78bfa', bg:'rgba(124,58,237,0.08)', border:'rgba(124,58,237,0.12)' },
-            { emoji:'🧠', title:'심층 풀이', sub:'13섹션 해설', color:'#f9a8d4', bg:'rgba(236,72,153,0.08)', border:'rgba(236,72,153,0.12)' },
+            { emoji:'🧠', title:'심층 풀이', sub:'12섹션 해설', color:'#f9a8d4', bg:'rgba(236,72,153,0.08)', border:'rgba(236,72,153,0.12)' },
             { emoji:'⚡', title:'신살 포함', sub:'30+종 분석', color:'#fcd34d', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.12)' }
           ].map((item,i) =>
             React.createElement('div', { key:i, style:{background:item.bg,borderRadius:'16px',padding:'16px 10px',textAlign:'center',border:'1px solid '+item.border} },
@@ -4477,9 +4441,20 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     React.useEffect(() => {
       if (!currentResult || !currentInput) return;
       const cacheKey = _sajuCacheKey;
-      if (aiSections) return; // 이미 캐시에서 로드됨
-
+      // 캐시 직접 확인 (state 값 대신)
+      try {
+        const cached = cacheKey ? localStorage.getItem(cacheKey) : null;
+        const p = cached ? JSON.parse(cached) : null;
+        if (p && Array.isArray(p) && p.length > 0) {
+          setAiSections(p);
+          setAiLoading(false);
+          return;
+        }
+      } catch(e) {}
+      // 새 분석 시작
+      setAiSections(null);
       setAiError(false);
+      setAiLoading(true);
 
       const pillarDesc = ['year','month','day','hour'].map(k => {
         const p = currentResult.pillars[k]; if (!p) return '';
@@ -4760,7 +4735,7 @@ ${curDwPayload}
         prompt,
         max_tokens: 16000
       };
-      const aiFetchParsed = callAI(sajuPayload, undefined)
+      const aiFetchParsed = callAI(sajuPayload)
       .then(data => {
         const text = (data.content||[]).map(x=>x.text||'').join('');
         console.log('AI 사주 응답 길이:', text.length);
@@ -4777,7 +4752,7 @@ ${curDwPayload}
         else setAiError(true);
       })
       .finally(() => setAiLoading(false));
-    }, [aiRetryCount]);
+    }, [_sajuCacheKey, aiRetryCount]);
 
     if (!currentResult || !currentInput)     if (!currentResult || !currentInput) return React.createElement('div', { style:{padding:'20px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'} }, '데이터 없음');
 
@@ -5259,9 +5234,14 @@ ${curDwPayload}
     React.useEffect(() => {
       if (!person1 || !person2) return;
       const cacheKey = _compatCacheKey;
-      if (aiCompatSections) return; // 이미 캐시에서 로드됨
-
-      setAiCompatLoading(true);
+      try {
+        const cached = localStorage.getItem(_compatCacheKey);
+        const p = cached ? JSON.parse(cached) : null;
+        if (p && Array.isArray(p.sections) && p.sections.length > 0) {
+          setAiCompatSections(p.sections); setAiCompatLoading(false); return;
+        }
+      } catch(e) {}
+      setAiCompatSections(null); setAiCompatError(false); setAiCompatLoading(true);
 
       const relationLabel = { couple:'연인/부부', friend:'친구', business:'비즈니스', parent:'부모자식', sibling:'형제자매', etc:'기타' }[compatRelation] || '기타';
       const p1Sinsal = [...r1.pillarSinsal.year,...r1.pillarSinsal.month,...r1.pillarSinsal.day,...r1.pillarSinsal.hour].filter((v,i,a)=>a.indexOf(v)===i);
@@ -5491,8 +5471,7 @@ ${p2PillarDesc}
         prompt,
         max_tokens: 16000
       };
-      const compatCtrl = new AbortController();
-      const aiFetchCParsed = callAI(compatPayload, compatCtrl.signal)
+      const aiFetchCParsed = callAI(compatPayload)
       .then(data => {
         const text = (data.content||[]).map(x=>x.text||'').join('');
         console.log('AI 궁합 응답 길이:', text.length);
@@ -5526,8 +5505,7 @@ ${p2PillarDesc}
         } else setAiCompatError(true);
       })
       .finally(() => setAiCompatLoading(false));
-      return () => compatCtrl.abort();
-    }, []);
+    }, [_compatCacheKey]);
 
     if (!person1 || !person2) return React.createElement('div', { style:{padding:'16px',textAlign:'center',color:'rgba(255,255,255,0.4)'} }, '데이터 없음');
     
@@ -7927,7 +7905,20 @@ ${isSangsaeng
     const [peakInfo, setPeakInfo] = React.useState(()=>{ try{ return JSON.parse(localStorage.getItem(_cacheKey+'_peak')||'null'); }catch(e){return null;} });
 
     React.useEffect(()=>{
-      if (!aiLoading) return;
+      // 캐시 직접 확인
+      try {
+        const cached = localStorage.getItem(_cacheKey);
+        const p = cached ? JSON.parse(cached) : null;
+        if (p && Array.isArray(p) && p.length > 0) {
+          setAiSections(p);
+          setAiLoading(false);
+          return;
+        }
+      } catch(e) {}
+      // 새 분석 - 초기화
+      setAiSections(null);
+      setAiError(false);
+      setAiLoading(true);
 
       // 현재 나이 기준 동적 섹션 구성
       const pastDws = dwData ? dwData.daewoons.filter(dw => dw.endAge < currentAge) : [];
@@ -8036,8 +8027,8 @@ ${pillarsDesc}
           if(e.name!=='AbortError') setAiError(true);
         }finally{ setAiLoading(false); }
       })();
-      clearTimeout(_timeout); return ()=>{ ctrl.abort(); clearTimeout(_timeout); };
-    },[]);
+      return ()=>ctrl.abort();
+    },[_cacheKey]);
 
     // 대운 타임라인 렌더
     const elColor = {목:'#4ade80',화:'#f87171',토:'#fbbf24',금:'#e2e8f0',수:'#60a5fa'};
@@ -8523,285 +8514,179 @@ ${pillarsDesc}
     const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
     if (!person) return React.createElement('div', { style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)'} },
       React.createElement('p',{style:{fontSize:'14px',marginBottom:'16px'}},'데이터를 찾을 수 없습니다'),
-      React.createElement('button',{onClick:()=>setScreen('yearly'),style:{padding:'10px 24px',background:'rgba(251,191,36,0.15)',border:'1px solid rgba(251,191,36,0.3)',borderRadius:'12px',color:'#fbbf24',cursor:'pointer',fontSize:'13px'}},'돌아가기')
+      React.createElement('button',{onClick:()=>setScreen('yearly'),style:{padding:'10px 24px',background:'rgba(251,191,36,0.15)',borderRadius:'12px',border:'1px solid rgba(251,191,36,0.3)',color:'#fbbf24',cursor:'pointer'}},'신년운세로 돌아가기')
     );
 
     const r = person.result || analyzeSaju(person.year, person.month, person.day, person.hour, person.minute, person.isLunar, false);
     const currentYear = new Date().getFullYear();
-    const birthYear = parseInt(person.year);
-    const currentAge = currentYear - birthYear;
     const dayGan   = STEMS.names[r.dsi];
-    const dayGanKr  = STEMS.korean[r.dsi];
-    const dayEl = STEMS.elements[r.dsi];
-    const yongshin = r.fe.yongshin;
-    const gishin = r.fe.gishin;
+    const dayGanKr = STEMS.korean[r.dsi];
+    const dayEl    = STEMS.elements[r.dsi];
 
+    const _cacheKey = `ai_yearly_v59_${person.id}_${currentYear}`;
+    const _cachedData = (() => { try { const c = localStorage.getItem(_cacheKey); return c ? JSON.parse(c) : null; } catch(e) { return null; } })();
+
+    const [aiSections, setAiSections]   = React.useState(() => _cachedData?.sections || null);
+    const [aiMonthly, setAiMonthly]     = React.useState(() => _cachedData?.monthly  || []);
+    const [aiClosing, setAiClosing]     = React.useState(() => _cachedData?.closing  || '');
+    const [aiLoading, setAiLoading]     = React.useState(() => !_cachedData?.sections);
+    const [aiError, setAiError]         = React.useState(false);
+    const [openIdx, setOpenIdx]         = React.useState(null);
+
+    // ── 사주 데이터 계산 ──
+    const feStr   = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}(${v}%)`).join(' > ');
     const allSinsal = [...(r.pillarSinsal?.year||[]),...(r.pillarSinsal?.month||[]),...(r.pillarSinsal?.day||[]),...(r.pillarSinsal?.hour||[])].filter((v,i,a)=>a.indexOf(v)===i);
-    // 프롬프트용 별칭
-    const ilganKr = dayGanKr;
-    const feStr = r ? Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}(${v}%)`).join(' > ') : '';
-    const strongEl = r ? Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1])[0] : ['?','?'];
-    const weakEl   = r ? Object.entries(r.fe.pct).sort((a,b)=>a[1]-b[1])[0]  : ['?','?'];
-    const sinsal   = allSinsal.join(', ') || '없음';
-    const feDesc = Object.entries(r.fe.pct).map(([k,v])=>`\${k}: \${v}%`).join(', ');
-    const pillarsDesc = ['year','month','day','hour'].map(k=>{
-      if(!r.pillars[k]) return '';
-      return `\${k==='year'?'연':k==='month'?'월':k==='day'?'일':'시'}주:\${STEMS.names[r.pillars[k].si]}\${BRANCHES.names[r.pillars[k].bi]}`;
-    }).filter(Boolean).join(' ');
+    const pillarsDesc = ['year','month','day','hour'].map(k => {
+      const pl = r.pillars[k];
+      if (!pl) return '';
+      return `${pl.stem}${pl.branch}(${STEMS.korean[pl.si]}${BRANCHES.korean[pl.bi]}) 십성:${pl.tenGod||''}`;
+    }).join(' | ');
+    const curDw = r.daewoon?.find(d => d.startAge <= (currentYear - parseInt(person.year)) && (currentYear - parseInt(person.year)) < d.startAge + 10);
+    const dwDesc = curDw ? `현재 대운: ${curDw.stem}${curDw.branch}(${curDw.stemKr||''}${curDw.branchKr||''}) ${curDw.tenGod||''}` : '';
+    const yy = currentYear % 100;
+    const sewoonStem   = STEMS.names[yy % 10];
+    const sewoonBranch = BRANCHES.names[yy % 12];
+    const sewoonDesc   = `${sewoonStem}${sewoonBranch}년`;
 
-    let dwData = null;
-    try { dwData = calcDaewoon(person.year,person.month,person.day,person.hour!=='unknown'?parseInt(person.hour):12,person.minute?parseInt(person.minute):0,person.gender,person.calendar); } catch(e) {}
-    const curDw = dwData ? dwData.daewoons.find((dw,i)=>{ const nx=dwData.daewoons[i+1]; return currentAge>=dw.age&&(!nx||currentAge<nx.age); }) : null;
-    const dwDesc = curDw ? `현재 대운: ${curDw.stem}${curDw.branch}(${curDw.stemKr}${curDw.branchKr}) ${curDw.tenGod}` : '';
-    const curDwStr = curDw ? `${curDw.stem}${curDw.branch}(${curDw.tenGod}) 대운` : '현재 대운 계산 중';
-
-    const sewoonDesc = Object.entries(SEWOON||{}).filter(([y])=>parseInt(y)>=currentYear-1&&parseInt(y)<=currentYear+3).map(([y,v])=>`\${y}년:\${v.stem}\${v.branch}`).join(', ');
-
-    const _cacheKey = `ai_yearly_v58_${person.id}`;
-    const loadFromCache = (key) => { try{ const p=JSON.parse(localStorage.getItem(key)||'null'); if(!p) return null; if(Array.isArray(p)&&p.length>0) return {sections:p,monthly:[],closing:''}; if(p.sections&&p.sections.length>0) return p; return null; }catch(e){return null;} };
-    const _cachedData = loadFromCache(_cacheKey);
-    const [aiSections, setAiSections] = React.useState(()=>_cachedData?.sections||null);
-    const [aiMonthly, setAiMonthly] = React.useState(()=>_cachedData?.monthly||[]);
-    const [aiClosing, setAiClosing]  = React.useState(()=>_cachedData?.closing||'');
-    const [aiLoading, setAiLoading] = React.useState(()=>!_cachedData?.sections);
-    const [aiError, setAiError] = React.useState(false);
-    const [openIdx, setOpenIdx] = React.useState(null);
-    const accordionRefs = React.useRef([]);
-
-    React.useEffect(()=>{
-      if (aiSections) { setAiLoading(false); return; }
-      const ctrl = new AbortController();
-      // 180초 타임아웃
-      const timeout = setTimeout(() => { /* 타임아웃 무시 */ }, 999000);
-      (async()=>{
-        try{
-          const prompt = `당신은 한국 최고의 사주 명리학 전문가입니다. 아래 만세력 데이터를 보고 ${person.name}님의 ${currentYear}년 신년운세를 작성하세요.
+    const prompt = `당신은 한국 최고의 사주 명리학 전문가입니다. 아래 만세력 데이터를 보고 ${person.name}님의 ${currentYear}년 신년운세를 작성하세요.
 
 ▌만세력 원국
 ${pillarsDesc}
 
 ▌핵심 데이터
 이름: ${person.name} / 성별: ${person.gender} / 생년월일: ${person.year}.${person.month}.${person.day}
-일간: ${STEMS.korean[r.dsi]}(${dayEl}행) / 오행 분포: ${feDesc}
-용신: ${yongshin} / 기신: ${gishin}
+일간: ${dayGanKr}(${dayEl}행) / 오행 분포: ${feStr}
+용신: ${r.fe.yongshin} / 기신: ${r.fe.gishin}
 신살: ${allSinsal.join(', ')||'없음'}
-${dwDesc} / 세운 흐름: ${sewoonDesc}
+${dwDesc} / 세운: ${sewoonDesc}
 
 ▌작성 원칙
 ① 섹션 13개, 섹션당 800자, 후반도 초반과 동일한 밀도
 ② ${person.name}님 이름을 각 섹션에 직접 호명
-③ ${currentYear}년 세운과 원국 용신·기신의 관계를 구체적 수치·방향으로 분석
+③ ${currentYear}년 세운과 원국 용신·기신의 관계를 구체적으로 분석
 ④ 구체적 연도·월·행동 제시 — 모호한 표현 금지
 ⑤ JSON 문자열 내 큰따옴표 금지
 
-▌일간 자연물 치환표
-甲갑=소나무 / 乙을=화초·장미 / 丙병=태양 / 丁정=촛불 / 戊무=산
-己기=논밭 / 庚경=도끼·바위 / 辛신=칼·다이아몬드 / 壬임=강·바다 / 癸계=빗물
-
-▌섹션별 제목 공식 + 내용 필수 포인트
-
-[S1 — ${currentYear}년 한 해 총운]
-제목: 올해 세운이 이 사람에게 어떤 해인지 한 컷
-예) 드디어 봄이 왔다, 이제 꽃 피울 차례 / 폭풍 전야, 하지만 이 사람은 폭풍을 즐긴다
-내용 필수:
-- 세운과 대운 교차로 올해 전반 기운 판정 (길년 vs 흉년 솔직하게)
-- 작년과 비교해 달라지는 점 — 열리는 것과 닫히는 것
-- 올해 가장 중요한 키워드 3개
-- 올해를 잘 보내기 위한 핵심 태도 한 가지
-
-[S2 — 올해 일과 커리어]
-제목: 올해 직장·커리어에서 일어날 일
-예) 올해 승진이나 이직, 진짜 가능한 해다 / 지금 자리를 지키면서 힘을 키워야 할 때
-내용 필수:
-- 관성·식상과 ${currentYear}년 세운의 관계 분석
-- 승진·이직·창업 여부에 대한 명확한 판단
-- 직장 내 관계(상사·동료)의 흐름
-- 올해 커리어에서 반드시 챙겨야 할 행동
-
-[S3 — 올해 재물 흐름]
-제목: 올해 돈이 들어오고 나가는 패턴
-예) 올해 돈 들어오는 루트가 열렸다, 근데 새는 곳도 열렸다 / 벌기보다 지키는 게 올해 과제
-내용 필수:
-- 재성과 ${currentYear}년 세운의 관계로 수입 흐름 판단
-- 돈이 들어오는 방식과 시기 (구체적으로)
-- 지출이 커지는 시기와 원인
-- 투자·저축에 대한 조언
-
-[S4 — 올해 사랑과 인연]
-제목: 올해 연애·결혼 운세
-예) 올해 인연이 들어올 조건이 갖춰졌다 / 기존 관계 정리하고 새 출발할 타이밍
-내용 필수 (성별 구분):
-- ${person.gender === '여성' ? '관성(남자 운)' : '재성(여자 운)'}과 세운의 관계
-- 새 인연이 들어올 가능성과 조건
-- 기존 관계(연인·배우자)와의 흐름 변화
-- 올해 관계에서 조심해야 할 상황
-
-[S5 — 올해 건강]
-제목: 올해 몸이 보내는 신호
-예) 올해 이 부위 진짜 조심해야 한다 / 번아웃 주의보, 쉬는 것도 전략이다
-내용 필수:
-- 오행 불균형이 ${currentYear}년 세운과 맞물려 신체에 나타나는 방식
-- 특히 주의해야 할 부위 (오행별: 목=간·눈, 화=심장·혈압, 토=소화·위, 금=폐·대장, 수=신장·방광)
-- 조심해야 할 시기 (월 특정)
-- 건강을 지키는 실천 조언
-
-[S6 — 올해 가장 강하게 열리는 분야]
-제목: 올해 에너지를 집중해야 할 곳
-예) 올해 이 분야에서 치면 진짜 된다 / 용신이 세운과 합쳐지는 이 시기를 노려라
-내용 필수:
-- 용신(${yongshin}) 에너지가 ${currentYear}년 세운과 맞물려 가장 잘 터지는 영역
-- 에너지를 집중할 분야 구체적 제시
-- 그 분야에서 올해 안에 해야 할 행동
-- 이 기회가 얼마나 지속되는지
-
-[S7 — 올해 빠지기 쉬운 함정]
-제목: 올해 이것만큼은 하지 마라
-예) 올해 이 실수 한 번이면 1년이 날아간다 / 기신이 세운에서 활성화되는 이 패턴 주의
-내용 필수:
-- 기신(${gishin}) 에너지가 세운에서 활성화되는 방식
-- 무의식적으로 빠지기 쉬운 실수 패턴 (구체적 상황으로)
-- 올해 특히 조심해야 할 결정 (투자, 관계, 직장 등)
-- 이 함정을 피하는 방법
-
-[S8 — 상반기 흐름 (1~6월)]
-제목: 상반기 키워드와 핵심 달
-예) 상반기는 준비, 5월에 모든 것을 걸어라 / 3월까지 빠르게, 그 다음은 잠시 숨 고르기
-내용 필수:
-- 1~6월 중 가장 유리한 달 2~3개 특정 + 이유
-- 가장 조심할 달 1~2개 특정 + 이유
-- 상반기 전체 에너지 방향
-- 상반기에 반드시 해야 할 행동 하나
-
-[S9 — 하반기 흐름 (7~12월)]
-제목: 하반기 키워드와 마무리 전략
-예) 하반기에 진짜 게임이 시작된다 / 하반기는 지키는 시간, 수확은 내년에
-내용 필수:
-- 7~12월 중 가장 유리한 달 2~3개 특정 + 이유
-- 상반기와 달라지는 에너지 흐름
-- 연말(11~12월)을 어떻게 마무리해야 하는지
-- 올해를 내년으로 연결하는 핵심 행동
-
-[S10 — 신살이 올해 만드는 변수]
-제목: 보유 신살이 올해 어떤 변수로 작용하는지
-예) 역마살이 올해 세운을 만나면 생기는 일 / 신살 없이 원국 구조만으로 충분한 이유
-내용 필수:
-- 보유 신살(${allSinsal.join(', ')||'없음'})이 ${currentYear}년 세운과 만나 만드는 특수 상황
-- 길신이 기회를 키우는 조건
-- 흉살이 발동하지 않는 방법
-- 신살이 올해 운세에서 가장 중요한 변수가 되는 시기
-
-[S11 — 올해 주변 관계 전략]
-제목: 올해 내 편이 되어줄 사람과 조심할 관계
-예) 올해 이 사람이 귀인이다, 놓치지 마 / 에너지 빼앗는 관계에서 벗어나야 올해가 열린다
-내용 필수:
-- 가족·친구·직장 동료와의 관계 흐름
-- 올해 귀인이 될 사람 유형 (오행·십성 기준)
-- 에너지를 빼앗는 관계 유형
-- 관계에서 올해 가장 중요한 태도
-
-[S12 — 이 사주의 ${currentYear}년 특수 구조]
-제목: 원국과 올해 세운이 만드는 이 해만의 특수 상황
-예) 이 사주가 ${currentYear}년을 만나면 생기는 특별한 일 / 10년에 한 번 오는 이 구조, 올해가 그때다
-내용 필수:
-- 원국과 ${currentYear}년 세운이 만들어내는 가장 독특한 구조 분석
-- 이 해에만 나타나는 특별한 기회 또는 주의사항
-- 이 구조가 마지막으로 왔던 때와 그때 어떤 일이 있었는지
-- 이 구조를 최대한 활용하는 방법
-
-[S13 — ${person.name}님에게 꼭 하고 싶은 말]
-제목: 이 사주가 ${person.name}님의 ${currentYear}년에 전하는 메시지
-예) 당신의 ${currentYear}년은 이미 준비가 됐다 / ${currentYear}년이 끝날 때 이 한 마디를 기억하길
-내용 필수:
-- 앞선 12개 섹션을 꿰뚫는 올해 핵심 과제
-- 지금 당장 써먹을 수 있는 행동 1~3가지 (구체적으로)
-- 올해 안에 반드시 결정해야 할 것 하나
-- 마지막 문장: 이 사주가 ${person.name}님의 ${currentYear}년에 전하고 싶은 한마디.
+▌섹션 구성
+S1: ${currentYear}년 총운 / S2: 직업·커리어 / S3: 재물 / S4: 연애·결혼
+S5: 건강 / S6: 인간관계 / S7: 가족 / S8: 이사·이동
+S9: 상반기 흐름 / S10: 하반기 흐름 / S11: 월별 운세 포인트
+S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
 
 ▌출력 형식 (JSON만, 다른 텍스트 금지)
 {"sections":[{"icon":"이모지","color":"tailwind색상클래스","title":"제목","content":"800자 내용"}]}
 - sections 배열에 S1~S13 순서대로 13개 객체
 - color 예시: text-amber-400, text-yellow-400, text-orange-400, text-rose-400, text-purple-400`;
 
+    React.useEffect(() => {
+      // 캐시 직접 확인
+      try {
+        const cached = localStorage.getItem(_cacheKey);
+        const p = cached ? JSON.parse(cached) : null;
+        if (p && p.sections && p.sections.length > 0) {
+          setAiSections(p.sections);
+          if (p.monthly) setAiMonthly(p.monthly);
+          if (p.closing) setAiClosing(p.closing);
+          setAiLoading(false);
+          return;
+        }
+      } catch(e) {}
+      // 새 분석 시작
+      setAiSections(null);
+      setAiError(false);
+      setAiLoading(true);
+      const ctrl = new AbortController();
+      (async () => {
+        try {
           const payload = { t: '4', prompt, max_tokens: 16000 };
           const data = await callAI(payload, ctrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
           const clean = text.replace(/```json|```/g,'').trim();
           const jsonStart = clean.indexOf('{');
-          if(jsonStart===-1) throw new Error('no JSON');
+          if (jsonStart === -1) throw new Error('no JSON');
           const parsed = JSON.parse(clean.slice(jsonStart));
-          if(parsed.sections&&parsed.sections.length>0){
-            const cacheObj = { sections: parsed.sections, monthly: parsed.monthly||[], closing: parsed.closing||'' };
-            localStorage.setItem(_cacheKey, JSON.stringify(cacheObj));
+          if (parsed.sections && parsed.sections.length > 0) {
+            localStorage.setItem(_cacheKey, JSON.stringify({ sections: parsed.sections, monthly: parsed.monthly||[], closing: parsed.closing||'' }));
             setAiSections(parsed.sections);
-            if(parsed.monthly) setAiMonthly(parsed.monthly);
-            if(parsed.closing) setAiClosing(parsed.closing);
+            if (parsed.monthly) setAiMonthly(parsed.monthly);
+            if (parsed.closing) setAiClosing(parsed.closing);
           } else throw new Error('empty');
-        }catch(e){
-          if(e.name!=='AbortError') setAiError(true);
+        } catch(e) {
+          if (e.name !== 'AbortError') setAiError(true);
         } finally { setAiLoading(false); }
       })();
-      return ()=>ctrl.abort();
-    },[]);
+      return () => ctrl.abort();
+    }, [_cacheKey]);
 
     return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'120px',position:'relative'} },
       React.createElement(StarBg),
 
-      // 헤더 (사주/궁합과 동일한 sticky 헤더)
-      React.createElement('div', { style:{position:'sticky',top:56,zIndex:20,background:'rgba(7,5,20,0.95)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(252,211,77,0.1)'} },
-        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',maxWidth:'512px',margin:'0 auto'} },
-          React.createElement('button', { onClick:()=>setScreen('yearly'), style:{width:'36px',height:'36px',borderRadius:'12px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
-          React.createElement('div', { style:{flex:1,minWidth:0} },
-            React.createElement('p', { style:{color:'rgba(252,211,77,0.5)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase',marginBottom:'2px'} }, `✦ ${currentYear} YEARLY FORTUNE`),
-            React.createElement('h1', { style:{color:'white',fontWeight:'800',fontSize:'16px',letterSpacing:'-0.5px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, `${person.name}님의 ${currentYear}년 운세`)
+      // ── 헤더 ──
+      React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
+        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 12px'} },
+          React.createElement('button', { onClick:()=>setScreen('yearly'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',color:'white',fontSize:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'} }, '←'),
+          React.createElement('div', { style:{flex:1} },
+            React.createElement('p', { style:{color:'rgba(252,211,77,0.6)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase',marginBottom:'2px'} }, 'YEARLY FORTUNE'),
+            React.createElement('h1', { style:{color:'white',fontWeight:'800',fontSize:'17px',letterSpacing:'-0.5px'} }, `${person.name}님의 ${currentYear}년 신년운세`)
           ),
-          React.createElement(ShareButton, { title:`${person.name}님의 ${currentYear}년 신년운세`, text:`사주ON에서 분석한 ${person.name}님의 ${currentYear}년 운세입니다.` })
+          React.createElement('button', {
+            onClick: () => { if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`, text:`사주ON에서 분석한 ${person.name}님의 ${currentYear}년 운세입니다.`, url:window.location.href}).catch(()=>{}); } else { navigator.clipboard.writeText(window.location.href).catch(()=>{}); alert('링크가 복사되었습니다'); } },
+            style:{padding:'8px 14px',borderRadius:'12px',background:'rgba(251,191,36,0.1)',border:'1px solid rgba(251,191,36,0.25)',color:'#fbbf24',fontSize:'12px',fontWeight:'700',cursor:'pointer'}
+          }, '🔗 공유')
         )
       ),
 
-      React.createElement('div', { style:{padding:'16px 16px 0',position:'relative',zIndex:1} },
+      React.createElement(DisclaimerBar),
 
-        // 기본 정보 카드
-        React.createElement('div', { style:{background:'linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.05))',borderRadius:'20px',border:'1px solid rgba(251,191,36,0.2)',padding:'16px',margin:'12px 0'} },
-          React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'14px'} },
-            React.createElement('div', { style:{width:'48px',height:'48px',borderRadius:'50%',background:person.gender==='여성'?'linear-gradient(135deg,#ec4899,#f472b6)':'linear-gradient(135deg,#3b82f6,#60a5fa)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0} }, person.gender==='여성'?'♀':'♂'),
-            React.createElement('div', { style:{flex:1,minWidth:0} },
-              React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'16px',marginBottom:'2px'} }, person.name),
-              React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, `${person.year}.${String(person.month).padStart(2,'0')}.${String(person.day).padStart(2,'0')} · ${person.gender} · 만 ${currentAge}세`),
-              React.createElement('p', { style:{color:'rgba(252,211,77,0.7)',fontSize:'11px',marginTop:'4px'} }, `일간 ${STEMS.korean[r.dsi]}(${dayEl}행) · 용신 ${yongshin} · 현재 ${curDwStr}`)
-            )
+      React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
+
+        // ── 기본 정보 카드 ──
+        React.createElement('div', { style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'16px',marginBottom:'12px',display:'flex',alignItems:'center',gap:'14px'} },
+          React.createElement('div', { style:{width:'52px',height:'52px',borderRadius:'50%',background:person.gender==='여성'?'linear-gradient(135deg,#ec4899,#f472b6)':'linear-gradient(135deg,#3b82f6,#60a5fa)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0} }, person.gender==='여성'?'♀':'♂'),
+          React.createElement('div', { style:{flex:1} },
+            React.createElement('h2', { style:{color:'white',fontWeight:'800',fontSize:'17px',marginBottom:'3px'} }, person.name),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px'} }, `${person.year}.${String(person.month).padStart(2,'0')}.${String(person.day).padStart(2,'0')} · ${person.gender} · 만 ${currentYear - parseInt(person.year)}세`),
+            React.createElement('p', { style:{color:'rgba(252,211,77,0.8)',fontSize:'12px',marginTop:'3px',fontWeight:'600'} }, `일간 ${dayGanKr}(${dayEl}행) · 용신 ${r.fe.yongshin} · ${sewoonDesc}`)
           )
         ),
 
-        // AI 로딩
+        // ── 로딩 ──
         aiLoading && React.createElement(SajuLoadingScreen),
 
-        // AI 에러
-        aiError && React.createElement('div', { style:{background:'rgba(239,68,68,0.1)',borderRadius:'16px',border:'1px solid rgba(239,68,68,0.2)',padding:'20px',textAlign:'center',margin:'8px 0'} },
+        // ── 에러 ──
+        aiError && React.createElement('div', { style:{background:'rgba(239,68,68,0.1)',borderRadius:'16px',border:'1px solid rgba(239,68,68,0.2)',padding:'20px',textAlign:'center',marginTop:'8px'} },
           React.createElement('p', { style:{color:'#f87171',fontSize:'14px',marginBottom:'12px'} }, '분석 중 오류가 발생했습니다'),
-          React.createElement('button', { onClick:()=>{ setAiError(false); setAiLoading(true); localStorage.removeItem(_cacheKey); }, style:{padding:'10px 24px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'12px',border:'none',cursor:'pointer',color:'#1a0a00',fontWeight:'700',fontSize:'14px'} }, '다시 풀이받기')
+          React.createElement('button', {
+            onClick:()=>{ setAiError(false); setAiLoading(true); localStorage.removeItem(_cacheKey);
+              (async()=>{ try{ const data=await callAI({t:'4',prompt,max_tokens:16000}); const text=(data.content||[]).map(x=>x.text||'').join(''); const clean=text.replace(/```json|```/g,'').trim(); const j=clean.indexOf('{'); if(j===-1) throw new Error('no JSON'); const parsed=JSON.parse(clean.slice(j)); if(parsed.sections&&parsed.sections.length>0){ localStorage.setItem(_cacheKey,JSON.stringify({sections:parsed.sections})); setAiSections(parsed.sections); } else throw new Error('empty'); }catch(e){ setAiError(true); }finally{ setAiLoading(false); } })();
+            },
+            style:{padding:'10px 28px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'12px',border:'none',cursor:'pointer',color:'#1a0a00',fontWeight:'700',fontSize:'14px'}
+          }, '다시 풀이받기')
         ),
 
-        // AI 결과 (AccordionItem 사용)
+        // ── AI 결과 ──
         !aiLoading && aiSections && React.createElement(React.Fragment, null,
-          React.createElement('div', { style:{padding:'10px 14px',background:'rgba(251,191,36,0.05)',borderRadius:'16px',display:'flex',alignItems:'flex-start',gap:'8px',marginBottom:'8px'} },
+          React.createElement('div', { style:{padding:'10px 14px',background:'rgba(251,191,36,0.05)',borderRadius:'14px',border:'1px solid rgba(251,191,36,0.1)',display:'flex',alignItems:'flex-start',gap:'8px',marginBottom:'8px'} },
             React.createElement('span', { style:{fontSize:'12px'} }, 'ℹ️'),
-            React.createElement('p', { style:{color:'rgba(252,211,77,0.5)',fontSize:'10px',lineHeight:'1.6'} }, '전통 명리학 + AI 기반 참고용 콘텐츠 · 결과 확인 즉시 청약철회 불가')
+            React.createElement('p', { style:{color:'rgba(252,211,77,0.5)',fontSize:'10px',lineHeight:'1.6'} }, '전통 명리학 기반 참고용 콘텐츠 · 결과 확인 즉시 청약철회 불가')
           ),
-          React.createElement('p', { style:{padding:'4px 16px 12px',textAlign:'center',color:'rgba(255,255,255,0.2)',fontSize:'10px',letterSpacing:'2px'} }, `✦ ${currentYear}년 신년운세 — 총 ${aiSections.length}개 섹션`),
-          aiSections.map((sec, i) =>
+          React.createElement('p', { style:{textAlign:'center',color:'rgba(255,255,255,0.15)',fontSize:'10px',letterSpacing:'2px',padding:'4px 0 10px'} }, `✦ ${currentYear} 신년운세 — ${aiSections.length}개 섹션`),
+          aiSections.map((sec,i) =>
             React.createElement(AccordionItem, { key:i, idx:i, icon:sec.icon||'🌟', color:sec.color||'text-amber-400', title:sec.title, content:sec.content })
-          )
-        ),
+          ),
 
-        // 리뷰 / 공유 CTA
-        !aiLoading && aiSections && React.createElement('div', { style:{display:'flex',gap:'8px',margin:'8px 0 20px'} },
-          React.createElement('button', { onClick:()=>setScreen('review'), style:{flex:1,padding:'13px',background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.2)',borderRadius:'14px',color:'rgba(252,211,77,0.8)',fontSize:'13px',fontWeight:'700',cursor:'pointer'} }, '⭐ 리뷰 남기기'),
-          React.createElement('button', { onClick:()=>{ if(navigator.share){ navigator.share({title:person.name+'님의 '+currentYear+' 신년운세',text:'사주ON에서 분석한 나의 운세',url:window.location.href}).catch(()=>{}); } else { navigator.clipboard?.writeText(window.location.href); alert('링크가 복사됐어요!'); } }, style:{flex:1,padding:'13px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'14px',color:'rgba(255,255,255,0.6)',fontSize:'13px',fontWeight:'700',cursor:'pointer'} }, '🔗 공유하기')
+          // ── CTA ──
+          React.createElement('div', { style:{display:'flex',gap:'8px',margin:'12px 0 4px'} },
+            React.createElement('button', { onClick:()=>setScreen('review'), style:{flex:1,padding:'13px',background:'rgba(255,255,255,0.05)',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',color:'rgba(255,255,255,0.6)',fontSize:'13px',fontWeight:'600',cursor:'pointer'} }, '⭐ 후기 남기기'),
+            React.createElement('button', {
+              onClick:()=>{ if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`,text:`사주ON에서 분석한 ${person.name}님의 ${currentYear}년 운세입니다.`,url:window.location.href}).catch(()=>{}); } else { navigator.clipboard.writeText(window.location.href).catch(()=>{}); alert('링크가 복사되었습니다'); } },
+              style:{flex:1,padding:'13px',background:'rgba(251,191,36,0.08)',borderRadius:'14px',border:'1px solid rgba(251,191,36,0.2)',color:'#fbbf24',fontSize:'13px',fontWeight:'600',cursor:'pointer'}
+            }, '🔗 공유하기')
+          )
         )
       )
     );
   };
-
 
   const DaewoonScreen = () => {
     const [selectedPerson, setSelectedPerson] = React.useState(
@@ -9123,8 +9008,8 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
     }, '⭐ 별 충전하기'),
     moons >= 10 && React.createElement('button', {
       onClick: exchangeMoonsForStars,
-      style:{width:'100%',padding:'13px',background:'linear-gradient(135deg,rgba(59,130,246,0.15),rgba(29,78,216,0.1))',borderRadius:'16px',fontWeight:'700',fontSize:'13px',color:'#93c5fd',border:'1px solid rgba(59,130,246,0.3)',cursor:'pointer',marginTop:'-8px',marginBottom:'4px'}
-    }, `🌙 달 ${moons}개 보유 · 10개 = ⭐1별 교환 가능`),
+      style:{width:'100%',padding:'12px',background:'rgba(59,130,246,0.1)',borderRadius:'14px',fontWeight:'700',fontSize:'12px',color:'#93c5fd',border:'1px solid rgba(59,130,246,0.25)',cursor:'pointer',marginTop:'-4px',marginBottom:'4px'}
+    }, `🌙 달 ${moons}개 · 10개 = ⭐1별 교환하기`),
 
     // 구분선
     React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'14px'} },
@@ -9335,7 +9220,7 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
         )
       ),
 
-      React.createElement('div', { style:{padding:'72px 16px 20px',maxWidth:'512px',margin:'0 auto',display:'flex',flexDirection:'column',gap:'16px',position:'relative',zIndex:1} },
+      React.createElement('div', { style:{padding:'20px 16px',maxWidth:'512px',margin:'0 auto',display:'flex',flexDirection:'column',gap:'16px',position:'relative',zIndex:1} },
 
         // 결제 대기 안내
         pendingProduct && React.createElement('div', { style:{background:'rgba(124,58,237,0.06)',borderRadius:'18px',border:'1px solid rgba(124,58,237,0.3)',padding:'16px'} },
@@ -9348,26 +9233,10 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
           )
         ),
 
-        // 달→별 교환 배너 (달이 10개 이상일 때만 표시)
-        moons >= 10 && React.createElement('div', { style:{background:'linear-gradient(135deg,rgba(147,197,253,0.1),rgba(59,130,246,0.06))',borderRadius:'18px',border:'1px solid rgba(147,197,253,0.2)',padding:'14px 16px',marginBottom:'12px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'} },
-          React.createElement('div', null,
-            React.createElement('p', { style:{color:'#93c5fd',fontWeight:'700',fontSize:'13px',marginBottom:'3px'} }, `🌙 달 ${moons}개 보유 중`),
-            React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px'} }, `달 10개 → ⭐ 별 1개 교환 가능 (${Math.floor(moons/10)}개)`)
-          ),
-          React.createElement('button', {
-            onClick: exchangeMoonsForStars,
-            style:{padding:'8px 16px',background:'linear-gradient(135deg,#3b82f6,#1d4ed8)',borderRadius:'12px',border:'none',cursor:'pointer',color:'white',fontWeight:'700',fontSize:'12px',flexShrink:0}
-          }, '교환하기')
-        ),
-
         // 패키지 선택
         React.createElement('div', null,
-          React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'} },
-            React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'9px',letterSpacing:'4px',textTransform:'uppercase'} }, 'PACKAGES'),
-            React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'11px'} }, '⭐ 1별 = ₩1,000')
-          ),
-
-                    React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'10px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'9px',letterSpacing:'4px',textTransform:'uppercase',marginBottom:'12px'} }, '✦  충전 패키지 선택'),
+          React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'10px'} },
             packages.map((pkg, i) => {
               const isSelected = selectedStars === pkg.stars;
               const isRecommended = pkg.label === 'BEST';
@@ -10351,7 +10220,7 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
     ];
     return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',color:'white',paddingBottom:'112px'} },
       React.createElement(StarBg),
-      React.createElement('div', { style:{position:'sticky',top:0,zIndex:20,background:'rgba(7,5,20,0.95)',backdropFilter:'blur(10px)',display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',background:'rgba(7,5,20,0.92)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(255,255,255,0.06)'} },
+      React.createElement('div', { style:{position:'sticky',top:56,zIndex:20,display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',background:'rgba(7,5,20,0.92)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(255,255,255,0.06)'} },
         React.createElement('button', { onClick: () => setScreen('mypage'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
         React.createElement('span', { style:{fontWeight:'800',fontSize:'16px',color:'white',marginLeft:'8px'} }, '서비스 이용약관')
       ),
@@ -10413,7 +10282,7 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
     ];
     return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',color:'white',paddingBottom:'112px',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
-      React.createElement('div', { style:{position:'sticky',top:0,zIndex:20,background:'rgba(7,5,20,0.95)',backdropFilter:'blur(10px)',display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',background:'rgba(7,5,20,0.92)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(255,255,255,0.06)'} },
+      React.createElement('div', { style:{position:'sticky',top:56,zIndex:20,display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',background:'rgba(7,5,20,0.92)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(255,255,255,0.06)'} },
         React.createElement('button', { onClick: () => setScreen('mypage'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
         React.createElement('span', { style:{fontWeight:'800',fontSize:'16px',color:'white',marginLeft:'8px'} }, '개인정보 처리방침')
       ),
@@ -10496,7 +10365,7 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
     { id: 'input', icon: '🔮', label: '사주' },
     { id: 'compatibility', icon: '💕', label: '궁합' },
     { id: 'yearly', icon: '🎊', label: '신년운세' },
-    { id: 'premium', icon: '✨', label: '프리미엄' },
+    { id: 'premium', icon: '🗺️', label: '대운지도' },
   ];
 
   return React.createElement('div', { style:{maxWidth:'512px',margin:'0 auto',position:'relative'} },
@@ -10515,7 +10384,7 @@ ${dwDesc} / 세운 흐름: ${sewoonDesc}
               if (item.id === 'input') { setScreen('saju-list'); window.scrollTo(0,0); return; }
               if (item.id === 'premium') {
                 if (!isLoggedIn && !DEV_MODE) { setShowLogin(true); return; }
-                setShowPremiumSheet(true); return;
+                setScreen('roadmap'); window.scrollTo(0,0); return;
               }
               setScreen(item.id); 
             }, 
