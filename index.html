@@ -7898,7 +7898,7 @@ ${isSangsaeng
     const dwListStr = (dwData ? dwData.daewoons.slice(0,10) : []).map(dw=>`${dw.age}세 ${dw.stem}${dw.branch}(${dw.tenGod})`).join(' / ');
     const currentDw = curDw;
 
-    const _cacheKey = `ai_roadmap_v8_${inp.name}_${inp.year}_${inp.month}_${inp.day}`;
+    const _cacheKey = `ai_roadmap_v9_${inp.name}_${inp.year}_${inp.month}_${inp.day}`;
     const _roadmapEntry = savedRoadmap.find(r => String(r.personId) === String(roadmapPerson));
     const _purchasedYear = _roadmapEntry?.purchasedYear || new Date().getFullYear();
     const _currentYear = new Date().getFullYear();
@@ -8025,7 +8025,7 @@ ${pillarsDesc}
           if(parsed.sections && parsed.sections.length>0){
             localStorage.setItem(_cacheKey, JSON.stringify(parsed.sections));
             setAiSections(parsed.sections);
-            if(parsed.peak){ localStorage.setItem(_cacheKey+'_peak',JSON.stringify({headline:parsed.headline,peak:parsed.peak})); setPeakInfo({headline:parsed.headline,peak:parsed.peak}); }
+            if(parsed.peakInfo){ localStorage.setItem(_cacheKey+'_peak',JSON.stringify(parsed.peakInfo)); setPeakInfo(parsed.peakInfo); }
           } else throw new Error('no sections');
         }catch(e){
           if(e.name!=='AbortError') setAiError(true);
@@ -8061,8 +8061,8 @@ ${pillarsDesc}
           React.createElement('div',{style:{display:'flex',gap:'10px'}},
             React.createElement('div',{style:{flex:1,background:'rgba(255,255,255,0.05)',borderRadius:'12px',padding:'12px',textAlign:'center'}},
               React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'9px',letterSpacing:'1px',marginBottom:'4px'}},'전성기'),
-              React.createElement('p',{style:{color:'#c4b5fd',fontWeight:'900',fontSize:'16px',lineHeight:1}},peakInfo?.peak?.age||(aiLoading?'…':'?')),
-              React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',marginTop:'3px'}},peakInfo?.peak?.dw||'')
+              React.createElement('p',{style:{color:'#c4b5fd',fontWeight:'900',fontSize:'16px',lineHeight:1}},peakInfo?.peak?.age||peakInfo?.peak?.daewoon||(aiLoading?'…':'?')),
+              React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',marginTop:'3px'}},peakInfo?.peak?.daewoon||'')
             ),
             React.createElement('div',{style:{flex:1,background:'rgba(255,255,255,0.05)',borderRadius:'12px',padding:'12px',textAlign:'center'}},
               React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'9px',letterSpacing:'1px',marginBottom:'4px'}},'현재 대운'),
