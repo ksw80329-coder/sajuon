@@ -3787,7 +3787,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           )
         ),
         React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'6px'} },
-          React.createElement('span', { style:{background:'rgba(251,191,36,0.15)',borderRadius:'8px',padding:'3px 8px',color:'#fbbf24',fontSize:'10px',fontWeight:'700'} }, '⭐ 2'),
+          React.createElement('span', { style:{background:'rgba(251,191,36,0.15)',borderRadius:'8px',padding:'3px 8px',color:'#fbbf24',fontSize:'10px',fontWeight:'700'} }, '⭐ 2별'),
           React.createElement('span', { style:{color:'rgba(251,191,36,0.5)',fontSize:'18px'} }, '›')
         )
       ),
@@ -3846,7 +3846,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                 )
               )
             ),
-            React.createElement('p', { style:{color:'#fbbf24',fontWeight:'900',fontSize:'17px',flexShrink:0,marginTop:'4px'} }, (currentInput && savedPaidSaju.some(p => p.name === currentInput.name && p.year === currentInput.year && p.month === currentInput.month && p.day === currentInput.day)) ? '✅ 결과 보기' : '⭐ 3별')
+            React.createElement('p', { style:{color:'#fbbf24',fontWeight:'900',fontSize:'17px',flexShrink:0,marginTop:'4px'} }, '⭐ 3별')
           )
         ),
 
@@ -3871,9 +3871,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             ),
             React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'13px',marginBottom:'3px'} }, '신년운세'),
             React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',marginBottom:'8px',lineHeight:'1.4'} }, '월별·재물·연애·건강'),
-            savedYearly.length > 0
-              ? React.createElement('p', { style:{color:'#4ade80',fontWeight:'900',fontSize:'13px'} }, '✅ 결과 보기')
-              : React.createElement('p', { style:{color:'#fbbf24',fontWeight:'900',fontSize:'15px'} }, '⭐ 2별')
+            React.createElement('p', { style:{color:'#fbbf24',fontWeight:'900',fontSize:'15px'} }, '⭐ 2별')
           )
         ),
 
@@ -3891,9 +3889,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           ),
           React.createElement('div',{style:{textAlign:'right',flexShrink:0}},
             
-            savedRoadmap.length > 0
-              ? React.createElement('p',{style:{color:'#4ade80',fontWeight:'900',fontSize:'13px'}},'✅ 결과 보기')
-              : React.createElement('p',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'15px'}},'⭐1별')
+            React.createElement('p',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'15px'}},'⭐1별')
           )
         ),
       ),
@@ -3908,11 +3904,14 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           React.createElement('span', { style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase'} }, 'WHY SAJU ON'),
           React.createElement('div', { style:{flex:1,height:'1px',background:'rgba(255,255,255,0.05)'} })
         ),
-        React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',gap:'8px'} },
+        React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px'} },
           [
-            { emoji:'🗓️', title:'절기 정밀', sub:'만세력 계산', color:'#a78bfa', bg:'rgba(124,58,237,0.08)', border:'rgba(124,58,237,0.12)' },
+            { emoji:'🗓️', title:'절기 정밀', sub:'만세력 자동 계산', color:'#a78bfa', bg:'rgba(124,58,237,0.08)', border:'rgba(124,58,237,0.12)' },
             { emoji:'🧠', title:'심층 풀이', sub:'13섹션 해설', color:'#f9a8d4', bg:'rgba(236,72,153,0.08)', border:'rgba(236,72,153,0.12)' },
-            { emoji:'⚡', title:'신살 포함', sub:'30+종 분석', color:'#fcd34d', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.12)' }
+            { emoji:'⚡', title:'신살 포함', sub:'30+종 분석', color:'#fcd34d', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.12)' },
+            { emoji:'💞', title:'궁합 분석', sub:'8가지 관계 유형', color:'#f472b6', bg:'rgba(219,39,119,0.08)', border:'rgba(219,39,119,0.12)' },
+            { emoji:'🗺️', title:'대운 지도', sub:'10개 대운 완전 분석', color:'#c4b5fd', bg:'rgba(139,92,246,0.08)', border:'rgba(139,92,246,0.12)' },
+            { emoji:'🔐', title:'보안 결제', sub:'포트원 안전 결제', color:'#6ee7b7', bg:'rgba(16,185,129,0.08)', border:'rgba(16,185,129,0.12)' }
           ].map((item,i) =>
             React.createElement('div', { key:i, style:{background:item.bg,borderRadius:'16px',padding:'16px 10px',textAlign:'center',border:'1px solid '+item.border} },
               React.createElement('span', { style:{fontSize:'22px',display:'block',marginBottom:'8px'} }, item.emoji),
@@ -10391,11 +10390,11 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
   };
 
   const baseNavItems = [
-    { id: 'home', icon: '🏠', label: '홈' },
-    { id: 'input', icon: '🔮', label: '사주' },
-    { id: 'compatibility', icon: '💕', label: '궁합' },
-    { id: 'yearly', icon: '🎊', label: '신년운세' },
-    { id: 'premium', icon: '🗺️', label: '대운지도' },
+    { id: 'home',          icon: '🏠', label: '홈' },
+    { id: 'input',         icon: '✨', label: '사주' },
+    { id: 'compatibility', icon: '💞', label: '궁합' },
+    { id: 'yearly',        icon: '🎆', label: '신년운세' },
+    { id: 'premium',       icon: '🗺️', label: '대운지도' },
   ];
 
   return React.createElement('div', { style:{maxWidth:'512px',margin:'0 auto',position:'relative'} },
@@ -10418,10 +10417,14 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
               }
               setScreen(item.id); 
             }, 
-            style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:'3px',padding:'6px 4px 8px',borderRadius:'12px',border:'none',cursor:'pointer',background:isActive?'rgba(168,85,247,0.12)':'transparent',transition:'all 0.2s'}
+            style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:'3px',padding:'6px 4px 8px',borderRadius:'12px',border:'none',cursor:'pointer',background:'none',transition:'transform 0.15s',WebkitTapHighlightColor:'transparent'},
+            onMouseDown: e => e.currentTarget.style.transform='scale(0.88)',
+            onMouseUp: e => e.currentTarget.style.transform='scale(1)',
+            onTouchStart: e => e.currentTarget.style.transform='scale(0.88)',
+            onTouchEnd: e => e.currentTarget.style.transform='scale(1)',
           },
             React.createElement('div', { 
-              style:{width:'32px',height:'32px',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',background:isActive?'linear-gradient(135deg,#7c3aed,#a855f7)':'transparent',transition:'all 0.2s',color:isActive?'white':'rgba(255,255,255,0.3)',position:'relative'}
+              style:{width:'36px',height:'36px',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',background:isActive?'linear-gradient(135deg,#7c3aed,#a855f7)':'transparent',transition:'all 0.2s',color:isActive?'white':'rgba(255,255,255,0.35)',position:'relative',boxShadow:isActive?'0 0 12px rgba(139,92,246,0.6)':'none',transform:isActive?'scale(1.08)':'scale(1)'}
             }, 
               item.icon,
               item.id==='premium' && React.createElement('span', { style:{position:'absolute',top:'-4px',right:'-4px',width:'8px',height:'8px',borderRadius:'50%',background:'linear-gradient(135deg,#fbbf24,#f97316)'} })
