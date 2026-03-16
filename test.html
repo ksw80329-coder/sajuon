@@ -17,7 +17,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="사주ON">
-  <link rel="apple-touch-icon" href="https://sajuon.kr/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="manifest" href="/manifest.json">
 
   <!-- 구조화 데이터: FAQ (SEO 스니펫 최적화) -->
   <script type="application/ld+json">
@@ -1766,12 +1770,6 @@ function App() {
         )
       ),
 
-      // 소요시간 안내 배너
-      React.createElement('div', { style:{position:'relative',zIndex:1,marginBottom:'20px',background:'rgba(139,92,246,0.12)',border:'1px solid rgba(139,92,246,0.25)',borderRadius:'20px',padding:'10px 20px',textAlign:'center'} },
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'0.5px'} }, '✦ AI가 13개 섹션 · 10,000자 풀이를 직접 작성 중'),
-        React.createElement('p', { style:{color:'rgba(196,181,253,0.9)',fontSize:'12px',fontWeight:'700',marginTop:'3px'} }, '⏱️ 분석 완료까지 약 2~3분 소요됩니다'),
-        elapsed >= 300 && React.createElement('p', { style:{color:'rgba(251,191,36,0.9)',fontSize:'11px',fontWeight:'700',marginTop:'6px',padding:'4px 10px',background:'rgba(251,191,36,0.1)',borderRadius:'8px'} }, '⚠️ 5분 이상 결과가 없으면 새로고침 해주세요')
-      ),
 
       React.createElement('div', { style:{position:'relative',zIndex:1,marginBottom:'20px',background:'rgba(139,92,246,0.12)',border:'1px solid rgba(139,92,246,0.25)',borderRadius:'20px',padding:'10px 20px',textAlign:'center'} },
         React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px'} }, '✦ 사주 원국 · 신살 · 대운을 심층 해석하고 있습니다'),
@@ -2741,9 +2739,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       if (isSame) score += 5;
       if (isGeuk) score -= 15;
       if (isChung) score -= 10;
-      // 오늘 요일 보정
-      const dow = today.getDay(); // 0=일
-      if (dow === 0 || dow === 6) score += 5; // 주말 가산
       score = Math.min(98, Math.max(30, score));
 
       // 운세 텍스트 생성
@@ -3296,6 +3291,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       buyer_email: userEmail || '',
       buyer_name: session?.nickname || userEmail || '사주ON 회원',
       m_redirect_url: 'https://sajuon.kr/?payment=success',
+      // 토스페이 모바일 리디렉션 (준비 완료 시 활성화)
+      // ...(method === 'toss' ? { m_redirect_url: 'https://sajuon.kr/?payment=success' } : {}),
     }, async (rsp) => {
       if (rsp.success) {
         try {
@@ -5353,7 +5350,10 @@ ${p2PillarDesc}
 
 관계 유형: ${relationLabel}
 오행 관계: ${el1Full} vs ${el2Full} → ${isSangsaeng?'상생':''}${isSanggeuk?'상극':''}${(!isSangsaeng&&!isSanggeuk)?'비화':''}
-교차 충: ${crossRel.chungs||'없음'} / 교차 합: ${crossRel.haps||'없음'}
+천간 관계: ${STEMHAP_SC[s1+s2]?'천간합 (매우 좋음)':STEMGEUK_SC[s1+s2]?'천간극 (갈등 주의)':'중립'}
+지지 관계: ${b1&&b2?(YUKAP_SC[b1+b2]?'육합 (좋음)':SAMHAP_PAIRS[b1+b2]?'삼합 (좋음)':CHUNG_SC[b1+b2]?'지지충 (충돌 주의)':'중립'):'정보없음'}
+교차 충: ${crossRel.chungs||'없음'} / 교차 합: ${crossRel.haps||'없음'} / 천간합: ${crossRel.stemHaps||'없음'}
+종합 궁합 점수: ${totalScore}점 (이 점수를 S1 제목에 반드시 반영할 것)
 
 ━━━ 작성 원칙 ━━━
 ① 섹션 13개, 섹션당 800자, 후반도 초반과 동일한 밀도
@@ -5381,7 +5381,8 @@ ${p2PillarDesc}
 ━━━ 섹션 13개 — 제목 공식 + 내용 필수 포인트 ━━━
 
 [S1 💫 점수 + 두 일간 조합 이미지]
-제목 공식: "점수: [두 일간 자연물 조합 한 컷 이미지], [관계 핵심 특성 한 마디]"
+★ 반드시 종합 궁합 점수 ${totalScore}점을 제목에 그대로 사용할 것 (임의 변경 절대 금지)
+제목 공식: "${totalScore}점: [두 일간 자연물 조합 한 컷 이미지], [관계 핵심 특성 한 마디]"
 예) 72점: 끌림은 강렬하지만, 서로의 고집 버튼을 누르면 핵폭발 주의보
     82점: 차가운 보석과 뜨거운 용광로의 만남, 원진살만 조심하면 대박
     86점: 보석을 비추는 태양, 흙더미 속 보물을 캐내는 운명적 케미
@@ -5604,17 +5605,35 @@ ${p2PillarDesc}
       '수목': 85, '수화': 35, '수토': 55, '수금': 90, '수수': 70
     };
     const baseScore = compatMap[el1 + el2] || 60;
-    const stemBonus = ((r1.dsi + r2.dsi) % 5) * 2;
-    const branchBonus = r1.pillars.day && r2.pillars.day ? ((r1.pillars.day.bi + r2.pillars.day.bi) % 6) : 3;
+
+    // 천간 관계 보정 (명리학 기반)
+    const STEMHAP_SC  = {'甲己':true,'己甲':true,'乙庚':true,'庚乙':true,'丙辛':true,'辛丙':true,'丁壬':true,'壬丁':true,'戊癸':true,'癸戊':true};
+    const STEMGEUK_SC = {'甲庚':true,'庚甲':true,'乙辛':true,'辛乙':true,'丙壬':true,'壬丙':true,'丁癸':true,'癸丁':true};
+    const s1 = STEMS.names[r1.dsi], s2 = STEMS.names[r2.dsi];
+    const stemBonus = STEMHAP_SC[s1+s2] ? 12 : STEMGEUK_SC[s1+s2] ? -8 : 0;
+
+    // 지지 관계 보정 (명리학 기반)
+    const b1 = r1.pillars?.day ? BRANCHES.names[r1.pillars.day.bi] : null;
+    const b2 = r2.pillars?.day ? BRANCHES.names[r2.pillars.day.bi] : null;
+    const YUKAP_SC  = {'子丑':true,'丑子':true,'寅亥':true,'亥寅':true,'卯戌':true,'戌卯':true,'辰酉':true,'酉辰':true,'巳申':true,'申巳':true,'午未':true,'未午':true};
+    const SAMHAP_PAIRS = {'寅午':true,'午寅':true,'午戌':true,'戌午':true,'寅戌':true,'戌寅':true,'申子':true,'子申':true,'子辰':true,'辰子':true,'申辰':true,'辰申':true,'巳酉':true,'酉巳':true,'酉丑':true,'丑酉':true,'巳丑':true,'丑巳':true,'亥卯':true,'卯亥':true,'卯未':true,'未卯':true,'亥未':true,'未亥':true};
+    const CHUNG_SC  = {'子午':true,'午子':true,'丑未':true,'未丑':true,'寅申':true,'申寅':true,'卯酉':true,'酉卯':true,'辰戌':true,'戌辰':true,'巳亥':true,'亥巳':true};
+    const branchBonus = b1 && b2
+      ? (YUKAP_SC[b1+b2] ? 10 : SAMHAP_PAIRS[b1+b2] ? 8 : CHUNG_SC[b1+b2] ? -12 : 0)
+      : 0;
     
     // 관계 유형별 가중치 (같은 두 사람도 관계에 따라 다른 결과)
     const relationModifiers = {
-      couple: { base: 0, loveMult: 1.15, commMult: 1.1, moneyMult: 0.95, valuesMult: 1.05, personalityMult: 1.1 },
-      parent: { base: -3, loveMult: 0.7, commMult: 1.2, moneyMult: 1.0, valuesMult: 1.15, personalityMult: 1.05 },
-      sibling: { base: -2, loveMult: 0.6, commMult: 1.1, moneyMult: 1.05, valuesMult: 1.0, personalityMult: 1.0 },
-      friend: { base: 2, loveMult: 0.8, commMult: 1.15, moneyMult: 0.9, valuesMult: 1.1, personalityMult: 1.05 },
-      business: { base: -5, loveMult: 0.5, commMult: 1.2, moneyMult: 1.25, valuesMult: 1.2, personalityMult: 0.95 },
-      etc: { base: 0, loveMult: 1.0, commMult: 1.0, moneyMult: 1.0, valuesMult: 1.0, personalityMult: 1.0 }
+      couple:      { base:  0, loveMult:1.15, commMult:1.10, moneyMult:0.95, valuesMult:1.05, personalityMult:1.10 },
+      parent_child:{ base: -3, loveMult:0.70, commMult:1.20, moneyMult:1.00, valuesMult:1.15, personalityMult:1.05 },
+      parent:      { base: -3, loveMult:0.70, commMult:1.20, moneyMult:1.00, valuesMult:1.15, personalityMult:1.05 },
+      sibling:     { base: -2, loveMult:0.60, commMult:1.10, moneyMult:1.05, valuesMult:1.00, personalityMult:1.05 },
+      friend:      { base:  2, loveMult:0.80, commMult:1.15, moneyMult:0.90, valuesMult:1.10, personalityMult:1.05 },
+      business:    { base: -5, loveMult:0.50, commMult:1.20, moneyMult:1.25, valuesMult:1.20, personalityMult:0.95 },
+      grandparent: { base: -4, loveMult:0.65, commMult:1.10, moneyMult:0.90, valuesMult:1.20, personalityMult:1.00 },
+      mentor:      { base:  0, loveMult:0.60, commMult:1.25, moneyMult:1.00, valuesMult:1.20, personalityMult:1.05 },
+      rival:       { base: -8, loveMult:0.50, commMult:0.90, moneyMult:1.10, valuesMult:0.90, personalityMult:0.90 },
+      etc:         { base:  0, loveMult:1.00, commMult:1.00, moneyMult:1.00, valuesMult:1.00, personalityMult:1.00 }
     };
     const rm = relationModifiers[compatRelation] || relationModifiers.etc;
     const totalScore = Math.min(100, Math.max(30, Math.round(baseScore + stemBonus + branchBonus + rm.base)));
@@ -5769,14 +5788,29 @@ ${p2PillarDesc}
         React.createElement('div', { style:{borderTop:'1px solid rgba(255,255,255,0.07)',paddingTop:'18px',textAlign:'center'} },
           React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'8px'} }, '종합 궁합 점수'),
           React.createElement('div', { style:{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'4px',marginBottom:'6px'} },
-            React.createElement('span', { style:{fontSize:'52px',fontWeight:'900',letterSpacing:'-2px',background:'linear-gradient(135deg,#f9a8d4,#c4b5fd)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',lineHeight:1} }, totalScore),
+            React.createElement('span', { style:{fontSize:'52px',fontWeight:'900',letterSpacing:'-2px',background:'linear-gradient(135deg,#f9a8d4,#c4b5fd)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',lineHeight:1} }, (() => {
+              // AI 섹션 S1 제목에서 점수 파싱 (예: "83점:", "83점 —")
+              if (aiCompatSections && aiCompatSections.length > 0) {
+                const s1title = aiCompatSections[0].title || '';
+                const m = s1title.match(/(\d{2,3})점/);
+                if (m) return parseInt(m[1]);
+              }
+              return totalScore;
+            })()),
             React.createElement('span', { style:{color:'rgba(255,255,255,0.5)',fontSize:'18px',fontWeight:'700'} }, '점')
           ),
           React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'12px'} },
-            totalScore >= 85 ? '✦ 천생연분 · 최고의 궁합입니다' :
-            totalScore >= 70 ? '✦ 좋은 궁합 · 서로 잘 맞아요' :
-            totalScore >= 55 ? '✦ 무난한 궁합 · 노력하면 더 좋아져요' :
-            '✦ 서로 다른 점 많음 · 이해와 배려가 필요해요'
+            (() => {
+              let ai = totalScore;
+              if (aiCompatSections && aiCompatSections.length > 0) {
+                const m = (aiCompatSections[0].title||'').match(/(\d{2,3})점/);
+                if (m) ai = parseInt(m[1]);
+              }
+              return ai >= 85 ? '✦ 천생연분 · 최고의 궁합입니다' :
+                     ai >= 70 ? '✦ 좋은 궁합 · 서로 잘 맞아요' :
+                     ai >= 55 ? '✦ 무난한 궁합 · 노력하면 더 좋아져요' :
+                     '✦ 서로 다른 점 많음 · 이해와 배려가 필요해요';
+            })()
           )
         )
       ),
@@ -5784,11 +5818,23 @@ ${p2PillarDesc}
       React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'18px'} },
         React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'16px'} }, '✦ 분야별 궁합'),
         [
-          { label: '성격', score: categoryScores.personality, color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
-          { label: '대화/소통', score: categoryScores.communication, color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
-          { label: '연애/결혼', score: categoryScores.love, color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
-          { label: '금전/재물', score: categoryScores.money, color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-          { label: '가치관', score: categoryScores.values, color: '#34d399', bg: 'rgba(52,211,153,0.12)' }
+          (() => {
+            // AI S1 점수 파싱해서 분야별 점수 보정
+            let aiTotal = totalScore;
+            if (aiCompatSections && aiCompatSections.length > 0) {
+              const m = (aiCompatSections[0].title||'').match(/(\d{2,3})점/);
+              if (m) aiTotal = parseInt(m[1]);
+            }
+            const ratio = aiTotal / Math.max(1, totalScore);
+            const adj = s => Math.min(99, Math.max(30, Math.round(s * ratio)));
+            return [
+              { label: '성격', score: adj(categoryScores.personality), color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
+              { label: '대화/소통', score: adj(categoryScores.communication), color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
+              { label: '연애/결혼', score: adj(categoryScores.love), color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
+              { label: '금전/재물', score: adj(categoryScores.money), color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+              { label: '가치관', score: adj(categoryScores.values), color: '#34d399', bg: 'rgba(52,211,153,0.12)' }
+            ];
+          })()
         ].map((item, i) =>
           React.createElement('div', { key: i, style:{marginBottom: i < 4 ? '14px' : '0'} },
             React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'} },
@@ -9534,7 +9580,7 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
               ),
               // 토스페이
               React.createElement('button', {
-                onClick: () => alert('토스페이는 현재 준비 중입니다.\n카카오페이로 결제해 주세요 😊'),
+                onClick: () => { alert('토스페이는 현재 준비 중입니다.\n카카오페이로 결제해 주세요 😊'); /* TODO: !processing && doCharge(selPkg, 'toss') */ },
                 style:{width:'100%',padding:'18px 20px',background:'linear-gradient(135deg,#1e293b,#0f172a)',borderRadius:'18px',border:'1px solid rgba(255,255,255,0.08)',opacity:0.6,cursor:'not-allowed',border:'none',cursor:processing?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',opacity:processing?0.6:1,boxShadow:'0 4px 20px rgba(0,100,255,0.2)',transition:'all 0.2s'}
               },
                 React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'14px'} },
@@ -10066,6 +10112,20 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
             React.createElement('span', { style:{color:'rgba(255,255,255,0.4)',fontWeight:'400',fontSize:'13px'} }, item.label)
           )
         ),
+        React.createElement('button', {
+          onClick: () => {
+            if (!window.confirm('분석 캐시를 초기화할까요?\n저장된 사주/궁합/운세 기록은 유지되고,\nAI 분석 결과만 삭제됩니다.')) return;
+            const keys = Object.keys(localStorage).filter(k => k.startsWith('ai_') || k.startsWith('daily_'));
+            keys.forEach(k => localStorage.removeItem(k));
+            alert('✅ 캐시 ' + keys.length + '개 초기화 완료!\n페이지를 새로고침합니다.');
+            window.location.reload();
+          },
+          style:{width:'100%',display:'flex',alignItems:'center',gap:'14px',padding:'13px 20px',background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.5)',textAlign:'left'}
+        },
+          React.createElement('span', { style:{fontSize:'17px'} }, '🗑️'),
+          React.createElement('span', { style:{fontWeight:'500',fontSize:'14px'} }, '분석 캐시 초기화')
+        ),
+        React.createElement('div', { style:{margin:'8px 20px',height:'1px',background:'rgba(255,255,255,0.06)'} }),
         React.createElement('div', { style:{margin:'8px 20px',height:'1px',background:'rgba(255,255,255,0.06)'} }),
         React.createElement('button', { 
           onClick: () => { handleLogout(); setShowSideMenu(false); },
@@ -10635,7 +10695,6 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
             onClick: () => { 
               if (item.id === 'input') { setScreen('saju-list'); window.scrollTo(0,0); return; }
               if (item.id === 'premium') {
-                if (!isLoggedIn && !DEV_MODE) { setShowLogin(true); return; }
                 setScreen('roadmap'); window.scrollTo(0,0); return;
               }
               setScreen(item.id); 
