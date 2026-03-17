@@ -8089,6 +8089,14 @@ ${isSangsaeng
         return `${dw.age}~${dw.endAge}세 | ${dw.stem}${dw.branch}(${dw.stemKr}${dw.branchKr}) | 십성:${dw.tenGod} | 12운성:${dw.twelve} | 오행:${el}${yinyang}`;
       }).join('\n');
 
+      // 코드 기반 전성기/취약기 미리 계산 → AI에게 전달
+      const twelveScoreMap = {'장생':68,'목욕':55,'관대':78,'건록':88,'제왕':95,'쇠':62,'병':42,'사':32,'묘':28,'절':38,'태':52,'양':62};
+      const dwWithScore = allDws.map(dw => ({ ...dw, energyScore: twelveScoreMap[dw.twelve] || 60 }));
+      const peakDw = dwWithScore.reduce((a,b) => a.energyScore > b.energyScore ? a : b);
+      const lowDw  = dwWithScore.reduce((a,b) => a.energyScore < b.energyScore ? a : b);
+      const calcPeakStr = `${peakDw.age}~${peakDw.endAge}세 ${peakDw.stemKr}${peakDw.branchKr}대운 (12운성: ${peakDw.twelve}, 에너지: ${peakDw.energyScore}점)`;
+      const calcLowStr  = `${lowDw.age}~${lowDw.endAge}세 ${lowDw.stemKr}${lowDw.branchKr}대운 (12운성: ${lowDw.twelve}, 에너지: ${lowDw.energyScore}점)`;
+
       const prompt = `당신은 한국 최고의 사주 명리학 전문가입니다. 아래 사주로 ${inp.name}님의 대운 인생 지도를 작성하세요.
 
 ▌사주 원국
@@ -8101,6 +8109,12 @@ ${pillarsDesc}
 용신: ${yongshin} / 기신: ${gishin}
 신살: ${sinsal || '없음'}
 대운 목록: ${dwListStr}
+
+▌에너지 곡선 기준 전성기/취약기 (그래프와 반드시 일치시킬 것)
+전성기: ${calcPeakStr}
+취약기: ${calcLowStr}
+→ peakInfo.peak.age는 반드시 "${peakDw.age}~${peakDw.endAge}세"로 작성할 것
+→ peakInfo.caution.age는 반드시 "${lowDw.age}~${lowDw.endAge}세"로 작성할 것
 
 ▌작성 원칙
 ① 섹션 10개 — 대운 하나당 섹션 하나, 순서대로
