@@ -9489,9 +9489,14 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
       // DEV_MODE: 실제 결제 없이 즉시 충전
       if (DEV_MODE) {
         const newStars = stars + pkg.stars;
+        const newMoons = moons + (pkg.moons || 0);
         setStars(newStars);
-        if (userKey) saveUserData(userKey, 'stars', newStars);
-        alert(`[테스트] ⭐ ${pkg.stars}개 충전 완료! (총 ${newStars}개)`);
+        if (pkg.moons > 0) setMoons(newMoons);
+        if (userKey) {
+          saveUserData(userKey, 'stars', newStars);
+          if (pkg.moons > 0) saveUserData(userKey, 'moons', newMoons);
+        }
+        alert(`[테스트] ⭐ ${pkg.stars}별${pkg.moons > 0 ? ` + 🌙 ${pkg.moons}달` : ''} 충전 완료!`);
         if (pendingProduct && newStars >= pendingStars) {
           setTimeout(() => { _doPurchase(pendingProduct); }, 100);
         }
