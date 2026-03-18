@@ -1,7 +1,21 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<script>(function(){if(!window.location.href.includes("test.html"))return;const KEY="sajuon_dev_auth",PWD="sajuon2026!";if(sessionStorage.getItem(KEY)==="ok")return;const input=prompt("🔐 개발자 비밀번호:");if(input!==PWD){document.documentElement.innerHTML="<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#070514;color:rgba(255,255,255,0.4);font-family:sans-serif">접근이 거부되었습니다.</div>";throw new Error("Unauthorized");}sessionStorage.setItem(KEY,"ok");})();</script>
+<script>
+(function(){
+  if (!window.location.href.includes('test.html')) return;
+  var KEY = 'sajuon_dev_auth', PWD = 'sajuon2026!';
+  if (sessionStorage.getItem(KEY) === 'ok') return;
+  var input = prompt('\uD83D\uDD10 개발자 비밀번호를 입력하세요:');
+  if (input !== PWD) {
+    document.open();
+    document.write('<html><body style="margin:0;background:#070514;display:flex;align-items:center;justify-content:center;height:100vh;"><p style="color:rgba(255,255,255,0.4);font-family:sans-serif;font-size:14px;">접근이 거부되었습니다.</p></body></html>');
+    document.close();
+    return;
+  }
+  sessionStorage.setItem(KEY, 'ok');
+})();
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>사주ON — 2026 무료 사주·궁합·운세 | 전통 명리학 심층 분석</title>
