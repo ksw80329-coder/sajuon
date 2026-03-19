@@ -8425,9 +8425,8 @@ ${pillarsDesc}
 
       // 포인트 생성: 각 대운 중심
       const points = daewoons.map(dw => {
-        const midAge = (dw.age + dw.endAge) / 2;
         const score = twelveScore[dw.twelve] || 60;
-        return { x: ageToX(midAge), y: scoreToY(score), score, dw, midAge };
+        return { x: ageToX(dw.age), y: scoreToY(score), score, dw, midAge: dw.age };
       });
 
       // ── 그리드 ──
@@ -8854,8 +8853,8 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
     const branchC= {자:'#60a5fa',축:'#fbbf24',인:'#4ade80',묘:'#86efac',진:'#fbbf24',사:'#f87171',오:'#f87171',미:'#fbbf24',신:'#e2e8f0',유:'#f1f5f9',술:'#fbbf24',해:'#60a5fa'};
     const shareData = {title:`${person.name}님의 ${currentYear}년 신년운세 — 사주ON`,desc:`${dayGanKr}(${dayEl}) · ${gradeInfo.label} · ${Math.round(totalScore)}점`,tag:'yearly'};
 
-    const renderMonthlySection = (content) => {
-      const lines = (content||'').split('\n').filter(l=>l.trim());
+    const renderMonthlySection = (secContent) => {
+      const lines = (secContent||'').split('\n').filter(l=>l.trim());
       const months = lines.filter(l=>/^(1[0-2]|[1-9])월/.test(l.trim()));
       if (months.length >= 6) {
         const monthEmojis = ['❄️','🌸','🌿','🌧️','☀️','🌊','🍃','🌻','🍂','🎃','🍁','🎄'];
