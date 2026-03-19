@@ -1,13 +1,52 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<style>
+#sajuon-lock{position:fixed;inset:0;z-index:999999;background:#070514;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#sajuon-lock .box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:44px 32px;width:300px;max-width:90vw;text-align:center}
+#sajuon-lock .icon{font-size:36px;margin-bottom:14px}
+#sajuon-lock .title{color:rgba(255,255,255,0.85);font-size:15px;font-weight:700;margin-bottom:6px}
+#sajuon-lock .sub{color:rgba(255,255,255,0.3);font-size:11px;margin-bottom:24px;letter-spacing:0.5px}
+#sajuon-lock input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;color:white;font-size:20px;outline:none;letter-spacing:6px;text-align:center;margin-bottom:14px;-webkit-text-security:disc}
+#sajuon-lock input:focus{border-color:rgba(251,191,36,0.5);box-shadow:0 0 0 3px rgba(251,191,36,0.08)}
+#sajuon-lock button{width:100%;padding:14px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;border-radius:14px;color:white;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:0.5px}
+#sajuon-lock button:active{opacity:0.85}
+#sajuon-lock .err{color:#f87171;font-size:12px;margin-top:12px;min-height:16px;transition:opacity 0.2s}
+</style>
 <script>
 (function(){
   if (!window.location.href.includes('test.html')) return;
   var KEY = 'sajuon_dev_auth', PWD = '2024100611';
   if (sessionStorage.getItem(KEY) === 'ok') return;
-  var H = '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#070514;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif}.box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:40px 32px;width:300px;text-align:center}.icon{font-size:32px;margin-bottom:16px}.title{color:rgba(255,255,255,0.85);font-size:16px;font-weight:600;margin-bottom:24px}input{width:100%;padding:12px 16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:12px;color:white;font-size:18px;outline:none;letter-spacing:4px;text-align:center;margin-bottom:16px}input::placeholder{color:rgba(255,255,255,0.2);letter-spacing:0}input:focus{border-color:rgba(251,191,36,0.5)}button{width:100%;padding:13px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;cursor:pointer}.err{color:#f87171;font-size:13px;margin-top:12px;min-height:18px}</style></head><body><div class="box"><div class="icon">&#128274;</div><div class="title">개발자 전용 페이지</div><input type="password" id="pw" placeholder="비밀번호" autocomplete="off"/><button onclick="chk()">확인</button><div class="err" id="err"></div></div><script>document.getElementById("pw").addEventListener("keydown",function(e){if(e.key==="Enter")chk()});function chk(){var v=document.getElementById("pw").value;if(v==="'+PWD+'"){sessionStorage.setItem("'+KEY+'","ok");location.reload();}else{document.getElementById("err").textContent="비밀번호가 올바르지 않습니다.";document.getElementById("pw").value="";}}<\/script></body></html>';
-  document.open(); document.write(H); document.close();
+  // 페이지 렌더 완전 차단
+  document.documentElement.style.visibility = 'hidden';
+  window.addEventListener('DOMContentLoaded', function(){
+    document.documentElement.style.visibility = '';
+    var overlay = document.createElement('div');
+    overlay.id = 'sajuon-lock';
+    overlay.innerHTML = '<div class="box"><div class="icon">&#128274;</div><div class="title">개발자 전용 페이지</div><div class="sub">SAJUON DEV</div><input type="password" id="sj-pw" placeholder="비밀번호" autocomplete="off"/><button onclick="sjChk()">확인</button><div class="err" id="sj-err"></div></div>';
+    document.body.appendChild(overlay);
+    setTimeout(function(){ document.getElementById('sj-pw').focus(); }, 100);
+  });
+  window.sjChk = function(){
+    var v = document.getElementById('sj-pw').value;
+    if (v === PWD) {
+      sessionStorage.setItem(KEY, 'ok');
+      var el = document.getElementById('sajuon-lock');
+      el.style.transition = 'opacity 0.3s';
+      el.style.opacity = '0';
+      setTimeout(function(){ el.remove(); }, 300);
+    } else {
+      var err = document.getElementById('sj-err');
+      err.textContent = '비밀번호가 올바르지 않습니다.';
+      document.getElementById('sj-pw').value = '';
+      document.getElementById('sj-pw').focus();
+      setTimeout(function(){ err.textContent = ''; }, 2000);
+    }
+  };
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && document.getElementById('sj-pw')) window.sjChk();
+  });
 })();
 </script>
   <meta charset="UTF-8">
