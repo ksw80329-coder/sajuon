@@ -3391,7 +3391,7 @@ function App() {
           React.createElement('input', {
             type:'text', inputMode:'numeric', maxLength:10,
             placeholder:'예) 19901225',
-            defaultValue: (form.year && form.month && form.day) ? String(form.year)+String(form.month).padStart(2,'0')+String(form.day).padStart(2,'0') : '',
+            defaultValue: (form.year && form.month && form.day) ? String(form.year)+'.'+String(form.month).padStart(2,'0')+'.'+String(form.day).padStart(2,'0') : '',
             onChange: e => {
               const digits = e.target.value.replace(/[^0-9]/g,'').slice(0,8);
               let out = digits;
