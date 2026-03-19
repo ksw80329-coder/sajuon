@@ -20,8 +20,6 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
   <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
-  <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="manifest" href="/manifest.json">
 
@@ -4517,7 +4515,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 
     const PaidResultScreen = () => {
     // ===== AI 해설 캐시 (hooks - early return 앞에 위치해야 함) =====
-    const _sajuCacheKey = currentInput ? `ai_saju_v42_${currentInput.name}_${currentInput.year}_${currentInput.month}_${currentInput.day}_${currentInput.hour}` : 'ai_saju_null';
+    const _sajuCacheKey = currentInput ? `ai_saju_v44_${currentInput.name}_${currentInput.year}_${currentInput.month}_${currentInput.day}_${currentInput.hour}` : 'ai_saju_null';
     const [aiSections, setAiSections] = React.useState(() => {
       try { const c = localStorage.getItem(_sajuCacheKey); const p = c ? JSON.parse(c) : null; return Array.isArray(p) && p.length > 0 ? p : null; } catch(e) { return null; }
     });
@@ -4669,6 +4667,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 ⑤ 신살은 삶의 장면으로 서술 — 이름 나열 금지
 ⑥ 불확실한 내용은 '~경향이 있다' '~가능성이 높다'로 표현
 ⑦ JSON 문자열 내 큰따옴표 사용 금지
+⑧ ⑥ 한자 표기 시 반드시 바로 옆 괄호 안에 한글 독음 병기 — 예) 甲(갑), 丙午(병오), 天干(천간), 比肩(비견), 食神(식신). 한자만 단독 사용 금지.
 
 ━━━ 일간 자연물 치환표 ━━━
 甲갑=소나무·거목 / 乙을=화초·덩굴·장미 / 丙병=태양·불꽃 / 丁정=촛불·등불
@@ -5285,7 +5284,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const person1 = savedSaju.find(s => String(s.id) === String(compatPerson1));
     const person2 = savedSaju.find(s => String(s.id) === String(compatPerson2));
 
-    const _compatCacheKey = (person1 && person2) ? `ai_compat_v42_${person1.id}_${person2.id}_${compatRelation||'couple'}` : 'ai_compat_null';
+    const _compatCacheKey = (person1 && person2) ? `ai_compat_v44_${person1.id}_${person2.id}_${compatRelation||'couple'}` : 'ai_compat_null';
     const [aiCompatSections, setAiCompatSections] = React.useState(() => {
       try { const c = localStorage.getItem(_compatCacheKey); const p = c ? JSON.parse(c) : null; return p && Array.isArray(p.sections) && p.sections.length > 0 ? p.sections : null; } catch(e) { return null; }
     });
@@ -5383,6 +5382,7 @@ ${p2PillarDesc}
 ④ 구어체·슬랭 허용 (겉바속촉, 찐한, 쿨내 진동, 멘탈 바사삭, 고구마, 끝판왕 등)
 ⑤ 구체적 일상 장면으로 서술 — 추상어 금지
 ⑥ JSON 문자열 내 큰따옴표 금지
+⑧ 한자 표기 시 반드시 바로 옆 괄호 안에 한글 독음 병기 — 예) 甲(갑), 丙午(병오), 天干(천간), 比肩(비견), 食神(식신). 한자만 단독 사용 금지.
 ⑦ 관계 유형은 반드시 [${relationLabel}]이며, 모든 섹션 내용은 이 관계에 맞게 작성
    - 연인/부부: 연애·결혼·갈등·성적 케미 중심
    - 친구: 우정·의리·취미·소통 중심
@@ -8045,7 +8045,7 @@ ${isSangsaeng
     const dwListStr = (dwData ? dwData.daewoons.slice(0,10) : []).map(dw=>`${dw.age}세 ${dw.stem}${dw.branch}(${dw.tenGod})`).join(' / ');
     const currentDw = curDw;
 
-    const _cacheKey = `ai_roadmap_v9_${inp.name}_${inp.year}_${inp.month}_${inp.day}`;
+    const _cacheKey = `ai_roadmap_v11_${inp.name}_${inp.year}_${inp.month}_${inp.day}`;
     const _roadmapEntry = savedRoadmap.find(r => String(r.personId) === String(roadmapPerson));
     const _purchasedYear = _roadmapEntry?.purchasedYear || new Date().getFullYear();
     const _currentYear = new Date().getFullYear();
@@ -8124,6 +8124,7 @@ ${pillarsDesc}
 ③ ${inp.name}님 이름을 각 섹션에 자연스럽게 언급
 ④ 구어체·구체적 장면 서술 — '발전', '성장', '도전' 같은 추상어 금지
 ⑤ JSON 문자열 내 큰따옴표 금지
+⑥ 한자 표기 시 반드시 바로 옆 괄호 안에 한글 독음 병기 — 예) 甲(갑), 丙午(병오), 比肩(비견). 한자만 단독 사용 금지.
 
 ▌일간 자연물 치환표
 甲갑=소나무 / 乙을=화초·장미 / 丙병=태양 / 丁정=촛불 / 戊무=산
@@ -8703,7 +8704,7 @@ ${pillarsDesc}
     const dayGanKr = STEMS.korean[r.dsi];
     const dayEl    = STEMS.elements[r.dsi];
 
-    const _cacheKey = `ai_yearly_v59_${person.id}_${currentYear}`;
+    const _cacheKey = `ai_yearly_v61_${person.id}_${currentYear}`;
     const _cachedData = (() => { try { const c = localStorage.getItem(_cacheKey); return c ? JSON.parse(c) : null; } catch(e) { return null; } })();
 
     const [aiSections, setAiSections]   = React.useState(() => _cachedData?.sections || null);
@@ -8746,6 +8747,7 @@ ${dwDesc} / 세운: ${sewoonDesc}
 ③ ${currentYear}년 세운과 원국 용신·기신의 관계를 구체적으로 분석
 ④ 구체적 연도·월·행동 제시 — 모호한 표현 금지
 ⑤ JSON 문자열 내 큰따옴표 금지
+⑥ ⑥ 한자 표기 시 반드시 바로 옆 괄호 안에 한글 독음 병기 — 예) 甲(갑), 丙午(병오), 天干(천간), 比肩(비견), 食神(식신). 한자만 단독 사용 금지.
 
 ▌섹션 구성
 S1: ${currentYear}년 총운 / S2: 직업·커리어 / S3: 재물 / S4: 연애·결혼
@@ -8983,8 +8985,7 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
                     sec.icon || '🌟'
                   ),
                   React.createElement('div', { style:{flex:1,minWidth:0} },
-                    React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'9px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'3px'} }, `S${i+1}`),
-                    React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'14px',letterSpacing:'-0.3px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'} }, sec.title || `섹션 ${i+1}`)
+                    React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'14px',letterSpacing:'-0.3px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',margin:0} }, sec.title || `섹션 ${i+1}`)
                   ),
                   React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'8px',background:isOpen?`${cHex}20`:'rgba(255,255,255,0.05)',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.3s',transform:isOpen?'rotate(180deg)':'none',flexShrink:0} },
                     React.createElement('span', { style:{color:isOpen?cHex:'rgba(255,255,255,0.3)',fontSize:'12px'} }, '▼')
@@ -9864,36 +9865,11 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
 
     const [dragY, setDragY] = React.useState(0);
     const startYRef = React.useRef(0);
-    const isDraggingRef = React.useRef(false);
     const close = () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); };
 
-    // ── 터치 드래그 ──
     const onTouchStart = e => { startYRef.current = e.touches[0].clientY; };
-    const onTouchMove = e => {
-      const dy = e.touches[0].clientY - startYRef.current;
-      if (dy > 0) { e.preventDefault(); setDragY(dy); }
-    };
-    const onTouchEnd = () => { if (dragY > 100) close(); else setDragY(0); };
-
-    // ── 마우스 드래그 ──
-    const onMouseDown = e => {
-      e.preventDefault();
-      isDraggingRef.current = true;
-      startYRef.current = e.clientY;
-      const onMove = ev => {
-        if (!isDraggingRef.current) return;
-        const dy = ev.clientY - startYRef.current;
-        if (dy > 0) setDragY(dy);
-      };
-      const onUp = () => {
-        isDraggingRef.current = false;
-        setDragY(prev => { if (prev > 100) { close(); return 0; } return 0; });
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseup', onUp);
-      };
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-    };
+    const onTouchMove = e => { const dy = e.touches[0].clientY - startYRef.current; if (dy > 0) setDragY(dy); };
+    const onTouchEnd = () => { if (dragY > 100) close(); setDragY(0); };
 
     return React.createElement('div', {
       style:{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'}
@@ -9903,16 +9879,11 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
         onClick: () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); }
       }),
       React.createElement('div', {
-        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',transform:`translateY(${dragY}px)`,transition:dragY===0?'transform 0.35s cubic-bezier(0.32,0.72,0,1)':'none'},
+        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',overflow:'hidden',transform:`translateY(${dragY}px)`,transition:dragY===0?'transform 0.3s cubic-bezier(0.32,0.72,0,1)':'none'},
+        onTouchStart, onTouchMove, onTouchEnd,
         onClick: e => e.stopPropagation()
       },
-        React.createElement('div', {
-          style:{width:'100%',padding:'14px 0 6px',display:'flex',justifyContent:'center',cursor:'grab',userSelect:'none',touchAction:'none'},
-          onMouseDown,
-          onTouchStart, onTouchMove, onTouchEnd
-        },
-          React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.2)'} })
-        ),
+        React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.15)',margin:'12px auto 0'} }),
         React.createElement('div', { style:{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',width:'300px',height:'200px',background:'radial-gradient(circle at 50% 0%,rgba(124,58,237,0.18),transparent 70%)',pointerEvents:'none'} }),
 
         React.createElement('div', { style:{padding:'28px 24px 32px',position:'relative'} },
