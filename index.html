@@ -18,9 +18,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="사주ON">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icon-180.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/icon-180.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/icon-180.png">
+  <link rel="apple-touch-icon-precomposed" href="/icon-180.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="shortcut icon" href="/icon-32.png">
   <link rel="manifest" href="/manifest.json">
 
   <!-- 구조화 데이터: FAQ (SEO 스니펫 최적화) -->
@@ -2182,27 +2186,11 @@ ${allSinsal.includes('원진') || allSinsal.includes('구추방해') ? '원진�
     const yearEl = '화';
     const yearRelation = getYearRelation(dayEl, yearEl);
     
-    // 총운 점수 계산 — 세운·용신·기신·신살 종합 반영
-    // 세운과 일간 관계 점수
-    const relationScore = yearRelation === '생받음' ? 88    // 세운이 일간을 생해줌 = 최고
-                        : yearRelation === '생'     ? 78    // 일간이 세운을 생해줌 = 좋음
-                        : yearRelation === '조화'   ? 82    // 같은 오행 = 매우 좋음
-                        : yearRelation === '극함'   ? 65    // 일간이 세운 극 = 보통
-                        : yearRelation === '극'     ? 52    // 세운이 일간 극 = 나쁨
-                        : 68;                               // 보통
-    // 용신/기신이 세운과 일치하면 추가 보정
-    const yongshinBonus = fe.yongshin === yearEl ? 8 : fe.gishin === yearEl ? -8 : 0;
-    // 길한 신살 보너스
-    const sinsalBonus = (allSinsal.includes('천을귀인') ? 5 : 0)
-                      + (allSinsal.includes('태극귀인') ? 4 : 0)
-                      + (allSinsal.includes('학당귀인') ? 3 : 0)
-                      + (allSinsal.includes('문창귀인') ? 2 : 0)
-                      + (allSinsal.includes('재고귀인') ? 3 : 0)
-                      - (allSinsal.includes('백호살')   ? 3 : 0)
-                      - (allSinsal.includes('양인살')   ? 2 : 0);
-    // 결정론적 개인 편차 (dsi 기반, -5~+5)
-    const variance = (result.dsi % 11) - 5;
-    const totalScore = Math.min(95, Math.max(45, Math.round(relationScore + yongshinBonus + sinsalBonus + variance)));
+    // 총운 점수 계산 (deterministic)
+    const baseScore = 50 + (result.dsi % 20);
+    const elBonus = yearRelation === '생' ? 15 : yearRelation === '조화' ? 10 : yearRelation === '극' ? -10 : 0;
+    const sinsalBonus = (allSinsal.includes('천을귀인') ? 5 : 0) + (allSinsal.includes('학당귀인') ? 3 : 0) - (allSinsal.includes('백호살') ? 2 : 0);
+    const totalScore = Math.min(95, Math.max(45, baseScore + elBonus + sinsalBonus));
     
     // 월별 운세 생성
     const monthlyFortunes = generateMonthlyFortunes(result, input, totalScore);
@@ -8378,10 +8366,11 @@ ${pillarsDesc}
       const ageToX = (age) => PAD_L + ((age - daewoons[0].age) / totalSpan) * chartW;
       const scoreToY = (s) => PAD_T + chartH - ((s - 20) / 80) * chartH;
 
-      // 포인트 생성: 각 대운 시작 나이 기준 (X축 레이블과 일치)
+      // 포인트 생성: 각 대운 중심
       const points = daewoons.map(dw => {
+        const midAge = (dw.age + dw.endAge) / 2;
         const score = twelveScore[dw.twelve] || 60;
-        return { x: ageToX(dw.age), y: scoreToY(score), score, dw, midAge: dw.age };
+        return { x: ageToX(midAge), y: scoreToY(score), score, dw, midAge };
       });
 
       // ── 그리드 ──
@@ -9879,9 +9868,17 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
     const startYRef = React.useRef(0);
     const close = () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); };
 
-    const onTouchStart = e => { startYRef.current = e.touches[0].clientY; };
-    const onTouchMove = e => { const dy = e.touches[0].clientY - startYRef.current; if (dy > 0) setDragY(dy); };
-    const onTouchEnd = () => { if (dragY > 100) close(); setDragY(0); };
+    const onTouchStart = e => {
+      startYRef.current = e.touches[0].clientY;
+    };
+    const onTouchMove = e => {
+      const dy = e.touches[0].clientY - startYRef.current;
+      if (dy > 0) {
+        e.preventDefault();
+        setDragY(dy);
+      }
+    };
+    const onTouchEnd = () => { if (dragY > 100) close(); else setDragY(0); };
 
     return React.createElement('div', {
       style:{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'}
@@ -9891,11 +9888,15 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
         onClick: () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); }
       }),
       React.createElement('div', {
-        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',overflow:'hidden',transform:`translateY(${dragY}px)`,transition:dragY===0?'transform 0.3s cubic-bezier(0.32,0.72,0,1)':'none'},
-        onTouchStart, onTouchMove, onTouchEnd,
+        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',transform:`translateY(${dragY}px)`,transition:dragY===0?'transform 0.3s cubic-bezier(0.32,0.72,0,1)':'none'},
         onClick: e => e.stopPropagation()
       },
-        React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.15)',margin:'12px auto 0'} }),
+        React.createElement('div', {
+          style:{width:'100%',padding:'16px 0 8px',display:'flex',justifyContent:'center',cursor:'grab',touchAction:'none'},
+          onTouchStart, onTouchMove, onTouchEnd
+        },
+          React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.25)'} })
+        ),
         React.createElement('div', { style:{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',width:'300px',height:'200px',background:'radial-gradient(circle at 50% 0%,rgba(124,58,237,0.18),transparent 70%)',pointerEvents:'none'} }),
 
         React.createElement('div', { style:{padding:'28px 24px 32px',position:'relative'} },
