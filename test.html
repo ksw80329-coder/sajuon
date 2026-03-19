@@ -16,7 +16,12 @@
 (function(){
   if (!window.location.href.includes('test.html')) return;
   var KEY = 'sajuon_dev_auth', PWD = '2024100611';
-  if (sessionStorage.getItem(KEY) === 'ok') return;
+  // 이미 인증됨 → visibility 복원만 하고 통과
+  if (sessionStorage.getItem(KEY) === 'ok') {
+    document.documentElement.style.visibility = '';
+    return;
+  }
+  // 미인증 → 화면 숨기고 오버레이 표시
   document.documentElement.style.visibility = 'hidden';
   function render() {
     document.documentElement.style.visibility = '';
@@ -31,6 +36,7 @@
     var v=document.getElementById('sj-pw').value;
     if(v===PWD){
       sessionStorage.setItem(KEY,'ok');
+      document.documentElement.style.visibility = ''; // 반드시 복원
       var el=document.getElementById('sj-lock');
       if(el){el.style.transition='opacity 0.3s';el.style.opacity='0';setTimeout(function(){el.remove();},300);}
     } else {
