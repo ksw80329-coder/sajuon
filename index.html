@@ -1332,7 +1332,7 @@ function App() {
           setPaymentProduct(pending.product);
           setTimeout(() => {
             // 결제 금액 검증 (기본 검증)
-            if (parseInt(tossAmount) === pending.product.price) {
+            if (!tossAmount || parseInt(tossAmount) === pending.product.price) {
               // 결제 완료 처리
               const newPurchase = {
                 id: Date.now(),
@@ -8697,55 +8697,36 @@ ${pillarsDesc}
 
     const r = person.result || analyzeSaju(person.year, person.month, person.day, person.hour, person.minute, person.isLunar, false);
     const currentYear = new Date().getFullYear();
+    const dayGan   = STEMS.names[r.dsi];
     const dayGanKr = STEMS.korean[r.dsi];
     const dayEl    = STEMS.elements[r.dsi];
 
-    // ── 세운 간지 (올바른 공식) ──
-    const sewoonStemIdx   = (currentYear - 4) % 10;
-    const sewoonBranchIdx = (currentYear - 4) % 12;
-    const sewoonStemKr    = STEMS.korean[sewoonStemIdx];
-    const sewoonBranchKr  = BRANCHES.korean[sewoonBranchIdx];
-    const sewoonDesc = `${STEMS.names[sewoonStemIdx]}${BRANCHES.names[sewoonBranchIdx]}(${sewoonStemKr}${sewoonBranchKr})년`;
-
-    // ── 총운 점수 계산 ──
-    const _yearlyData = (() => { try { return generateYearlyInterpretation(r, person); } catch(e) { return null; } })();
-    const totalScore = _yearlyData?.totalScore || (() => {
-      const base = 50 + (r.dsi % 20);
-      const sewoonEl = sewoonStemIdx <= 1 ? '목' : sewoonStemIdx <= 3 ? '화' : sewoonStemIdx <= 5 ? '토' : sewoonStemIdx <= 7 ? '금' : '수';
-      const elBonus = dayEl === sewoonEl ? 8 : 0;
-      return Math.min(95, Math.max(45, base + elBonus));
-    })();
-
-    // ── 등급 정보 ──
-    const gradeInfo = totalScore >= 80
-      ? { label:'대길(大吉)', short:'대길', emoji:'🎊', color:'#fbbf24', glow:'rgba(251,191,36,0.35)', bg:'rgba(251,191,36,0.1)', border:'rgba(251,191,36,0.35)', desc:'황금 같은 한 해입니다' }
-      : totalScore >= 65
-      ? { label:'길(吉)',     short:'길',   emoji:'✨', color:'#4ade80', glow:'rgba(74,222,128,0.30)', bg:'rgba(74,222,128,0.1)',  border:'rgba(74,222,128,0.35)',  desc:'성장과 도약의 한 해입니다' }
-      : totalScore >= 50
-      ? { label:'평(平)',     short:'평',   emoji:'🌱', color:'#60a5fa', glow:'rgba(96,165,250,0.30)',  bg:'rgba(96,165,250,0.1)',   border:'rgba(96,165,250,0.35)',   desc:'내실을 다지는 한 해입니다' }
-      : { label:'흉(凶)',     short:'흉',   emoji:'⚠️', color:'#f87171', glow:'rgba(248,113,113,0.30)', bg:'rgba(248,113,113,0.1)',  border:'rgba(248,113,113,0.35)',  desc:'인내와 지혜가 필요한 한 해입니다' };
-
-    // ── 캐시 & 상태 ──
-    const _cacheKey = `ai_yearly_v60_${person.id}_${currentYear}`;
+    const _cacheKey = `ai_yearly_v59_${person.id}_${currentYear}`;
     const _cachedData = (() => { try { const c = localStorage.getItem(_cacheKey); return c ? JSON.parse(c) : null; } catch(e) { return null; } })();
-    const [aiSections, setAiSections] = React.useState(() => _cachedData?.sections || null);
-    const [aiLoading, setAiLoading]   = React.useState(() => !_cachedData?.sections);
-    const [aiError, setAiError]       = React.useState(false);
-    const [openIdx, setOpenIdx]       = React.useState(null);
 
-    // ── 사주 데이터 ──
-    const feStr     = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}(${v}%)`).join(' > ');
+    const [aiSections, setAiSections]   = React.useState(() => _cachedData?.sections || null);
+    const [aiMonthly, setAiMonthly]     = React.useState(() => _cachedData?.monthly  || []);
+    const [aiClosing, setAiClosing]     = React.useState(() => _cachedData?.closing  || '');
+    const [aiLoading, setAiLoading]     = React.useState(() => !_cachedData?.sections);
+    const [aiError, setAiError]         = React.useState(false);
+    const [openIdx, setOpenIdx]         = React.useState(null);
+
+    // ── 사주 데이터 계산 ──
+    const feStr   = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}(${v}%)`).join(' > ');
     const allSinsal = [...(r.pillarSinsal?.year||[]),...(r.pillarSinsal?.month||[]),...(r.pillarSinsal?.day||[]),...(r.pillarSinsal?.hour||[])].filter((v,i,a)=>a.indexOf(v)===i);
     const pillarsDesc = ['year','month','day','hour'].map(k => {
-      const pl = r.pillars[k]; if (!pl) return '';
+      const pl = r.pillars[k];
+      if (!pl) return '';
       return `${pl.stem}${pl.branch}(${STEMS.korean[pl.si]}${BRANCHES.korean[pl.bi]}) 십성:${pl.tenGod||''}`;
     }).join(' | ');
-    const curDw   = r.daewoon?.find(d => d.startAge <= (currentYear - parseInt(person.year)) && (currentYear - parseInt(person.year)) < d.startAge + 10);
-    const dwDesc  = curDw ? `현재 대운: ${curDw.stem}${curDw.branch}(${curDw.stemKr||''}${curDw.branchKr||''}) ${curDw.tenGod||''}` : '';
+    const curDw = r.daewoon?.find(d => d.startAge <= (currentYear - parseInt(person.year)) && (currentYear - parseInt(person.year)) < d.startAge + 10);
+    const dwDesc = curDw ? `현재 대운: ${curDw.stem}${curDw.branch}(${curDw.stemKr||''}${curDw.branchKr||''}) ${curDw.tenGod||''}` : '';
+    const yy = currentYear % 100;
+    const sewoonStem   = STEMS.names[yy % 10];
+    const sewoonBranch = BRANCHES.names[yy % 12];
+    const sewoonDesc   = `${sewoonStem}${sewoonBranch}년`;
 
-    // ── AI 프롬프트 ──
-    const sajuCurrentYear = currentYear;
-    const prompt = `당신은 한국 최고의 사주 명리학 전문가입니다. 아래 만세력 데이터를 보고 ${person.name}님의 ${sajuCurrentYear}년 신년운세를 작성하세요.
+    const prompt = `당신은 한국 최고의 사주 명리학 전문가입니다. 아래 만세력 데이터를 보고 ${person.name}님의 ${currentYear}년 신년운세를 작성하세요.
 
 ▌만세력 원국
 ${pillarsDesc}
@@ -8758,15 +8739,14 @@ ${pillarsDesc}
 ${dwDesc} / 세운: ${sewoonDesc}
 
 ▌작성 원칙
-현재 연도: ${sajuCurrentYear}년 — 모든 섹션에서 연도를 언급할 때 반드시 ${sajuCurrentYear}년을 사용할 것.
 ① 섹션 13개, 섹션당 800자, 후반도 초반과 동일한 밀도
 ② ${person.name}님 이름을 각 섹션에 직접 호명
-③ ${sajuCurrentYear}년 세운과 원국 용신·기신의 관계를 구체적으로 분석
+③ ${currentYear}년 세운과 원국 용신·기신의 관계를 구체적으로 분석
 ④ 구체적 연도·월·행동 제시 — 모호한 표현 금지
 ⑤ JSON 문자열 내 큰따옴표 금지
 
 ▌섹션 구성
-S1: ${sajuCurrentYear}년 총운 / S2: 직업·커리어 / S3: 재물 / S4: 연애·결혼
+S1: ${currentYear}년 총운 / S2: 직업·커리어 / S3: 재물 / S4: 연애·결혼
 S5: 건강 / S6: 인간관계 / S7: 가족 / S8: 이사·이동
 S9: 상반기 흐름 / S10: 하반기 흐름 / S11: 월별 운세 포인트
 S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
@@ -8777,206 +8757,251 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
 - color 예시: text-amber-400, text-yellow-400, text-orange-400, text-rose-400, text-purple-400`;
 
     React.useEffect(() => {
+      // 캐시 직접 확인
       try {
         const cached = localStorage.getItem(_cacheKey);
         const p = cached ? JSON.parse(cached) : null;
-        if (p?.sections?.length > 0) { setAiSections(p.sections); setAiLoading(false); return; }
+        if (p && p.sections && p.sections.length > 0) {
+          setAiSections(p.sections);
+          if (p.monthly) setAiMonthly(p.monthly);
+          if (p.closing) setAiClosing(p.closing);
+          setAiLoading(false);
+          return;
+        }
       } catch(e) {}
-      setAiSections(null); setAiError(false); setAiLoading(true);
+      // 새 분석 시작
+      setAiSections(null);
+      setAiError(false);
+      setAiLoading(true);
       const ctrl = new AbortController();
       (async () => {
         try {
-          const data = await callAI({ t:'4', prompt, max_tokens:16000 }, ctrl.signal);
+          const payload = { t: '4', prompt, max_tokens: 16000 };
+          const data = await callAI(payload, ctrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
           const clean = text.replace(/```json|```/g,'').trim();
-          const j = clean.indexOf('{'); if (j===-1) throw new Error('no JSON');
-          const parsed = JSON.parse(clean.slice(j));
-          if (parsed.sections?.length > 0) {
-            try { localStorage.setItem(_cacheKey, JSON.stringify({ sections: parsed.sections })); } catch(e) {}
+          const jsonStart = clean.indexOf('{');
+          if (jsonStart === -1) throw new Error('no JSON');
+          const parsed = JSON.parse(clean.slice(jsonStart));
+          if (parsed.sections && parsed.sections.length > 0) {
+            localStorage.setItem(_cacheKey, JSON.stringify({ sections: parsed.sections, monthly: parsed.monthly||[], closing: parsed.closing||'' }));
             setAiSections(parsed.sections);
+            if (parsed.monthly) setAiMonthly(parsed.monthly);
+            if (parsed.closing) setAiClosing(parsed.closing);
           } else throw new Error('empty');
-        } catch(e) { if (e.name !== 'AbortError') setAiError(true); }
-        finally { setAiLoading(false); }
+        } catch(e) {
+          if (e.name !== 'AbortError') setAiError(true);
+        } finally { setAiLoading(false); }
       })();
       return () => ctrl.abort();
     }, [_cacheKey]);
 
-    // ── 테마 ──
+    // 오행 기반 테마 색상
     const elTheme = {
-      목:{ primary:'#4ade80', secondary:'#86efac', bg:'rgba(74,222,128,0.08)',  grad:'135deg,rgba(22,101,52,0.65),rgba(5,46,22,0.95)',    accent:'#16a34a' },
-      화:{ primary:'#f87171', secondary:'#fca5a5', bg:'rgba(248,113,113,0.08)', grad:'135deg,rgba(153,27,27,0.65),rgba(69,10,10,0.95)',   accent:'#dc2626' },
-      토:{ primary:'#fbbf24', secondary:'#fde68a', bg:'rgba(251,191,36,0.08)',  grad:'135deg,rgba(146,64,14,0.65),rgba(69,26,3,0.95)',    accent:'#d97706' },
-      금:{ primary:'#e2e8f0', secondary:'#f1f5f9', bg:'rgba(226,232,240,0.08)', grad:'135deg,rgba(30,58,95,0.65),rgba(15,23,42,0.95)',    accent:'#94a3b8' },
-      수:{ primary:'#60a5fa', secondary:'#93c5fd', bg:'rgba(96,165,250,0.08)',  grad:'135deg,rgba(30,58,138,0.65),rgba(15,23,69,0.95)',   accent:'#2563eb' },
+      목: { primary:'#4ade80', secondary:'#86efac', bg:'rgba(74,222,128,0.08)', grad:'135deg,rgba(22,101,52,0.6),rgba(5,46,22,0.9)', accent:'#16a34a' },
+      화: { primary:'#f87171', secondary:'#fca5a5', bg:'rgba(248,113,113,0.08)', grad:'135deg,rgba(153,27,27,0.6),rgba(69,10,10,0.9)', accent:'#dc2626' },
+      토: { primary:'#fbbf24', secondary:'#fde68a', bg:'rgba(251,191,36,0.08)', grad:'135deg,rgba(146,64,14,0.6),rgba(69,26,3,0.9)', accent:'#d97706' },
+      금: { primary:'#e2e8f0', secondary:'#f1f5f9', bg:'rgba(226,232,240,0.08)', grad:'135deg,rgba(30,58,95,0.6),rgba(15,23,42,0.9)', accent:'#94a3b8' },
+      수: { primary:'#60a5fa', secondary:'#93c5fd', bg:'rgba(96,165,250,0.08)', grad:'135deg,rgba(30,58,138,0.6),rgba(15,23,69,0.9)', accent:'#2563eb' },
     };
     const theme = elTheme[dayEl] || elTheme['토'];
 
-    // ── 섹션 컬러맵 ──
-    const colorMap = {purple:'#c4b5fd',pink:'#f9a8d4',amber:'#fcd34d',emerald:'#6ee7b7',blue:'#93c5fd',red:'#fca5a5',yellow:'#fde68a',green:'#86efac',indigo:'#a5b4fc',rose:'#fda4af',orange:'#fdba74',teal:'#5eead4'};
-    const getSectionColor = sec => colorMap[(sec?.color||'').replace('text-','').replace(/-\d+$/,'')] || theme.primary;
+    // 월별 운세 요약 (섹션에서 파싱)
+    const monthEmojis = ['❄️','🌸','🌿','🌧️','☀️','🌊','🍃','🌻','🍂','🎃','🍁','🎄'];
 
     return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'120px',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
 
-      // ══ 히어로 헤더 ══
-      React.createElement('div', { style:{position:'relative',overflow:'hidden',paddingBottom:'32px'} },
+      // ── 히어로 헤더 (그라디언트 배경) ──
+      React.createElement('div', { style:{position:'relative',overflow:'hidden',paddingBottom:'28px'} },
+        // 배경 그라디언트
         React.createElement('div', { style:{position:'absolute',inset:0,background:`linear-gradient(${theme.grad})`,opacity:0.9} }),
-        React.createElement('div', { style:{position:'absolute',bottom:0,left:0,right:0,height:'60px',background:'linear-gradient(to bottom,transparent,#070514)'} }),
+        React.createElement('div', { style:{position:'absolute',bottom:0,left:0,right:0,height:'60px',background:'linear-gradient(to bottom, transparent, #070514)'} }),
 
-        // 상단 바
+        // 헤더 바
         React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'16px 16px 0',position:'relative',zIndex:1} },
           React.createElement('button', { onClick:()=>setScreen('yearly'), style:{width:'36px',height:'36px',borderRadius:'12px',background:'rgba(255,255,255,0.1)',border:'none',cursor:'pointer',color:'white',fontSize:'16px',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(8px)'} }, '←'),
           React.createElement('div', { style:{flex:1} },
             React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase'} }, 'YEARLY FORTUNE'),
             React.createElement('h1', { style:{color:'white',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.5px',margin:0} }, `${person.name}님의 ${currentYear}년 신년운세`)
           ),
-          React.createElement('button', { onClick:()=>{ if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`}); }},
+          React.createElement('button', {
+            onClick: () => { if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`}); } },
             style:{padding:'8px 14px',borderRadius:'12px',background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.2)',color:'white',fontSize:'12px',fontWeight:'700',cursor:'pointer',backdropFilter:'blur(8px)'}
           }, '🔗 공유')
         ),
 
-        // 프로필 + 총운 등급
+        // 프로필 + 핵심 정보
         React.createElement('div', { style:{padding:'20px 16px 0',position:'relative',zIndex:1} },
-
-          // 프로필 행
-          React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'14px',marginBottom:'22px'} },
-            React.createElement('div', { style:{width:'56px',height:'56px',borderRadius:'50%',background:`linear-gradient(135deg,${theme.primary},${theme.accent})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',boxShadow:`0 0 20px ${theme.primary}50`,flexShrink:0} },
+          React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'16px',marginBottom:'20px'} },
+            React.createElement('div', { style:{width:'64px',height:'64px',borderRadius:'50%',background:`linear-gradient(135deg,${theme.primary},${theme.accent})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px',boxShadow:`0 0 20px ${theme.primary}50`,flexShrink:0} },
               person.gender==='여성' ? '♀' : '♂'
             ),
-            React.createElement('div', { style:{flex:1} },
-              React.createElement('h2', { style:{color:'white',fontWeight:'900',fontSize:'19px',margin:'0 0 3px'} }, person.name),
-              React.createElement('p',  { style:{color:'rgba(255,255,255,0.45)',fontSize:'11px',margin:'0 0 6px'} },
-                `${person.year}.${String(person.month).padStart(2,'0')}.${String(person.day).padStart(2,'0')} · 만 ${currentYear-parseInt(person.year)}세`),
-              React.createElement('div', { style:{display:'flex',gap:'5px'} },
-                React.createElement('span', { style:{background:theme.bg,border:`1px solid ${theme.primary}40`,color:theme.primary,padding:'2px 9px',borderRadius:'20px',fontSize:'10px',fontWeight:'700'} }, `${dayGanKr}(${dayEl})`),
-                React.createElement('span', { style:{background:'rgba(255,255,255,0.07)',color:'rgba(255,255,255,0.45)',padding:'2px 9px',borderRadius:'20px',fontSize:'10px'} }, `용신 ${r.fe.yongshin}`),
-                React.createElement('span', { style:{background:'rgba(255,255,255,0.07)',color:'rgba(255,255,255,0.45)',padding:'2px 9px',borderRadius:'20px',fontSize:'10px'} }, sewoonDesc)
+            React.createElement('div', null,
+              React.createElement('h2', { style:{color:'white',fontWeight:'900',fontSize:'20px',margin:'0 0 4px'} }, person.name),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'12px',margin:'0 0 6px'} }, `${person.year}.${String(person.month).padStart(2,'0')}.${String(person.day).padStart(2,'0')} · 만 ${new Date().getFullYear()-parseInt(person.year)}세`),
+              React.createElement('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap'} },
+                React.createElement('span', { style:{background:theme.bg,border:`1px solid ${theme.primary}40`,color:theme.primary,padding:'3px 10px',borderRadius:'20px',fontSize:'11px',fontWeight:'700'} }, `${dayGanKr}(${dayEl})`),
+                React.createElement('span', { style:{background:'rgba(255,255,255,0.08)',color:'rgba(255,255,255,0.6)',padding:'3px 10px',borderRadius:'20px',fontSize:'11px'} }, `용신 ${r.fe.yongshin}`)
               )
             )
           ),
 
-          // ── 총운 등급 카드 (핵심 강조 영역) ──
-          React.createElement('div', { style:{
-            background:`linear-gradient(135deg,${gradeInfo.bg},rgba(255,255,255,0.03))`,
-            border:`1.5px solid ${gradeInfo.border}`,
-            borderRadius:'20px',
-            padding:'20px',
-            marginBottom:'18px',
-            boxShadow:`0 0 32px ${gradeInfo.glow}`,
-            display:'flex',
-            alignItems:'center',
-            gap:'18px',
-          }},
-            // 왼쪽: 등급 원
-            React.createElement('div', { style:{
-              width:'88px',height:'88px',borderRadius:'50%',
-              background:`radial-gradient(circle,${gradeInfo.bg} 0%,rgba(0,0,0,0.3) 100%)`,
-              border:`2px solid ${gradeInfo.border}`,
-              display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-              flexShrink:0,
-              boxShadow:`0 0 28px ${gradeInfo.glow}, inset 0 0 16px rgba(255,255,255,0.04)`,
-            }},
-              React.createElement('span', { style:{fontSize:'26px',lineHeight:1,marginBottom:'4px'} }, gradeInfo.emoji),
-              React.createElement('p',   { style:{color:gradeInfo.color,fontSize:'13px',fontWeight:'900',margin:0,letterSpacing:'-0.3px'} }, gradeInfo.short)
-            ),
-            // 오른쪽: 점수 + 설명
-            React.createElement('div', { style:{flex:1} },
-              React.createElement('div', { style:{display:'flex',alignItems:'baseline',gap:'4px',marginBottom:'4px'} },
-                React.createElement('span', { style:{color:gradeInfo.color,fontSize:'42px',fontWeight:'900',lineHeight:1,letterSpacing:'-2px'} }, Math.round(totalScore)),
-                React.createElement('span', { style:{color:gradeInfo.color,fontSize:'16px',fontWeight:'700',opacity:0.7} }, '점')
-              ),
-              React.createElement('p', { style:{color:'white',fontSize:'13px',fontWeight:'700',margin:'0 0 6px',lineHeight:1.4} }, gradeInfo.label),
-              React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'11px',margin:0,lineHeight:1.5} }, `${currentYear}년은 ${person.name}님에게 ${gradeInfo.desc}`)
+          // 오행 분포 미니 바
+          React.createElement('div', { style:{marginBottom:'16px'} },
+            React.createElement('div', { style:{display:'flex',gap:'4px',alignItems:'flex-end',height:'36px'} },
+              Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1]).map(([el,pct],i) => {
+                const elC = {목:'#4ade80',화:'#f87171',토:'#fbbf24',금:'#e2e8f0',수:'#60a5fa'}[el]||'#fff';
+                const isYongshin = r.fe.yongshin === el;
+                return React.createElement('div', { key:i, style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:'3px'} },
+                  isYongshin && React.createElement('span', { style:{fontSize:'8px',color:elC,opacity:0.8} }, '용'),
+                  React.createElement('div', { style:{width:'100%',background:elC,borderRadius:'4px 4px 0 0',height:`${Math.max(8,pct*0.4)}px`,opacity:isYongshin?1:0.45,transition:'height 0.5s'} }),
+                  React.createElement('span', { style:{color:'rgba(255,255,255,0.5)',fontSize:'9px'} }, el)
+                );
+              })
             )
           ),
-
-          // ── 사주 원국 (가독성 개선) ──
-          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px'} },
-            ['year','month','day','hour'].map((k, i) => {
-              const pl = r.pillars[k]; if (!pl) return null;
-              const labels = {year:'연주',month:'월주',day:'일주',hour:'시주'};
-              const stemC  = {갑:'#4ade80',을:'#86efac',병:'#f87171',정:'#fca5a5',무:'#fbbf24',기:'#fde68a',경:'#e2e8f0',신:'#f1f5f9',임:'#60a5fa',계:'#93c5fd'};
-              const branchC= {자:'#60a5fa',축:'#fbbf24',인:'#4ade80',묘:'#86efac',진:'#fbbf24',사:'#f87171',오:'#f87171',미:'#fbbf24',신:'#e2e8f0',유:'#f1f5f9',술:'#fbbf24',해:'#60a5fa'};
-              const sKr = STEMS.korean[pl.si], bKr = BRANCHES.korean[pl.bi];
-              const sc = stemC[sKr]||theme.primary, bc = branchC[bKr]||'rgba(255,255,255,0.6)';
-              const isDay = k==='day';
-              return React.createElement('div', { key:i, style:{
-                background:isDay?`linear-gradient(160deg,${theme.primary}18,${theme.accent}08)`:'rgba(255,255,255,0.04)',
-                borderRadius:'14px', padding:'12px 4px', textAlign:'center',
-                border:`1px solid ${isDay?theme.primary+'50':'rgba(255,255,255,0.07)'}`
-              }},
-                React.createElement('p', { style:{color:isDay?theme.primary:'rgba(255,255,255,0.3)',fontSize:'9px',fontWeight:isDay?'700':'400',letterSpacing:'1px',marginBottom:'8px'} }, labels[k]),
-                React.createElement('p', { style:{color:sc,fontWeight:'900',fontSize:'24px',lineHeight:1,marginBottom:'3px',fontFamily:'serif',textShadow:`0 0 10px ${sc}50`} }, pl.stem),
-                React.createElement('p', { style:{color:sc,fontSize:'9px',fontWeight:'700',marginBottom:'8px',opacity:0.8} }, sKr),
-                React.createElement('div', { style:{height:'1px',background:'rgba(255,255,255,0.07)',marginBottom:'8px'} }),
-                React.createElement('p', { style:{color:bc,fontWeight:'900',fontSize:'24px',lineHeight:1,marginBottom:'3px',fontFamily:'serif'} }, pl.branch),
-                React.createElement('p', { style:{color:bc,fontSize:'9px',fontWeight:'700',opacity:0.8} }, bKr)
-              );
-            })
+          // 올해의 키워드 태그
+          React.createElement('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap'} },
+            ['총운 분석','월별 흐름','재물·연애','건강운'].map((tag,i) =>
+              React.createElement('span', { key:i, style:{background:'rgba(255,255,255,0.1)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.15)',color:'white',padding:'5px 12px',borderRadius:'20px',fontSize:'11px',fontWeight:'600'} }, tag)
+            )
           )
         )
       ),
 
       React.createElement(DisclaimerBar),
 
-      // ══ 본문 ══
+      // ── 본문 ──
       React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
 
+        // 안내 배너
+        React.createElement('div', { style:{display:'flex',gap:'10px',alignItems:'flex-start',padding:'10px 14px',background:'rgba(251,191,36,0.05)',borderRadius:'14px',border:'1px solid rgba(251,191,36,0.1)',marginBottom:'16px',marginTop:'12px'} },
+          React.createElement('span', { style:{fontSize:'12px',flexShrink:0} }, 'ℹ️'),
+          React.createElement('p', { style:{color:'rgba(252,211,77,0.5)',fontSize:'10px',lineHeight:'1.6',margin:0} }, '전통 명리학 기반 참고용 콘텐츠 · 결과 확인 즉시 청약철회 불가')
+        ),
+
+        // 로딩
         aiLoading && React.createElement(SajuLoadingScreen),
 
+        // 에러
         aiError && React.createElement('div', { style:{background:'rgba(239,68,68,0.1)',borderRadius:'16px',border:'1px solid rgba(239,68,68,0.2)',padding:'20px',textAlign:'center',marginBottom:'16px'} },
           React.createElement('p', { style:{color:'#f87171',fontSize:'14px',marginBottom:'12px'} }, '분석 중 오류가 발생했습니다'),
           React.createElement('button', {
             onClick:()=>{ setAiError(false); setAiLoading(true); localStorage.removeItem(_cacheKey);
-              (async()=>{ try{ const data=await callAI({t:'4',prompt,max_tokens:16000}); const text=(data.content||[]).map(x=>x.text||'').join(''); const clean=text.replace(/```json|```/g,'').trim(); const j=clean.indexOf('{'); if(j===-1) throw new Error('no JSON'); const parsed=JSON.parse(clean.slice(j)); if(parsed.sections?.length>0){ localStorage.setItem(_cacheKey,JSON.stringify({sections:parsed.sections})); setAiSections(parsed.sections); } else throw new Error('empty'); }catch(e){ setAiError(true); }finally{ setAiLoading(false); } })(); },
+              (async()=>{ try{ const data=await callAI({t:'4',prompt,max_tokens:16000}); const text=(data.content||[]).map(x=>x.text||'').join(''); const clean=text.replace(/\`\`\`json|\`\`\`/g,'').trim(); const j=clean.indexOf('{'); if(j===-1) throw new Error('no JSON'); const parsed=JSON.parse(clean.slice(j)); if(parsed.sections&&parsed.sections.length>0){ localStorage.setItem(_cacheKey,JSON.stringify({sections:parsed.sections})); setAiSections(parsed.sections); } else throw new Error('empty'); }catch(e){ setAiError(true); }finally{ setAiLoading(false); } })();
+            },
             style:{padding:'10px 28px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:'700',fontSize:'14px',color:'#1c1917'}
           }, '다시 풀이받기')
         ),
 
-        // ── AI 섹션 아코디언 ──
+        // ── AI 결과 ──
         !aiLoading && aiSections && React.createElement(React.Fragment, null,
-          React.createElement('p', { style:{textAlign:'center',color:'rgba(255,255,255,0.12)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase',marginBottom:'14px',marginTop:'4px'} },
+
+          // ── 올해의 핵심 데이터 카드 ──
+          React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'10px',marginBottom:'16px'} },
+
+            // 오행 분포 카드
+            React.createElement('div', { style:{background:'rgba(255,255,255,0.03)',borderRadius:'18px',border:'1px solid rgba(255,255,255,0.07)',padding:'18px'} },
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'14px'} }, '✦ 오행 분포'),
+              React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'8px'} },
+                Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1]).map(([el,pct],i) => {
+                  const elC = {목:'#4ade80',화:'#f87171',토:'#fbbf24',금:'#e2e8f0',수:'#60a5fa'}[el]||'#fff';
+                  const isYongshin = r.fe.yongshin === el;
+                  const isGishin = r.fe.gishin === el;
+                  return React.createElement('div', { key:i, style:{display:'flex',alignItems:'center',gap:'10px'} },
+                    React.createElement('span', { style:{color:elC,fontSize:'13px',fontWeight:'700',width:'20px',flexShrink:0} }, el),
+                    React.createElement('div', { style:{flex:1,height:'8px',borderRadius:'4px',background:'rgba(255,255,255,0.06)',overflow:'hidden'} },
+                      React.createElement('div', { style:{height:'100%',width:`${pct}%`,borderRadius:'4px',background:`linear-gradient(90deg,${elC},${elC}aa)`,transition:'width 1s ease'} })
+                    ),
+                    React.createElement('span', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px',width:'32px',textAlign:'right',flexShrink:0} }, `${pct}%`),
+                    isYongshin && React.createElement('span', { style:{color:elC,fontSize:'9px',background:`${elC}20`,border:`1px solid ${elC}40`,padding:'1px 6px',borderRadius:'6px',flexShrink:0} }, '용신'),
+                    isGishin && React.createElement('span', { style:{color:'rgba(239,68,68,0.7)',fontSize:'9px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',padding:'1px 6px',borderRadius:'6px',flexShrink:0} }, '기신')
+                  );
+                })
+              )
+            ),
+
+            // 사주 원국 간략 표시
+            React.createElement('div', { style:{background:'rgba(255,255,255,0.03)',borderRadius:'18px',border:'1px solid rgba(255,255,255,0.07)',padding:'18px'} },
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'14px'} }, '✦ 사주 원국'),
+              React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px'} },
+                ['year','month','day','hour'].map((k,i) => {
+                  const pl = r.pillars[k];
+                  if (!pl) return null;
+                  const labels = {year:'연주',month:'월주',day:'일주',hour:'시주'};
+                  const stemC = {갑:'#4ade80',을:'#86efac',병:'#f87171',정:'#fca5a5',무:'#fbbf24',기:'#fde68a',경:'#e2e8f0',신:'#f1f5f9',임:'#60a5fa',계:'#93c5fd'};
+                  const sKr = STEMS.korean[pl.si];
+                  const bKr = BRANCHES.korean[pl.bi];
+                  const c = stemC[sKr] || theme.primary;
+                  return React.createElement('div', { key:i, style:{background:'rgba(255,255,255,0.04)',borderRadius:'12px',padding:'12px 8px',textAlign:'center',border:`1px solid ${k==='day'?theme.primary+'40':'rgba(255,255,255,0.06)'}`} },
+                    React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'9px',marginBottom:'6px'} }, labels[k]),
+                    React.createElement('p', { style:{color:c,fontWeight:'900',fontSize:'16px',lineHeight:1,marginBottom:'3px'} }, pl.stem),
+                    React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontWeight:'700',fontSize:'14px',lineHeight:1,marginBottom:'6px'} }, pl.branch),
+                    React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'9px'} }, `${sKr}${bKr}`)
+                  );
+                })
+              )
+            ),
+
+            // 올해의 핵심 운세 요약 (첫 섹션 미리보기)
+            aiSections.length > 0 && React.createElement('div', { style:{background:`linear-gradient(135deg,${theme.primary}15,${theme.accent}08)`,borderRadius:'18px',border:`1px solid ${theme.primary}30`,padding:'18px'} },
+              React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'12px'} },
+                React.createElement('span', { style:{fontSize:'20px'} }, aiSections[0].icon || '🌟'),
+                React.createElement('p', { style:{color:theme.primary,fontWeight:'800',fontSize:'13px'} }, `${currentYear}년 총운 한눈에 보기`)
+              ),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.65)',fontSize:'13px',lineHeight:'1.8',display:'-webkit-box',WebkitLineClamp:4,WebkitBoxOrient:'vertical',overflow:'hidden'} },
+                (aiSections[0].content || '').slice(0, 180) + '...'
+              )
+            )
+          ),
+
+          // 섹션 헤더
+          React.createElement('p', { style:{textAlign:'center',color:'rgba(255,255,255,0.15)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase',marginBottom:'12px'} },
             `✦ ${currentYear} 신년운세 — ${aiSections.length}개 섹션`
           ),
+
+          // 섹션 카드들
           React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'16px'} },
-            aiSections.map((sec, i) => {
+            aiSections.map((sec,i) => {
               const isOpen = openIdx === i;
-              const cHex   = getSectionColor(sec);
-              return React.createElement('div', { key:i,
-                style:{borderRadius:'18px',border:`1px solid ${isOpen?cHex+'55':'rgba(255,255,255,0.07)'}`,background:isOpen?`${cHex}08`:'rgba(255,255,255,0.03)',overflow:'hidden',transition:'all 0.3s',boxShadow:isOpen?`0 4px 24px ${cHex}18`:'none'}
+              const sectionColor = sec.color ? sec.color.replace('text-','').replace('-400','') : 'amber';
+              const colorMap = { purple:'#c4b5fd', pink:'#f9a8d4', amber:'#fcd34d', emerald:'#6ee7b7', blue:'#93c5fd', red:'#fca5a5', yellow:'#fde68a', green:'#86efac', indigo:'#a5b4fc', rose:'#fda4af', orange:'#fdba74', teal:'#5eead4' };
+              const cHex = colorMap[sectionColor] || theme.primary;
+              return React.createElement('div', {
+                key:i,
+                style:{borderRadius:'18px',border:`1px solid ${isOpen ? cHex+'50' : 'rgba(255,255,255,0.07)'}`,background:isOpen?`rgba(${cHex==='#c4b5fd'?'196,181,253':cHex==='#fcd34d'?'252,211,77':cHex==='#f9a8d4'?'249,168,212':cHex==='#93c5fd'?'147,197,253':'255,255,255'},0.05)`:'rgba(255,255,255,0.03)',overflow:'hidden',transition:'all 0.3s',boxShadow:isOpen?`0 4px 24px ${cHex}20`:'none'}
               },
-                // 헤더
+                // 아코디언 헤더
                 React.createElement('div', {
                   onClick:()=>setOpenIdx(isOpen?null:i),
                   style:{display:'flex',alignItems:'center',gap:'14px',padding:'16px',cursor:'pointer'}
                 },
-                  React.createElement('div', { style:{width:'42px',height:'42px',borderRadius:'14px',background:`${cHex}22`,border:`1px solid ${cHex}35`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0} },
-                    sec.icon||'🌟'
+                  React.createElement('div', { style:{width:'42px',height:'42px',borderRadius:'14px',background:`linear-gradient(135deg,${cHex}25,${cHex}10)`,border:`1px solid ${cHex}30`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0} },
+                    sec.icon || '🌟'
                   ),
                   React.createElement('div', { style:{flex:1,minWidth:0} },
-                    React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'9px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'3px'} }, `S${i+1}`),
-                    React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'14px',letterSpacing:'-0.3px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',margin:0} }, sec.title||`섹션 ${i+1}`)
+                    React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'9px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'3px'} }, `S${i+1}`),
+                    React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'14px',letterSpacing:'-0.3px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'} }, sec.title || `섹션 ${i+1}`)
                   ),
-                  React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'8px',background:isOpen?`${cHex}22`:'rgba(255,255,255,0.05)',display:'flex',alignItems:'center',justifyContent:'center',transition:'transform 0.3s',transform:isOpen?'rotate(180deg)':'none',flexShrink:0} },
+                  React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'8px',background:isOpen?`${cHex}20`:'rgba(255,255,255,0.05)',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.3s',transform:isOpen?'rotate(180deg)':'none',flexShrink:0} },
                     React.createElement('span', { style:{color:isOpen?cHex:'rgba(255,255,255,0.3)',fontSize:'12px'} }, '▼')
                   )
                 ),
-                // 본문
-                isOpen && React.createElement('div', { style:{padding:'0 16px 18px'} },
-                  React.createElement('p', { style:{color:'rgba(255,255,255,0.75)',fontSize:'13px',lineHeight:'1.9',whiteSpace:'pre-wrap'} }, sec.content||'')
+                // 아코디언 본문
+                isOpen && React.createElement('div', { style:{padding:'0 16px 20px'} },
+                  React.createElement('div', { style:{height:'1px',background:`linear-gradient(to right, ${cHex}30, transparent)`,marginBottom:'16px'} }),
+                  React.createElement('p', { style:{color:'rgba(255,255,255,0.75)',fontSize:'14px',lineHeight:'1.9',whiteSpace:'pre-wrap'} }, sec.content || '')
                 )
               );
             })
           ),
 
-          // 하단 버튼
-          React.createElement('div', { style:{display:'flex',gap:'10px',marginTop:'8px'} },
+          // ── CTA ──
+          React.createElement('div', { style:{display:'flex',gap:'8px',margin:'4px 0 8px'} },
+            React.createElement('button', { onClick:()=>setScreen('review'), style:{flex:1,padding:'14px',background:'rgba(255,255,255,0.06)',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',color:'white',fontSize:'13px',fontWeight:'700',cursor:'pointer'} }, '⭐ 리뷰 남기기'),
             React.createElement('button', {
-              onClick:()=>setScreen('yearly'),
-              style:{flex:1,padding:'14px',background:'rgba(255,255,255,0.06)',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',color:'rgba(255,255,255,0.7)',fontSize:'13px',fontWeight:'700',cursor:'pointer'}
-            }, '← 목록으로'),
-            React.createElement('button', {
-              onClick:()=>{ if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`}); }},
+              onClick:()=>{ if(navigator.share){ navigator.share({title:`${person.name}님의 ${currentYear}년 신년운세`}); } },
               style:{flex:1,padding:'14px',background:'rgba(251,191,36,0.08)',borderRadius:'14px',border:'1px solid rgba(251,191,36,0.2)',color:'#fbbf24',fontSize:'13px',fontWeight:'700',cursor:'pointer'}
             }, '🔗 공유하기')
           )
@@ -9481,7 +9506,7 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
       // 충전 전용: kakao 또는 toss만 허용
       const payMethod = method === 'kakao' ? 'kakao' : 'toss';
       requestPortonePayment(
-        { name: `사주ON 별 ${pkg.stars}개 충전`, price: pkg.price },
+        { name: `사주ON 별 ${pkg.stars}개 충전`, price: pkg.price, type: 'charge', stars: pkg.stars, moons: pkg.moons || 0 },
         payMethod,
         () => {
           const newStars = stars + pkg.stars;
