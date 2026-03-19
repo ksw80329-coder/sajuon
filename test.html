@@ -1,19 +1,46 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<style>
+#sj-lock{position:fixed;inset:0;z-index:999999;background:#070514;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#sj-lock .box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:44px 32px;width:300px;max-width:90vw;text-align:center}
+#sj-lock .ico{font-size:36px;margin-bottom:14px}
+#sj-lock .ttl{color:rgba(255,255,255,0.85);font-size:15px;font-weight:700;margin-bottom:6px}
+#sj-lock .sub{color:rgba(255,255,255,0.3);font-size:11px;margin-bottom:24px;letter-spacing:0.5px}
+#sj-lock input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;color:white;font-size:18px;outline:none;text-align:center;margin-bottom:14px;box-sizing:border-box}
+#sj-lock input:focus{border-color:rgba(251,191,36,0.5);box-shadow:0 0 0 3px rgba(251,191,36,0.08)}
+#sj-lock button{width:100%;padding:14px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;border-radius:14px;color:white;font-size:15px;font-weight:800;cursor:pointer}
+#sj-lock .err{color:#f87171;font-size:12px;margin-top:12px;min-height:16px}
+</style>
 <script>
 (function(){
   if (!window.location.href.includes('test.html')) return;
-  var KEY = 'sajuon_dev_auth', PWD = 'sajuon2026!';
+  var KEY = 'sajuon_dev_auth', PWD = '2024100611';
   if (sessionStorage.getItem(KEY) === 'ok') return;
-  var input = prompt('\uD83D\uDD10 개발자 비밀번호를 입력하세요:');
-  if (input !== PWD) {
-    document.open();
-    document.write('<html><body style="margin:0;background:#070514;display:flex;align-items:center;justify-content:center;height:100vh;"><p style="color:rgba(255,255,255,0.4);font-family:sans-serif;font-size:14px;">접근이 거부되었습니다.</p></body></html>');
-    document.close();
-    return;
+  document.documentElement.style.visibility = 'hidden';
+  function render() {
+    document.documentElement.style.visibility = '';
+    var d = document.createElement('div'); d.id = 'sj-lock';
+    d.innerHTML = '<div class="box"><div class="ico">&#128274;</div><div class="ttl">개발자 전용 페이지</div><div class="sub">SAJUON DEV</div><input type="password" id="sj-pw" placeholder="비밀번호" autocomplete="off"/><button onclick="sjChk()">확인</button><div class="err" id="sj-err"></div></div>';
+    document.body.appendChild(d);
+    setTimeout(function(){ var el=document.getElementById('sj-pw'); if(el) el.focus(); },100);
   }
-  sessionStorage.setItem(KEY, 'ok');
+  if (document.body) render();
+  else document.addEventListener('DOMContentLoaded', render);
+  window.sjChk = function(){
+    var v=document.getElementById('sj-pw').value;
+    if(v===PWD){
+      sessionStorage.setItem(KEY,'ok');
+      var el=document.getElementById('sj-lock');
+      if(el){el.style.transition='opacity 0.3s';el.style.opacity='0';setTimeout(function(){el.remove();},300);}
+    } else {
+      document.getElementById('sj-err').textContent='비밀번호가 올바르지 않습니다.';
+      document.getElementById('sj-pw').value='';
+      document.getElementById('sj-pw').focus();
+      setTimeout(function(){var e=document.getElementById('sj-err');if(e)e.textContent='';},2000);
+    }
+  };
+  document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.getElementById('sj-pw'))window.sjChk();});
 })();
 </script>
   <meta charset="UTF-8">
