@@ -18,13 +18,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="사주ON">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="/icon-180.png">
-  <link rel="apple-touch-icon" sizes="120x120" href="/icon-180.png">
-  <link rel="apple-touch-icon" sizes="76x76" href="/icon-180.png">
-  <link rel="apple-touch-icon-precomposed" href="/icon-180.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="icon" href="/favicon.ico">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="shortcut icon" href="/icon-32.png">
   <link rel="manifest" href="/manifest.json">
 
   <!-- 구조화 데이터: FAQ (SEO 스니펫 최적화) -->
@@ -9866,19 +9864,36 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
 
     const [dragY, setDragY] = React.useState(0);
     const startYRef = React.useRef(0);
+    const isDraggingRef = React.useRef(false);
     const close = () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); };
 
-    const onTouchStart = e => {
-      startYRef.current = e.touches[0].clientY;
-    };
+    // ── 터치 드래그 ──
+    const onTouchStart = e => { startYRef.current = e.touches[0].clientY; };
     const onTouchMove = e => {
       const dy = e.touches[0].clientY - startYRef.current;
-      if (dy > 0) {
-        e.preventDefault();
-        setDragY(dy);
-      }
+      if (dy > 0) { e.preventDefault(); setDragY(dy); }
     };
     const onTouchEnd = () => { if (dragY > 100) close(); else setDragY(0); };
+
+    // ── 마우스 드래그 ──
+    const onMouseDown = e => {
+      e.preventDefault();
+      isDraggingRef.current = true;
+      startYRef.current = e.clientY;
+      const onMove = ev => {
+        if (!isDraggingRef.current) return;
+        const dy = ev.clientY - startYRef.current;
+        if (dy > 0) setDragY(dy);
+      };
+      const onUp = () => {
+        isDraggingRef.current = false;
+        setDragY(prev => { if (prev > 100) { close(); return 0; } return 0; });
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    };
 
     return React.createElement('div', {
       style:{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'}
@@ -9888,14 +9903,15 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
         onClick: () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); }
       }),
       React.createElement('div', {
-        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',transform:`translateY(${dragY}px)`,transition:dragY===0?'transform 0.3s cubic-bezier(0.32,0.72,0,1)':'none'},
+        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',transform:`translateY(${dragY}px)`,transition:dragY===0?'transform 0.35s cubic-bezier(0.32,0.72,0,1)':'none'},
         onClick: e => e.stopPropagation()
       },
         React.createElement('div', {
-          style:{width:'100%',padding:'16px 0 8px',display:'flex',justifyContent:'center',cursor:'grab',touchAction:'none'},
+          style:{width:'100%',padding:'14px 0 6px',display:'flex',justifyContent:'center',cursor:'grab',userSelect:'none',touchAction:'none'},
+          onMouseDown,
           onTouchStart, onTouchMove, onTouchEnd
         },
-          React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.25)'} })
+          React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.2)'} })
         ),
         React.createElement('div', { style:{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',width:'300px',height:'200px',background:'radial-gradient(circle at 50% 0%,rgba(124,58,237,0.18),transparent 70%)',pointerEvents:'none'} }),
 

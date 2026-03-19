@@ -1,19 +1,48 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<style>
+#sj-lock{position:fixed;inset:0;z-index:999999;background:#070514;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#sj-lock .box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:44px 32px;width:300px;max-width:90vw;text-align:center}
+#sj-lock .ico{font-size:36px;margin-bottom:14px}
+#sj-lock .ttl{color:rgba(255,255,255,0.85);font-size:15px;font-weight:700;margin-bottom:6px}
+#sj-lock .sub{color:rgba(255,255,255,0.3);font-size:11px;margin-bottom:24px;letter-spacing:0.5px}
+#sj-lock input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;color:white;font-size:22px;outline:none;letter-spacing:6px;text-align:center;margin-bottom:14px;box-sizing:border-box}
+#sj-lock input:focus{border-color:rgba(251,191,36,0.5);box-shadow:0 0 0 3px rgba(251,191,36,0.08)}
+#sj-lock button{width:100%;padding:14px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;border-radius:14px;color:white;font-size:15px;font-weight:800;cursor:pointer}
+#sj-lock .err{color:#f87171;font-size:12px;margin-top:12px;min-height:16px}
+</style>
 <script>
 (function(){
   if (!window.location.href.includes('test.html')) return;
-  var KEY = 'sajuon_dev_auth', PWD = 'sajuon2026!';
+  var KEY = 'sajuon_dev_auth', PWD = '2024100611';
   if (sessionStorage.getItem(KEY) === 'ok') return;
-  var input = prompt('\uD83D\uDD10 개발자 비밀번호를 입력하세요:');
-  if (input !== PWD) {
-    document.open();
-    document.write('<html><body style="margin:0;background:#070514;display:flex;align-items:center;justify-content:center;height:100vh;"><p style="color:rgba(255,255,255,0.4);font-family:sans-serif;font-size:14px;">접근이 거부되었습니다.</p></body></html>');
-    document.close();
-    return;
+  document.documentElement.style.visibility = 'hidden';
+  function render() {
+    document.documentElement.style.visibility = '';
+    var d = document.createElement('div'); d.id = 'sj-lock';
+    d.innerHTML = '<div class="box"><div class="ico">&#128274;</div><div class="ttl">개발자 전용 페이지</div><div class="sub">SAJUON DEV</div><input type="password" id="sj-pw" placeholder="비밀번호" autocomplete="off"/><button onclick="sjChk()">확인</button><div class="err" id="sj-err"></div></div>';
+    document.body.appendChild(d);
+    setTimeout(function(){ var el=document.getElementById('sj-pw'); if(el) el.focus(); }, 100);
   }
-  sessionStorage.setItem(KEY, 'ok');
+  if (document.body) render();
+  else document.addEventListener('DOMContentLoaded', render);
+  window.sjChk = function() {
+    var v = document.getElementById('sj-pw').value;
+    if (v === PWD) {
+      sessionStorage.setItem(KEY, 'ok');
+      var el = document.getElementById('sj-lock');
+      if (el) { el.style.transition='opacity 0.3s'; el.style.opacity='0'; setTimeout(function(){ el.remove(); }, 300); }
+    } else {
+      document.getElementById('sj-err').textContent = '비밀번호가 올바르지 않습니다.';
+      document.getElementById('sj-pw').value = '';
+      document.getElementById('sj-pw').focus();
+      setTimeout(function(){ document.getElementById('sj-err').textContent=''; }, 2000);
+    }
+  };
+  document.addEventListener('keydown', function(e){
+    if (e.key==='Enter' && document.getElementById('sj-pw')) window.sjChk();
+  });
 })();
 </script>
   <meta charset="UTF-8">
@@ -33,13 +62,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="사주ON">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="/icon-180.png">
-  <link rel="apple-touch-icon" sizes="120x120" href="/icon-180.png">
-  <link rel="apple-touch-icon" sizes="76x76" href="/icon-180.png">
-  <link rel="apple-touch-icon-precomposed" href="/icon-180.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="shortcut icon" href="/icon-32.png">
   <link rel="manifest" href="/manifest.json">
 
   <!-- 구조화 데이터: FAQ (SEO 스니펫 최적화) -->
@@ -9883,17 +9908,9 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
     const startYRef = React.useRef(0);
     const close = () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); };
 
-    const onTouchStart = e => {
-      startYRef.current = e.touches[0].clientY;
-    };
-    const onTouchMove = e => {
-      const dy = e.touches[0].clientY - startYRef.current;
-      if (dy > 0) {
-        e.preventDefault();
-        setDragY(dy);
-      }
-    };
-    const onTouchEnd = () => { if (dragY > 100) close(); else setDragY(0); };
+    const onTouchStart = e => { startYRef.current = e.touches[0].clientY; };
+    const onTouchMove = e => { const dy = e.touches[0].clientY - startYRef.current; if (dy > 0) setDragY(dy); };
+    const onTouchEnd = () => { if (dragY > 100) close(); setDragY(0); };
 
     return React.createElement('div', {
       style:{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'}
@@ -9903,15 +9920,11 @@ S12: 주의할 시기 / S13: ${person.name}님께 전하는 메시지
         onClick: () => { setShowLogin(false); resetEmailForm(); setEmailView('social'); }
       }),
       React.createElement('div', {
-        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',transform:`translateY(${dragY}px)`,transition:dragY===0?'transform 0.3s cubic-bezier(0.32,0.72,0,1)':'none'},
+        style:{position:'relative',width:'100%',maxWidth:'512px',background:'#0d0b1e',borderRadius:'28px 28px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 0 env(safe-area-inset-bottom)',overflow:'hidden',transform:`translateY(${dragY}px)`,transition:dragY===0?'transform 0.3s cubic-bezier(0.32,0.72,0,1)':'none'},
+        onTouchStart, onTouchMove, onTouchEnd,
         onClick: e => e.stopPropagation()
       },
-        React.createElement('div', {
-          style:{width:'100%',padding:'16px 0 8px',display:'flex',justifyContent:'center',cursor:'grab',touchAction:'none'},
-          onTouchStart, onTouchMove, onTouchEnd
-        },
-          React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.25)'} })
-        ),
+        React.createElement('div', { style:{width:'40px',height:'4px',borderRadius:'2px',background:'rgba(255,255,255,0.15)',margin:'12px auto 0'} }),
         React.createElement('div', { style:{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',width:'300px',height:'200px',background:'radial-gradient(circle at 50% 0%,rgba(124,58,237,0.18),transparent 70%)',pointerEvents:'none'} }),
 
         React.createElement('div', { style:{padding:'28px 24px 32px',position:'relative'} },
