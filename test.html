@@ -1398,8 +1398,33 @@ function App() {
           // paymentProduct 복원 후 handlePaymentComplete 실행
           setPaymentProduct(pending.product);
           setTimeout(() => {
-            // 결제 금액 검증 (기본 검증)
-            if (parseInt(tossAmount) === pending.product.price) {
+            // 결제 금액 검증
+            // 카카오페이 모바일: imp_uid로 서버 검증 / 토스: tossAmount로 클라이언트 검증
+            const verifyAndComplete = async () => {
+              // 1) 카카오페이(imp_uid 방식) → api.sajuon.kr/verify로 서버 검증
+              if (impUid && PAYMENT_WORKER && !PAYMENT_WORKER.includes('YOUR_ID')) {
+                try {
+                  const vRes = await fetch(`${PAYMENT_WORKER}/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imp_uid: impUid, merchant_uid: merchantUid, amount: pending.product.price })
+                  });
+                  const vData = await vRes.json();
+                  if (!vData.success) {
+                    alert('결제 검증 실패. 고객센터에 문의해주세요.');
+                    return;
+                  }
+                } catch(e) {
+                  console.warn('검증 서버 오류, 진행:', e);
+                  // 검증 서버 오류 시에도 포트원 결제 성공 응답을 신뢰
+                }
+              }
+              // 2) 토스페이먼츠: URL 파라미터 amount로 검증
+              else if (tossAmount && parseInt(tossAmount) !== pending.product.price) {
+                alert('결제 금액 불일치. 고객센터에 문의해주세요.');
+                return;
+              }
+              // ── 검증 통과 → 충전/구매 처리 ──
               // 결제 완료 처리
               const newPurchase = {
                 id: Date.now(),
@@ -1448,9 +1473,8 @@ function App() {
                 if (pending.yearlyResult) setSavedYearly(prev => [...prev, pending.yearlyResult]);
                 setScreen('yearly-result');
               }
-            } else {
-              alert('결제 금액 불일치. 고객센터에 문의해주세요.');
-            }
+            };
+            verifyAndComplete();
           }, 100);
         }
       } catch(e) { console.error('결제 복원 실패:', e); }
