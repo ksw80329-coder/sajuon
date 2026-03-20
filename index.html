@@ -1407,26 +1407,31 @@ function App() {
                 paymentKey: tossPaymentKey,
                 orderId: tossOrderId
               };
+              const safeKey = session?.key || userKey;
               setPurchases(prev => {
                 const updated = [...prev, newPurchase];
-                if (userKey) saveUserData(userKey, 'purchases', updated);
+                if (safeKey) saveUserData(safeKey, 'purchases', updated);
                 return updated;
               });
               // 충전 타입 처리
               if (pending.product.type === 'charge') {
+                // 리디렉션 후 userKey state가 아직 반영 안 될 수 있어 session.key 직접 사용
+                const safeKey = session?.key || userKey;
+                const addStars = pending.product.stars;
+                const addMoons = pending.product.moons || 0;
                 setStars(prev => {
-                  const next = prev + pending.product.stars;
-                  if (userKey) saveUserData(userKey, 'stars', next);
+                  const next = prev + addStars;
+                  if (safeKey) saveUserData(safeKey, 'stars', next);
                   return next;
                 });
-                if (pending.product.moons > 0) {
+                if (addMoons > 0) {
                   setMoons(prev => {
-                    const next = prev + pending.product.moons;
-                    if (userKey) saveUserData(userKey, 'moons', next);
+                    const next = prev + addMoons;
+                    if (safeKey) saveUserData(safeKey, 'moons', next);
                     return next;
                   });
                 }
-                alert(`✅ 충전 완료!\n⭐ ${pending.product.stars}별${pending.product.moons > 0 ? ` + 🌙 ${pending.product.moons}달` : ''} 지급되었습니다.`);
+                alert(`✅ 충전 완료!\n⭐ ${addStars}별${addMoons > 0 ? ` + 🌙 ${addMoons}달` : ''} 지급되었습니다.`);
                 return;
               }
               // 구매 콘텐츠 저장 및 화면 이동
