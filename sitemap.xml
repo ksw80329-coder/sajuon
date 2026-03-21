@@ -1,9 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- 메인 홈 -->
   <url>
     <loc>https://sajuon.kr/</loc>
-    <lastmod>2026-03-16</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2026-03-22</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+
+  <!-- 사주 심층분석 -->
+  <url>
+    <loc>https://sajuon.kr/#saju</loc>
+    <lastmod>2026-03-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 궁합 -->
+  <url>
+    <loc>https://sajuon.kr/#compat</loc>
+    <lastmod>2026-03-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 신년운세 -->
+  <url>
+    <loc>https://sajuon.kr/#yearly</loc>
+    <lastmod>2026-03-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 대운 인생지도 -->
+  <url>
+    <loc>https://sajuon.kr/#roadmap</loc>
+    <lastmod>2026-03-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
 </urlset>
