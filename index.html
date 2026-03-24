@@ -9574,7 +9574,11 @@ ${pillarsDesc}
                 style:{width:'100%',padding:'18px 20px',background:'linear-gradient(135deg,#FFE812,#FEE500)',borderRadius:'18px',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',boxShadow:'0 4px 20px rgba(254,229,0,0.35)'}
               },
                 React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'14px'} },
-                  React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'12px',background:'rgba(60,30,30,0.12)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px'} }, '💛'),
+                  React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'12px',background:'#3C1E1E',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'} },
+                    React.createElement('svg', {width:'28',height:'28',viewBox:'0 0 24 24',fill:'none'},
+                      React.createElement('path', {d:'M12 3C7.03 3 3 6.358 3 10.5c0 2.647 1.7 4.97 4.27 6.32l-.82 3.08a.3.3 0 00.44.33l3.6-2.38A10.7 10.7 0 0012 18c4.97 0 9-3.358 9-7.5S16.97 3 12 3z',fill:'#FFE812'})
+                    )
+                  ),
                   React.createElement('div', { style:{textAlign:'left'} },
                     React.createElement('p', { style:{fontWeight:'800',fontSize:'15px',color:'#3C1E1E',letterSpacing:'-0.3px'} }, '카카오페이'),
                     React.createElement('p', { style:{fontSize:'11px',color:'rgba(60,30,30,0.6)',marginTop:'1px'} }, '카카오 간편결제')
@@ -9588,10 +9592,14 @@ ${pillarsDesc}
               // 토스페이
               React.createElement('button', {
                 onClick: () => !processing && doCharge(selPkg, 'toss'),
-                style:{width:'100%',padding:'18px 20px',background:'linear-gradient(135deg,#1e293b,#0f172a)',borderRadius:'18px',border:'none',cursor:processing?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',opacity:processing?0.6:1,boxShadow:'0 4px 20px rgba(0,100,255,0.2)',transition:'all 0.2s'}
+                style:{width:'100%',padding:'18px 20px',background:'linear-gradient(135deg,#0064FF,#0050CC)',borderRadius:'18px',border:'none',cursor:processing?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',opacity:processing?0.6:1,boxShadow:'0 4px 20px rgba(0,100,255,0.4)',transition:'all 0.2s'}
               },
                 React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'14px'} },
-                  React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'12px',background:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',fontWeight:'900',color:'white'} }, 'T'),
+                  React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'12px',background:'white',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'} },
+                    React.createElement('svg', {width:'28',height:'18',viewBox:'0 0 56 20',fill:'none'},
+                      React.createElement('text', {x:'0',y:'17',fontFamily:'Arial Black,sans-serif',fontWeight:'900',fontSize:'18',fill:'#0064FF'}, 'toss')
+                    )
+                  ),
                   React.createElement('div', { style:{textAlign:'left'} },
                     React.createElement('p', { style:{fontWeight:'800',fontSize:'15px',color:'white',letterSpacing:'-0.3px'} }, '토스페이'),
                     React.createElement('p', { style:{fontSize:'11px',color:'rgba(255,255,255,0.55)',marginTop:'1px'} }, '토스 간편결제')
