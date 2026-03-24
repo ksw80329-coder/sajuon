@@ -235,7 +235,7 @@
   </script>
 
 </head>
-<body class="text-white">
+<body class="text-white" style="visibility:hidden;">
 <div id="app"></div>
 
 <script type="module">
@@ -10786,6 +10786,7 @@ ${pillarsDesc}
 }
 
 ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(App));
+document.body.style.visibility = '';
 </script>
 </body>
 </html>
