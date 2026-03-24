@@ -781,7 +781,6 @@ const KAKAO_APP_KEY = 'f68dda02192f5417b547eb2db8368d3d';
 const IMP_CODE        = 'imp60556156';                                   // 포트원 가맹점 식별코드
 const CHANNEL_KAKAO   = 'channel-key-6d75150a-64ef-42b7-8b29-7bf222e86997'; // 카카오페이 채널키
 const CHANNEL_TOSS    = 'channel-key-30262341-2209-4aab-93f3-805737438ec0';  // 포트원 토스 채널키
-const TOSS_CLIENT_KEY = '';  // 토스페이 직가맹 클라이언트 키 (live_ck_... 입력)
 const PAYMENT_WORKER  = 'https://api.sajuon.kr';
 const AI_WORKER       = 'https://dapper-dingo-54.ksw80329.deno.net';
 const DEV_MODE = true; // 프로덕션 — 항상 false
@@ -1438,17 +1437,20 @@ function App() {
               return;
             }
 
-            // 토스페이 직가맹: paymentKey로 서버 승인 후 처리
-            if (isTossSuccess && tossConfirmKey && PAYMENT_WORKER) {
+            // 토스페이 직가맹: payToken으로 서버 승인
+            if (isTossSuccess && PAYMENT_WORKER) {
+              const tossPayToken = urlParams.get('payToken');
+              const tossOrderNo  = urlParams.get('orderNo') || tossConfirmOrderId;
+              const tossAmount   = urlParams.get('amount')  || (pending?.product?.price);
               (async () => {
                 try {
-                  const confirmRes = await fetch(`${PAYMENT_WORKER}/toss-confirm`, {
+                  const confirmRes = await fetch(`${PAYMENT_WORKER}/toss-pay-confirm`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                      paymentKey: tossConfirmKey,
-                      orderId: tossConfirmOrderId,
-                      amount: parseInt(tossConfirmAmount),
+                      payToken: tossPayToken,
+                      orderId: tossOrderNo,
+                      amount: parseInt(tossAmount),
                     }),
                   });
                   const confirmData = await confirmRes.json();
@@ -1457,7 +1459,7 @@ function App() {
                     return;
                   }
                 } catch(e) {
-                  console.warn('토스 승인 서버 오류, 진행:', e);
+                  console.warn('토스페이 승인 서버 오류, 진행:', e);
                 }
               })();
             }
@@ -3566,25 +3568,25 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 
   // ===== 토스페이먼츠 직가맹 결제 =====
   const requestTossPayment = (product, onSuccess, onCancel) => {
-    if (!TOSS_CLIENT_KEY) { alert('토스페이 설정이 필요합니다.'); if(onCancel) onCancel(); return; }
-    if (!window.TossPayments) { alert('토스페이 SDK 로딩 중입니다. 잠시 후 다시 시도해주세요.'); if(onCancel) onCancel(); return; }
-
+    if (!PAYMENT_WORKER) { alert('결제 서버 설정이 필요합니다.'); if(onCancel) onCancel(); return; }
     const orderId = `SAJUON_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
     const pendingData = { product, currentInput: currentInput||null, currentResult: currentResult||null };
     try { sessionStorage.setItem('sajuon_pending_payment', JSON.stringify(pendingData)); } catch(e) {}
-
-    const tossPayments = window.TossPayments(TOSS_CLIENT_KEY);
-    tossPayments.requestPayment('토스페이', {
-      amount: product.price,
-      orderId,
-      orderName: product.name,
-      customerName: session?.nickname || userEmail || '사주ON 회원',
-      successUrl: `${window.location.origin}${window.location.pathname}?toss_payment=success&orderId=${orderId}`,
-      failUrl: `${window.location.origin}${window.location.pathname}?toss_payment=fail`,
-    }).catch((e) => {
-      if (e.code !== 'USER_CANCEL') console.error('토스페이 오류:', e);
-      if (onCancel) onCancel();
-    });
+    fetch(`${PAYMENT_WORKER}/toss-pay-create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId, amount: product.price, orderName: product.name,
+        successUrl: `${window.location.origin}${window.location.pathname}?toss_payment=success&orderId=${orderId}`,
+        failUrl: `${window.location.origin}${window.location.pathname}?toss_payment=fail`,
+      }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.checkoutPage) { window.location.href = data.checkoutPage; }
+      else { alert('토스페이 결제창 생성 실패: ' + (data.message || '다시 시도해주세요.')); if(onCancel) onCancel(); }
+    })
+    .catch(() => { alert('토스페이 연결 오류. 다시 시도해주세요.'); if(onCancel) onCancel(); });
   };
 
   const exchangeMoonsForStars = () => {
