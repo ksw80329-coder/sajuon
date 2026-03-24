@@ -1368,7 +1368,10 @@ function App() {
     const tossConfirmAmount = urlParams.get('amount');
     const impUid = urlParams.get('imp_uid');
     const merchantUid = urlParams.get('merchant_uid');
-    if ((tossPaymentKey || isPaymentSuccess || impUid || isTossComplete) && (tossOrderId || isPaymentSuccess || merchantUid || tossOrderIdDirect)) {
+    const tossPaymentKeyDirect = urlParams.get('paymentKey');
+    const tossOrderIdDirect = urlParams.get('orderId') || urlParams.get('orderNo');
+    const tossAmountDirect = urlParams.get('amount');
+    if ((tossPaymentKey || isPaymentSuccess || impUid || isTossComplete) && (tossOrderId || isPaymentSuccess || merchantUid || tossOrderIdDirect || isTossComplete)) {
       // localStorage에서 pending 결제 정보 복원
       try {
         const pending = JSON.parse(sessionStorage.getItem('sajuon_pending_payment') || 'null');
