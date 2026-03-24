@@ -9454,30 +9454,18 @@ ${pillarsDesc}
 
       // 토스페이 직가맹 결제
       if (method === 'toss') {
-        if (!window.TossPayments) {
-          alert('토스페이 SDK 로딩 중입니다. 잠시 후 다시 시도해주세요.');
-          setProcessing(false); return;
-        }
-        const tossSDK = window.TossPayments(TOSS_CLIENT_KEY);
-        const orderId = `SAJUON_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-        // pending 저장
-        try {
-          sessionStorage.setItem('sajuon_pending_payment', JSON.stringify({
-            product: { name: `사주ON 별 ${pkg.stars}개 충전`, price: pkg.price, type: 'charge', stars: pkg.stars, moons: pkg.moons || 0 },
-            orderId
-          }));
-        } catch(e) {}
-        tossSDK.requestPayment('카드', {
-          amount: pkg.price,
-          orderId,
-          orderName: `사주ON 별 ${pkg.stars}개 충전`,
-          customerName: session?.nickname || userEmail || '사주ON 회원',
-          successUrl: `${window.location.origin}${window.location.pathname}?toss_payment=success`,
-          failUrl:    `${window.location.origin}${window.location.pathname}?toss_payment=fail`,
-        }).catch((e) => {
-          console.warn('토스 결제 취소/실패:', e);
-          setProcessing(false);
-        });
+        requestTossPayment(
+          { name: `사주ON 별 ${pkg.stars}개 충전`, price: pkg.price, type: 'charge', stars: pkg.stars, moons: pkg.moons || 0 },
+          () => {
+            const newStars = stars + pkg.stars;
+            const newMoons = moons + (pkg.moons || 0);
+            setStars(newStars); if (pkg.moons > 0) setMoons(newMoons);
+            if (userKey) { saveUserData(userKey,'stars',newStars); if(pkg.moons>0) saveUserData(userKey,'moons',newMoons); }
+            setProcessing(false);
+            alert(`✅ 충전 완료!\n⭐ ${pkg.stars}별${pkg.moons > 0 ? ` + 🌙 ${pkg.moons}달` : ''} 지급되었습니다.`);
+          },
+          () => setProcessing(false)
+        );
         return;
       }
 
