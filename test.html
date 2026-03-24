@@ -1519,13 +1519,19 @@ function App() {
                 const addMoons = pending.product.moons || 0;
                 setStars(prev => {
                   const next = prev + addStars;
-                  if (safeKey) saveUserData(safeKey, 'stars', next);
+                  if (safeKey) {
+                    saveUserData(safeKey, 'stars', next);
+                    syncToCloud(safeKey, 'stars', next);
+                  }
                   return next;
                 });
                 if (addMoons > 0) {
                   setMoons(prev => {
                     const next = prev + addMoons;
-                    if (safeKey) saveUserData(safeKey, 'moons', next);
+                    if (safeKey) {
+                      saveUserData(safeKey, 'moons', next);
+                      syncToCloud(safeKey, 'moons', next);
+                    }
                     return next;
                   });
                 }
