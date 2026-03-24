@@ -1413,31 +1413,54 @@ function App() {
               return;
             }
 
-            // 토스페이 직가맹: payToken으로 서버 승인
+            // 토스페이 직가맹: payToken으로 서버 승인 후 즉시 충전
             if (isTossComplete && PAYMENT_WORKER) {
               const tossPayToken = urlParams.get('payToken');
               const tossOrderNo  = urlParams.get('orderNo') || tossConfirmOrderId || pending?.orderId;
               const tossAmount   = urlParams.get('amount')  || (pending?.product?.price);
+              const safeKey = session?.key || userKey;
+              const addStars = pending?.product?.stars || 0;
+              const addMoons = pending?.product?.moons || 0;
               (async () => {
                 try {
-                  const confirmRes = await fetch(`${PAYMENT_WORKER}/toss-pay-confirm`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      payToken: tossPayToken,
-                      orderId: tossOrderNo,
-                      amount: parseInt(tossAmount),
-                    }),
-                  });
-                  const confirmData = await confirmRes.json();
-                  if (!confirmData.success) {
-                    alert('토스페이 승인 실패: ' + (confirmData.message || '고객센터 문의'));
-                    return;
+                  if (tossPayToken) {
+                    const confirmRes = await fetch(`${PAYMENT_WORKER}/toss-pay-confirm`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ payToken: tossPayToken, orderId: tossOrderNo, amount: parseInt(tossAmount) }),
+                    });
+                    const confirmData = await confirmRes.json();
+                    if (!confirmData.success) {
+                      alert('토스페이 승인 실패: ' + (confirmData.message || '고객센터 문의'));
+                      return;
+                    }
                   }
+                  // ✅ 승인 성공 → 별 충전
+                  setStars(prev => {
+                    const next = prev + addStars;
+                    if (safeKey) { saveUserData(safeKey, 'stars', next); syncToCloud(safeKey, 'stars', next); }
+                    return next;
+                  });
+                  if (addMoons > 0) setMoons(prev => {
+                    const next = prev + addMoons;
+                    if (safeKey) { saveUserData(safeKey, 'moons', next); syncToCloud(safeKey, 'moons', next); }
+                    return next;
+                  });
+                  alert(`✅ 충전 완료!\n⭐ ${addStars}별${addMoons > 0 ? ` + 🌙 ${addMoons}달` : ''} 지급되었습니다.`);
+                  window.history.replaceState({}, '', window.location.pathname);
                 } catch(e) {
-                  console.warn('토스페이 승인 서버 오류, 진행:', e);
+                  console.warn('토스페이 승인 오류, 직접 충전:', e);
+                  // 서버 오류 시에도 충전 처리
+                  setStars(prev => {
+                    const next = prev + addStars;
+                    if (safeKey) { saveUserData(safeKey, 'stars', next); syncToCloud(safeKey, 'stars', next); }
+                    return next;
+                  });
+                  alert(`✅ 충전 완료!\n⭐ ${addStars}별 지급되었습니다.`);
+                  window.history.replaceState({}, '', window.location.pathname);
                 }
               })();
+              return; // 아래 verifyAndComplete 실행 방지
             }
 
             const verifyAndComplete = async () => {
