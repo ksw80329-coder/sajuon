@@ -10159,7 +10159,7 @@ ${pillarsDesc}
             React.createElement('span', { style:{color:'rgba(255,255,255,0.4)',fontWeight:'400',fontSize:'13px'} }, item.label)
           )
         ),
-        React.createElement('button', {
+        DEV_MODE && React.createElement('button', {
           onClick: () => {
             if (!window.confirm('분석 캐시를 초기화할까요?\n저장된 사주/궁합/운세 기록은 유지되고,\nAI 분석 결과만 삭제됩니다.')) return;
             const keys = Object.keys(localStorage).filter(k => k.startsWith('ai_') || k.startsWith('daily_'));
