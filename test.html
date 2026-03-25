@@ -1653,7 +1653,13 @@ function App() {
   const setSavedPaidSaju = (updater) => {
     setSavedPaidSajuRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (userKey) saveUserData(userKey, 'savedPaidSaju', next);
+      if (userKey) {
+        saveUserData(userKey, 'savedPaidSaju', next);
+        const added = next.filter(n => !prev.some(p => p.id === n.id));
+        added.forEach(a => saveAnalysisToCloud(userKey, a, 'paidSaju').catch(()=>{}));
+        const removed = prev.filter(p => !next.some(n => n.id === p.id));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
+      }
       return next;
     });
   };
@@ -3536,11 +3542,14 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           loadAnalysesFromCloud(resolvedKey, 'compat'),
           loadAnalysesFromCloud(resolvedKey, 'yearly'),
           loadAnalysesFromCloud(resolvedKey, 'roadmap'),
-        ]).then(([cloudSaju, cloudCompat, cloudYearly, cloudRoadmap]) => {
+          loadAnalysesFromCloud(resolvedKey, 'paidSaju'),
+        ]).then(([cloudSaju, cloudCompat, cloudYearly, cloudRoadmap, cloudPaidSaju]) => {
           mergeWithCloud(acctSaju, cloudSaju, setSavedSajuRaw, 'savedSaju');
           mergeWithCloud(acctCompatibility, cloudCompat, setSavedCompatibilityRaw, 'savedCompatibility');
           mergeWithCloud(acctYearly, cloudYearly, setSavedYearlyRaw, 'savedYearly');
           mergeWithCloud(acctRoadmap, cloudRoadmap, setSavedRoadmapRaw, 'savedRoadmap');
+          const acctPaidSaju = loadUserData(resolvedKey, 'savedPaidSaju', []);
+          mergeWithCloud(acctPaidSaju, cloudPaidSaju, setSavedPaidSajuRaw, 'savedPaidSaju');
         }).catch(()=>{});
       }, 1500); // 화면 먼저 띄운 후 백그라운드 동기화
     }).catch(()=>{}); // 실패해도 로컬값 절대 건드리지 않음
