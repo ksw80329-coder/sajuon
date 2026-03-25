@@ -6137,42 +6137,8 @@ ${p2PillarDesc}
           )
         )
       ),
-      // 분야별 궁합 - 리디자인
-      React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'18px'} },
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'16px'} }, '✦ 분야별 궁합'),
-        [
-          (() => {
-            // AI S1 점수 파싱해서 분야별 점수 보정
-            let aiTotal = totalScore;
-            if (aiCompatSections && aiCompatSections.length > 0) {
-              const m = (aiCompatSections[0].title||'').match(/(\d{2,3})점/);
-              if (m) aiTotal = parseInt(m[1]);
-            }
-            const ratio = (typeof aiTotal==='number'&&!isNaN(aiTotal)&&totalScore>0) ? aiTotal / totalScore : 1;
-            const safeRatio = (typeof ratio==='number'&&!isNaN(ratio)&&ratio>0) ? ratio : 1;
-            const _sfLocal=(v)=>(typeof v==='number'&&!isNaN(v)&&isFinite(v))?v:0;
-            const adj=s=>{const v=Math.round(_sfLocal(s)*safeRatio);return Math.min(100,Math.max(30,isNaN(v)||!isFinite(v)?50:v));};
-            return [
-              { label: '성격', score: adj(categoryScores.personality), color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
-              { label: '대화/소통', score: adj(categoryScores.communication), color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
-              { label: '연애/결혼', score: adj(categoryScores.love), color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
-              { label: '금전/재물', score: adj(categoryScores.money), color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-              { label: '가치관', score: adj(categoryScores.values), color: '#34d399', bg: 'rgba(52,211,153,0.12)' }
-            ];
-          })()
-        ].map((item, i) =>
-          React.createElement('div', { key: i, style:{marginBottom: i < 4 ? '14px' : '0'} },
-            React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'} },
-              React.createElement('span', { style:{color:'rgba(255,255,255,0.65)',fontSize:'13px',fontWeight:'500'} }, item.label),
-              React.createElement('span', { style:{color:item.color,fontSize:'13px',fontWeight:'700'} }, (isNaN(item.score)?50:Math.round(item.score))+'점')
-            ),
-            React.createElement('div', { style:{height:'6px',background:'rgba(255,255,255,0.07)',borderRadius:'3px',overflow:'hidden'} },
-              React.createElement('div', { style:{height:'100%',width:item.score+'%',background:item.color,borderRadius:'3px',transition:'width 0.8s ease'} })
-            )
-          )
-        )
-      ),
-      // 오행 관계 + 특별 인연 통합 카드
+      // (분야별 궁합 섹션 제거됨)
+            // 오행 관계 + 특별 인연 통합 카드
       React.createElement('div', { style:{margin:'0 16px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',padding:'18px'} },
         React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'16px'} }, '✦ 오행 관계'),
         // 오행 시각화
