@@ -903,7 +903,9 @@ function App() {
   
   // ── Firestore 동기화 유틸 ──
   const fsDoc = (uid) => window._firestore?.collection('users').doc(uid);
+  const fsAnalyses = (uid) => window._firestore?.collection('users').doc(uid).collection('analyses');
 
+  // 별/달 등 기본 필드 동기화
   const syncToCloud = async (uid, field, value) => {
     try {
       if (!window._firestore || !uid) return;
@@ -911,12 +913,45 @@ function App() {
     } catch(e) { console.warn('Firestore 저장 실패:', e); }
   };
 
+  // 분석결과 하나를 서브컬렉션에 저장
+  const saveAnalysisToCloud = async (uid, analysis, type) => {
+    try {
+      if (!window._firestore || !uid || !analysis?.id) return;
+      const docId = String(analysis.id);
+      await fsAnalyses(uid).doc(docId).set({ ...analysis, type, savedAt: Date.now() });
+    } catch(e) { console.warn('분석 저장 실패:', e); }
+  };
+
+  // 서브컬렉션에서 분석결과 삭제
+  const deleteAnalysisFromCloud = async (uid, analysisId) => {
+    try {
+      if (!window._firestore || !uid) return;
+      await fsAnalyses(uid).doc(String(analysisId)).delete();
+    } catch(e) { console.warn('분석 삭제 실패:', e); }
+  };
+
+  // 기본 사용자 정보 로드 (별/달)
   const loadFromCloud = async (uid) => {
     try {
       if (!window._firestore || !uid) return null;
       const doc = await fsDoc(uid).get();
       return doc.exists ? doc.data() : null;
     } catch(e) { console.warn('Firestore 로드 실패:', e); return null; }
+  };
+
+  // 서브컬렉션에서 분석내역 전체 로드
+  const loadAnalysesFromCloud = async (uid, type) => {
+    try {
+      if (!window._firestore || !uid) return [];
+      const snap = await fsAnalyses(uid).where('type','==',type).orderBy('savedAt','desc').limit(100).get();
+      return snap.docs.map(d => d.data());
+    } catch(e) {
+      // orderBy 인덱스 없을 경우 fallback
+      try {
+        const snap2 = await fsAnalyses(uid).where('type','==',type).get();
+        return snap2.docs.map(d => d.data()).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0)).slice(0,100);
+      } catch(e2) { console.warn('분석 로드 실패:', e2); return []; }
+    }
   };
 
   const saveUserData = (userKey, type, data) => {
@@ -1578,8 +1613,12 @@ function App() {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (userKey) {
         saveUserData(userKey, 'savedSaju', next);
-        const summary = next.slice(0,20).map(s => ({name:s.name||'',year:s.year||0,month:s.month||0,day:s.day||0,id:s.id||Date.now()}));
-        syncToCloud(userKey, 'sajuHistory', summary).catch(()=>{});
+        // 새로 추가된 항목만 서브컬렉션에 저장
+        const added = next.filter(n => !prev.some(p => p.id === n.id));
+        added.forEach(a => saveAnalysisToCloud(userKey, a, 'saju').catch(()=>{}));
+        // 삭제된 항목 서브컬렉션에서도 삭제
+        const removed = prev.filter(p => !next.some(n => n.id === p.id));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
       }
       return next;
     });
@@ -1596,13 +1635,10 @@ function App() {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (userKey) {
         saveUserData(userKey, 'savedCompatibility', next);
-        // Firestore 동기화 (분석내역 요약본만)
-        const summary = next.slice(0,20).map(c => ({
-          person1: c.person1?.name||'', person2: c.person2?.name||'',
-          score: c.score||0, relation: c.relation||0,
-          date: c.date||'', id: c.id||Date.now()
-        }));
-        syncToCloud(userKey, 'compatHistory', summary).catch(()=>{});
+        const added = next.filter(n => !prev.some(p => p.id === n.id));
+        added.forEach(a => saveAnalysisToCloud(userKey, a, 'compat').catch(()=>{}));
+        const removed = prev.filter(p => !next.some(n => n.id === p.id));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
       }
       return next;
     });
@@ -1610,14 +1646,26 @@ function App() {
   const setSavedYearly = (updater) => {
     setSavedYearlyRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (userKey) saveUserData(userKey, 'savedYearly', next);
+      if (userKey) {
+        saveUserData(userKey, 'savedYearly', next);
+        const added = next.filter(n => !prev.some(p => p.id === n.id));
+        added.forEach(a => saveAnalysisToCloud(userKey, a, 'yearly').catch(()=>{}));
+        const removed = prev.filter(p => !next.some(n => n.id === p.id));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
+      }
       return next;
     });
   };
   const setSavedRoadmap = (updater) => {
     setSavedRoadmapRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (userKey) saveUserData(userKey, 'savedRoadmap', next);
+      if (userKey) {
+        saveUserData(userKey, 'savedRoadmap', next);
+        const added = next.filter(n => !prev.some(p => p.id === n.id));
+        added.forEach(a => saveAnalysisToCloud(userKey, a, 'roadmap').catch(()=>{}));
+        const removed = prev.filter(p => !next.some(n => n.id === p.id));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
+      }
       return next;
     });
   };
@@ -3413,6 +3461,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const acctPaidSaju     = loadUserData(resolvedKey, 'savedPaidSaju', []);
     const acctCompatibility= loadUserData(resolvedKey, 'savedCompatibility', []);
     const acctYearly       = loadUserData(resolvedKey, 'savedYearly', []);
+    const acctRoadmap      = loadUserData(resolvedKey, 'savedRoadmap', []);
     const acctPurchases    = loadUserData(resolvedKey, 'purchases', []);
     const acctStars        = loadUserData(resolvedKey, 'stars', 0);
     const acctMoons        = loadUserData(resolvedKey, 'moons', 0);
@@ -3443,29 +3492,28 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       setMoons(finalMoons);
       saveUserData(resolvedKey, 'stars', finalStars);
       saveUserData(resolvedKey, 'moons', finalMoons);
-      // 분석내역 동기화 (클라우드가 더 많으면 병합)
-      if (cloudData.compatHistory && Array.isArray(cloudData.compatHistory)) {
-        setSavedCompatibilityRaw(prev => {
-          const merged = [...prev];
-          cloudData.compatHistory.forEach(ci => {
-            if (!merged.some(p => p.id === ci.id)) merged.push(ci);
-          });
-          const sorted = merged.sort((a,b) => (b.id||0)-(a.id||0)).slice(0,50);
-          saveUserData(resolvedKey, 'savedCompatibility', sorted);
-          return sorted;
+      // 서브컬렉션에서 분석내역 로드 후 로컬과 병합
+      const mergeWithCloud = (local, cloudList, setter, key) => {
+        const merged = [...(local||[])];
+        (cloudList||[]).forEach(ci => {
+          if (!merged.some(p => String(p.id) === String(ci.id))) merged.push(ci);
         });
-      }
-      if (cloudData.sajuHistory && Array.isArray(cloudData.sajuHistory)) {
-        setSavedSajuRaw(prev => {
-          const merged = [...prev];
-          cloudData.sajuHistory.forEach(si => {
-            if (!merged.some(p => p.id === si.id)) merged.push(si);
-          });
-          const sorted = merged.sort((a,b) => (b.id||0)-(a.id||0)).slice(0,50);
-          saveUserData(resolvedKey, 'savedSaju', sorted);
-          return sorted;
-        });
-      }
+        const sorted = merged.sort((a,b) => (b.savedAt||b.id||0)-(a.savedAt||a.id||0)).slice(0,100);
+        saveUserData(resolvedKey, key, sorted);
+        setter(sorted);
+      };
+      // 서브컬렉션에서 비동기 로드
+      Promise.all([
+        loadAnalysesFromCloud(resolvedKey, 'saju'),
+        loadAnalysesFromCloud(resolvedKey, 'compat'),
+        loadAnalysesFromCloud(resolvedKey, 'yearly'),
+        loadAnalysesFromCloud(resolvedKey, 'roadmap'),
+      ]).then(([cloudSaju, cloudCompat, cloudYearly, cloudRoadmap]) => {
+        mergeWithCloud(acctSaju, cloudSaju, setSavedSajuRaw, 'savedSaju');
+        mergeWithCloud(acctCompatibility, cloudCompat, setSavedCompatibilityRaw, 'savedCompatibility');
+        mergeWithCloud(acctYearly, cloudYearly, setSavedYearlyRaw, 'savedYearly');
+        mergeWithCloud(acctRoadmap, cloudRoadmap, setSavedRoadmapRaw, 'savedRoadmap');
+      }).catch(()=>{});
     }).catch(()=>{}); // 실패해도 로컬값 절대 건드리지 않음
 
     // (두 번째 Firestore 로드 제거 - 첫 번째에서 max 비교로 처리)
@@ -5418,7 +5466,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         isLoggedIn && savedCompatibility.length > 0 && React.createElement('div', { style:{marginBottom:'16px'} },
           React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'} },
             React.createElement('p', { style:{color:'rgba(249,168,212,0.5)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',fontWeight:'700'} }, '✦  이전 궁합 결과'),
-            React.createElement('span', { style:{color:'rgba(255,255,255,0.2)',fontSize:'11px'} }, savedCompatibility.length+'건')
+            React.createElement('span', { style:{color:'rgba(255,255,255,0.2)',fontSize:'11px'} }, savedCompatibility.length+'건 (최대 100개)')
           ),
           React.createElement('div', { style:{display:'flex',gap:'8px',overflowX:'auto',paddingBottom:'4px',paddingTop:'10px',overflow:'visible'} },
             savedCompatibility.slice(0,5).map((compat, i) => {
@@ -5451,7 +5499,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         ),
         isLoggedIn && savedSaju.length < 2 && React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'32px 20px',textAlign:'center'} },
           React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'14px',marginBottom:'6px'} }, '궁합 분석을 위해 최소 2명의 사주가 필요합니다'),
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'12px',marginBottom:'16px'} }, '현재 저장된 사주: '+savedSaju.length+'명'),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'12px',marginBottom:'16px'} }, '현재 저장된 사주: '+savedSaju.length+'명 · 최대 100개 저장'),
           React.createElement('button', { onClick:()=>{ setForm({name:'',gender:'여성',calendar:'양력',year:'',month:'',day:'',hour:'',minute:''}); setReturnScreen('compatibility'); setScreen('input'); }, style:{padding:'12px 28px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'14px',fontWeight:'700',fontSize:'14px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 4px 20px rgba(139,92,246,0.3)'} }, '+ 사주 추가하기')
         ),
         isLoggedIn && savedSaju.length >= 2 && React.createElement(React.Fragment, null,
@@ -9722,6 +9770,11 @@ ${pillarsDesc}
     return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',padding:'0 16px',paddingBottom:'112px',position:'relative',overflow:'hidden'} },
       React.createElement(StarBg),
       React.createElement(PageHeader,{label:'구매 기록',title:'이용내역',backTarget:'mypage'}),
+      React.createElement('div', { style:{margin:'0 16px 8px',padding:'10px 14px',background:'rgba(124,58,237,0.08)',borderRadius:'12px',border:'1px solid rgba(124,58,237,0.15)'} },
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px',lineHeight:'1.5',textAlign:'center'} },
+          '📋 분석 내역은 계정당 최대 100개까지 저장됩니다.\n초과 시 오래된 내역부터 자동 삭제됩니다.'
+        )
+      ),
       React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'14px'} },
         [{label:'사주 분석',count:savedPaidSaju.length,color:'#c4b5fd',bg:'rgba(124,58,237,0.08)',border:'rgba(124,58,237,0.15)'},{label:'궁합',count:savedCompatibility.length,color:'#f9a8d4',bg:'rgba(236,72,153,0.08)',border:'rgba(236,72,153,0.15)'},{label:'인생지도',count:savedRoadmap.length,color:'#a78bfa',bg:'rgba(124,58,237,0.08)',border:'rgba(124,58,237,0.15)'}]
         .map((item,i)=>React.createElement('div',{key:i,style:{background:item.bg,borderRadius:'14px',border:'1px solid '+item.border,padding:'14px 8px',textAlign:'center'}},
