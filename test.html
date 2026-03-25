@@ -5976,12 +5976,17 @@ ${p2PillarDesc}
     
     // 분야별 궁합 점수 계산 (관계 유형 반영)
     const _sf=(v)=>(typeof v==='number'&&!isNaN(v))?v:0;
+    const _sfc=(v,fb=50)=>(typeof v==='number'&&!isNaN(v)&&isFinite(v))?v:fb;
+    const _calcScore=(val,mult)=>{
+      const v=Math.round(_sfc(val)*_sfc(mult,1));
+      return Math.min(100,Math.max(30,isNaN(v)||!isFinite(v)?50:v));
+    };
     const categoryScores = {
-      personality: Math.min(100,Math.max(30,Math.round((_sf(baseScore)+(r1.dsi%3)*5+(r2.dsi%4)*3)*_sf(rm.personalityMult||1)))),
-      communication: Math.min(100,Math.max(30,Math.round((_sf(baseScore)+((r1.dsi+r2.dsi)%5)*4+(hasYukhap?10:0))*_sf(rm.commMult||1)))),
-      love: Math.min(100,Math.max(30,Math.round((_sf(baseScore)+_sf(stemBonus)+(hasStemHap?12:0)+(hasChung?-8:0))*_sf(rm.loveMult||1)))),
-      money: Math.min(100,Math.max(30,Math.round((55+(_sf(r1.fe?.pct?.['금'])+_sf(r2.fe?.pct?.['금']))/4+((r1.dsi+r2.dsi)%6)*3)*_sf(rm.moneyMult||1)))),
-      values: Math.min(100,Math.max(30,Math.round((_sf(baseScore)+_sf(branchBonus)+(el1===el2?8:0))*_sf(rm.valuesMult||1))))
+      personality: _calcScore(_sfc(baseScore)+(r1.dsi%3)*5+(r2.dsi%4)*3, _sfc(rm.personalityMult,1)),
+      communication: _calcScore(_sfc(baseScore)+((r1.dsi+r2.dsi)%5)*4+(hasYukhap?10:0), _sfc(rm.commMult,1)),
+      love: _calcScore(_sfc(baseScore)+_sfc(stemBonus)+(hasStemHap?12:0)+(hasChung?-8:0), _sfc(rm.loveMult,1)),
+      money: _calcScore(55+(_sfc(r1.fe?.pct?.['금'],0)+_sfc(r2.fe?.pct?.['금'],0))/4+((r1.dsi+r2.dsi)%6)*3, _sfc(rm.moneyMult,1)),
+      values: _calcScore(_sfc(baseScore)+_sfc(branchBonus)+(el1===el2?8:0), _sfc(rm.valuesMult,1))
     };
     
     // 상생/상극 관계
@@ -6145,7 +6150,8 @@ ${p2PillarDesc}
             }
             const ratio = (typeof aiTotal==='number'&&!isNaN(aiTotal)&&totalScore>0) ? aiTotal / totalScore : 1;
             const safeRatio = (typeof ratio==='number'&&!isNaN(ratio)&&ratio>0) ? ratio : 1;
-            const adj=s=>{const v=Math.round((_sf(s))*safeRatio);return Math.min(100,Math.max(30,isNaN(v)?50:v));};
+            const _sfLocal=(v)=>(typeof v==='number'&&!isNaN(v)&&isFinite(v))?v:0;
+            const adj=s=>{const v=Math.round(_sfLocal(s)*safeRatio);return Math.min(100,Math.max(30,isNaN(v)||!isFinite(v)?50:v));};
             return [
               { label: '성격', score: adj(categoryScores.personality), color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
               { label: '대화/소통', score: adj(categoryScores.communication), color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
@@ -6158,7 +6164,7 @@ ${p2PillarDesc}
           React.createElement('div', { key: i, style:{marginBottom: i < 4 ? '14px' : '0'} },
             React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'} },
               React.createElement('span', { style:{color:'rgba(255,255,255,0.65)',fontSize:'13px',fontWeight:'500'} }, item.label),
-              React.createElement('span', { style:{color:item.color,fontSize:'13px',fontWeight:'700'} }, Math.round(item.score)+'점')
+              React.createElement('span', { style:{color:item.color,fontSize:'13px',fontWeight:'700'} }, (isNaN(item.score)?50:Math.round(item.score))+'점')
             ),
             React.createElement('div', { style:{height:'6px',background:'rgba(255,255,255,0.07)',borderRadius:'3px',overflow:'hidden'} },
               React.createElement('div', { style:{height:'100%',width:item.score+'%',background:item.color,borderRadius:'3px',transition:'width 0.8s ease'} })
