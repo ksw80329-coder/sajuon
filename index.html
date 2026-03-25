@@ -1576,7 +1576,11 @@ function App() {
   const setSavedSaju = (updater) => {
     setSavedSajuRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (userKey) saveUserData(userKey, 'savedSaju', next);
+      if (userKey) {
+        saveUserData(userKey, 'savedSaju', next);
+        const summary = next.slice(0,20).map(s => ({name:s.name||'',year:s.year||0,month:s.month||0,day:s.day||0,id:s.id||Date.now()}));
+        syncToCloud(userKey, 'sajuHistory', summary).catch(()=>{});
+      }
       return next;
     });
   };
@@ -1590,7 +1594,16 @@ function App() {
   const setSavedCompatibility = (updater) => {
     setSavedCompatibilityRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (userKey) saveUserData(userKey, 'savedCompatibility', next);
+      if (userKey) {
+        saveUserData(userKey, 'savedCompatibility', next);
+        // Firestore 동기화 (분석내역 요약본만)
+        const summary = next.slice(0,20).map(c => ({
+          person1: c.person1?.name||'', person2: c.person2?.name||'',
+          score: c.score||0, relation: c.relation||0,
+          date: c.date||'', id: c.id||Date.now()
+        }));
+        syncToCloud(userKey, 'compatHistory', summary).catch(()=>{});
+      }
       return next;
     });
   };
@@ -3430,6 +3443,29 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       setMoons(finalMoons);
       saveUserData(resolvedKey, 'stars', finalStars);
       saveUserData(resolvedKey, 'moons', finalMoons);
+      // 분석내역 동기화 (클라우드가 더 많으면 병합)
+      if (cloudData.compatHistory && Array.isArray(cloudData.compatHistory)) {
+        setSavedCompatibilityRaw(prev => {
+          const merged = [...prev];
+          cloudData.compatHistory.forEach(ci => {
+            if (!merged.some(p => p.id === ci.id)) merged.push(ci);
+          });
+          const sorted = merged.sort((a,b) => (b.id||0)-(a.id||0)).slice(0,50);
+          saveUserData(resolvedKey, 'savedCompatibility', sorted);
+          return sorted;
+        });
+      }
+      if (cloudData.sajuHistory && Array.isArray(cloudData.sajuHistory)) {
+        setSavedSajuRaw(prev => {
+          const merged = [...prev];
+          cloudData.sajuHistory.forEach(si => {
+            if (!merged.some(p => p.id === si.id)) merged.push(si);
+          });
+          const sorted = merged.sort((a,b) => (b.id||0)-(a.id||0)).slice(0,50);
+          saveUserData(resolvedKey, 'savedSaju', sorted);
+          return sorted;
+        });
+      }
     }).catch(()=>{}); // 실패해도 로컬값 절대 건드리지 않음
 
     // (두 번째 Firestore 로드 제거 - 첫 번째에서 max 비교로 처리)
@@ -6080,8 +6116,9 @@ ${p2PillarDesc}
               const m = (aiCompatSections[0].title||'').match(/(\d{2,3})점/);
               if (m) aiTotal = parseInt(m[1]);
             }
-            const ratio = aiTotal / Math.max(1, totalScore);
-            const adj=s=>{const v=Math.round((_sf(s))*(_sf(ratio)||1));return Math.min(100,Math.max(30,v));};
+            const ratio = (typeof aiTotal==='number'&&!isNaN(aiTotal)&&totalScore>0) ? aiTotal / totalScore : 1;
+            const safeRatio = (typeof ratio==='number'&&!isNaN(ratio)&&ratio>0) ? ratio : 1;
+            const adj=s=>{const v=Math.round((_sf(s))*safeRatio);return Math.min(100,Math.max(30,isNaN(v)?50:v));};
             return [
               { label: '성격', score: adj(categoryScores.personality), color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
               { label: '대화/소통', score: adj(categoryScores.communication), color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
