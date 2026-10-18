@@ -220,6 +220,17 @@ import ReactDOM from 'https://esm.sh/react-dom@18/client';
 const STEMS = { names: ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'], korean: ['갑','을','병','정','무','기','경','신','임','계'], elements: ['목','목','화','화','토','토','금','금','수','수'] };
 const BRANCHES = { names: ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'], korean: ['자','축','인','묘','진','사','오','미','신','유','술','해'], elements: ['수','토','목','목','토','화','화','토','금','금','토','수'] };
 const COLORS = { 목:'#22c55e', 화:'#ef4444', 토:'#eab308', 금:'#9ca3af', 수:'#3b82f6' };
+// ========== 신년운세 대상 연도 ==========
+// 10월 1일부터는 다음 해 신년운세만 판매 (예: 2026.10~2027.09 → 2027년)
+const getFortuneYear = (d = new Date()) => d.getMonth() >= 9 ? d.getFullYear() + 1 : d.getFullYear();
+const FORTUNE_YEAR = getFortuneYear();
+const yearGanji = (y) => { const si=((y-4)%10+10)%10, bi=((y-4)%12+12)%12; return { stem:STEMS.names[si], branch:BRANCHES.names[bi], kr:STEMS.korean[si]+BRANCHES.korean[bi] }; };
+const FORTUNE_GANJI = yearGanji(FORTUNE_YEAR);
+const FORTUNE_LABEL = `${FORTUNE_YEAR} ${FORTUNE_GANJI.kr}년`;
+// 연도 필드가 없는 기존 기록은 2026년 구매분
+const yearlyYearOf = (y) => (y && y.year) ? Number(y.year) : 2026;
+// 현재 명리학상 연도 (입춘 기준, 2월 4일 전은 전년도)
+const sajuYearNow = (() => { const d=new Date(); return (d.getMonth()===0 || (d.getMonth()===1 && d.getDate()<4)) ? d.getFullYear()-1 : d.getFullYear(); })();
 const TEN_GODS = ['비견','겁재','식신','상관','편재','정재','편관','정관','편인','정인'];
 const TWELVE = ['장생','목욕','관대','건록','제왕','쇠','병','사','묘','절','태','양'];
 const SINSAL_12 = {'子':['장성살','반안살','역마살','육해살','화개살','겁살','재살','천살','지살','연살','월살','망신살'],'丑':['육해살','화개살','겁살','재살','천살','지살','연살','월살','망신살','장성살','반안살','역마살'],'寅':['재살','천살','지살','연살','월살','망신살','장성살','반안살','역마살','육해살','화개살','겁살'],'卯':['연살','월살','망신살','장성살','반안살','역마살','육해살','화개살','겁살','재살','천살','지살'],'辰':['장성살','반안살','역마살','육해살','화개살','겁살','재살','천살','지살','연살','월살','망신살'],'巳':['육해살','화개살','겁살','재살','천살','지살','연살','월살','망신살','장성살','반안살','역마살'],'午':['재살','천살','지살','연살','월살','망신살','장성살','반안살','역마살','육해살','화개살','겁살'],'未':['연살','월살','망신살','장성살','반안살','역마살','육해살','화개살','겁살','재살','천살','지살'],'申':['장성살','반안살','역마살','육해살','화개살','겁살','재살','천살','지살','연살','월살','망신살'],'酉':['육해살','화개살','겁살','재살','천살','지살','연살','월살','망신살','장성살','반안살','역마살'],'戌':['재살','천살','지살','연살','월살','망신살','장성살','반안살','역마살','육해살','화개살','겁살'],'亥':['연살','월살','망신살','장성살','반안살','역마살','육해살','화개살','겁살','재살','천살','지살']};
@@ -904,9 +915,34 @@ function App() {
   const fsDoc = (uid) => window._firestore?.collection('users').doc(uid);
   const fsAnalyses = (uid) => window._firestore?.collection('users').doc(uid).collection('analyses');
 
+  // Firestore 초기화(window load 이후)를 기다림 — 앱 재실행 직후 동기화 누락 방지
+  const whenFirestore = (timeoutMs = 15000) => new Promise(resolve => {
+    if (window._firestore) return resolve(window._firestore);
+    const t0 = Date.now();
+    const iv = setInterval(() => {
+      if (window._firestore) { clearInterval(iv); resolve(window._firestore); }
+      else if (Date.now() - t0 > timeoutMs) { clearInterval(iv); resolve(null); }
+    }, 200);
+  });
+
+  // 별/달 증감은 덮어쓰기 대신 원자적 increment (기기 간 동시 사용 시 잔액 꼬임 방지)
+  const cloudAdjust = async (uid, dStars = 0, dMoons = 0) => {
+    try {
+      if (!uid || (!dStars && !dMoons)) return;
+      if (!(await whenFirestore())) return;
+      const inc = window.firebase.firestore.FieldValue.increment;
+      const data = { updatedAt: Date.now() };
+      if (dStars) data.stars = inc(dStars);
+      if (dMoons) data.moons = inc(dMoons);
+      await fsDoc(uid).set(data, { merge: true });
+    } catch(e) { console.warn('잔액 동기화 실패:', e); }
+  };
+
   // 별/달 등 기본 필드 동기화
   const syncToCloud = async (uid, field, value) => {
     try {
+      // 잔액은 cloudAdjust(증감)로만 변경 — 절대값 덮어쓰기 금지
+      if (field === 'stars' || field === 'moons') return;
       if (!window._firestore || !uid) return;
       await fsDoc(uid).set({ [field]: value, updatedAt: Date.now() }, { merge: true });
     } catch(e) { console.warn('Firestore 저장 실패:', e); }
@@ -922,10 +958,11 @@ function App() {
   };
 
   // 서브컬렉션에서 분석결과 삭제
-  const deleteAnalysisFromCloud = async (uid, analysisId) => {
+  const deleteAnalysisFromCloud = async (uid, analysisId, type) => {
     try {
       if (!window._firestore || !uid) return;
-      await fsAnalyses(uid).doc(String(analysisId)).delete();
+      // 실제 삭제 대신 삭제 표시(tombstone) — 다른 기기의 로컬 사본도 지워지도록
+      await fsAnalyses(uid).doc(String(analysisId)).set({ id: analysisId, ...(type ? { type } : {}), deleted: true, deletedAt: Date.now() }, { merge: true });
     } catch(e) { console.warn('분석 삭제 실패:', e); }
   };
 
@@ -942,13 +979,13 @@ function App() {
   const loadAnalysesFromCloud = async (uid, type) => {
     try {
       if (!window._firestore || !uid) return [];
-      const snap = await fsAnalyses(uid).where('type','==',type).orderBy('savedAt','desc').limit(100).get();
-      return snap.docs.map(d => d.data());
+      const snap = await fsAnalyses(uid).where('type','==',type).get();
+      return snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
     } catch(e) {
       // orderBy 인덱스 없을 경우 fallback
       try {
-        const snap2 = await fsAnalyses(uid).where('type','==',type).get();
-        return snap2.docs.map(d => d.data()).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0)).slice(0,100);
+        const snap2 = await fsAnalyses(uid).get();
+        return snap2.docs.map(d => ({ ...d.data(), _docId: d.id })).filter(x => x.type === type);
       } catch(e2) { console.warn('분석 로드 실패:', e2); return []; }
     }
   };
@@ -957,10 +994,7 @@ function App() {
     try {
       localStorage.setItem(storageKey(userKey, type), JSON.stringify(data));
     } catch(e) { console.warn('localStorage 저장 실패:', e); }
-    // stars·moons는 Firestore에도 동기화 (크로스 디바이스)
-    if ((type === 'stars' || type === 'moons') && userKey) {
-      syncToCloud(userKey, type, data).catch(()=>{});
-    }
+    // stars·moons는 로컬 캐시만 갱신 — 클라우드는 cloudAdjust + 실시간 구독으로 처리
   };
 
   // 앱 세션 상태 (localStorage에서 마지막 로그인 계정 복원)
@@ -1219,6 +1253,7 @@ function App() {
   
   // 신년운세 관련 state
   const [yearlyPerson, setYearlyPerson] = useState('');
+  const [yearlyViewYear, setYearlyViewYear] = useState(FORTUNE_YEAR);
   const [savedYearly, setSavedYearlyRaw] = useState(() => session ? loadUserData(session.key, 'savedYearly', []) : []);
   const [savedRoadmap, setSavedRoadmapRaw] = useState(() => session ? loadUserData(session.key, 'savedRoadmap', []) : []);
   const [roadmapPerson, setRoadmapPerson] = useState(null); // career|love|money|health|move
@@ -1437,6 +1472,7 @@ function App() {
                 .then(function(r){ return r.json(); })
                 .then(function(data){
                   if (!data.success) { alert('결제 승인 실패: ' + data.message); return; }
+                  if (safeKey) cloudAdjust(safeKey, addStars, addMoons);
                   setStars(function(prev){ var next=prev+addStars; if(safeKey) saveUserData(safeKey,'stars',next); return next; });
                   if (addMoons > 0) setMoons(function(prev){ var next=prev+addMoons; if(safeKey) saveUserData(safeKey,'moons',next); return next; });
                   alert('✅ 충전 완료!\n⭐ ' + addStars + '별' + (addMoons>0?' + 🌙 '+addMoons+'달':'') + ' 지급되었습니다.');
@@ -1473,14 +1509,15 @@ function App() {
                     }
                   }
                   // ✅ 승인 성공 → 별 충전
+                  if (safeKey) cloudAdjust(safeKey, addStars, addMoons);
                   setStars(prev => {
                     const next = prev + addStars;
-                    if (safeKey) { saveUserData(safeKey, 'stars', next); syncToCloud(safeKey, 'stars', next); }
+                    if (safeKey) { saveUserData(safeKey, 'stars', next); }
                     return next;
                   });
                   if (addMoons > 0) setMoons(prev => {
                     const next = prev + addMoons;
-                    if (safeKey) { saveUserData(safeKey, 'moons', next); syncToCloud(safeKey, 'moons', next); }
+                    if (safeKey) { saveUserData(safeKey, 'moons', next); }
                     return next;
                   });
                   alert(`✅ 충전 완료!\n⭐ ${addStars}별${addMoons > 0 ? ` + 🌙 ${addMoons}달` : ''} 지급되었습니다.`);
@@ -1488,9 +1525,10 @@ function App() {
                 } catch(e) {
                   console.warn('토스페이 승인 오류, 직접 충전:', e);
                   // 서버 오류 시에도 충전 처리
+                  if (safeKey) cloudAdjust(safeKey, addStars, 0);
                   setStars(prev => {
                     const next = prev + addStars;
-                    if (safeKey) { saveUserData(safeKey, 'stars', next); syncToCloud(safeKey, 'stars', next); }
+                    if (safeKey) { saveUserData(safeKey, 'stars', next); }
                     return next;
                   });
                   alert(`✅ 충전 완료!\n⭐ ${addStars}별 지급되었습니다.`);
@@ -1550,11 +1588,11 @@ function App() {
                 const safeKey = session?.key || userKey;
                 const addStars = pending.product.stars;
                 const addMoons = pending.product.moons || 0;
+                if (safeKey) cloudAdjust(safeKey, addStars, addMoons);
                 setStars(prev => {
                   const next = prev + addStars;
                   if (safeKey) {
                     saveUserData(safeKey, 'stars', next);
-                    syncToCloud(safeKey, 'stars', next);
                   }
                   return next;
                 });
@@ -1563,7 +1601,6 @@ function App() {
                     const next = prev + addMoons;
                     if (safeKey) {
                       saveUserData(safeKey, 'moons', next);
-                      syncToCloud(safeKey, 'moons', next);
                     }
                     return next;
                   });
@@ -1585,7 +1622,7 @@ function App() {
                 if (pending.compatResult) setSavedCompatibility(prev => [...prev, pending.compatResult]);
                 setScreen('compatibility-result');
               } else if (pending.product.type === 'yearly' || (pending.product.name && pending.product.name.includes('신년운세'))) {
-                if (pending.yearlyResult) setSavedYearly(prev => [...prev, pending.yearlyResult]);
+                if (pending.yearlyResult) { setSavedYearly(prev => [...prev, pending.yearlyResult]); setYearlyViewYear(pending.yearlyResult.year || FORTUNE_YEAR); }
                 setScreen('yearly-result');
               }
             };
@@ -1617,7 +1654,7 @@ function App() {
         added.forEach(a => saveAnalysisToCloud(userKey, a, 'saju').catch(()=>{}));
         // 삭제된 항목 서브컬렉션에서도 삭제
         const removed = prev.filter(p => !next.some(n => n.id === p.id));
-        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id, 'saju').catch(()=>{}));
       }
       return next;
     });
@@ -1630,7 +1667,7 @@ function App() {
         const added = next.filter(n => !prev.some(p => p.id === n.id));
         added.forEach(a => saveAnalysisToCloud(userKey, a, 'paidSaju').catch(()=>{}));
         const removed = prev.filter(p => !next.some(n => n.id === p.id));
-        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id, 'paidSaju').catch(()=>{}));
       }
       return next;
     });
@@ -1643,7 +1680,7 @@ function App() {
         const added = next.filter(n => !prev.some(p => p.id === n.id));
         added.forEach(a => saveAnalysisToCloud(userKey, a, 'compat').catch(()=>{}));
         const removed = prev.filter(p => !next.some(n => n.id === p.id));
-        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id, 'compat').catch(()=>{}));
       }
       return next;
     });
@@ -1656,7 +1693,7 @@ function App() {
         const added = next.filter(n => !prev.some(p => p.id === n.id));
         added.forEach(a => saveAnalysisToCloud(userKey, a, 'yearly').catch(()=>{}));
         const removed = prev.filter(p => !next.some(n => n.id === p.id));
-        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id, 'yearly').catch(()=>{}));
       }
       return next;
     });
@@ -1669,7 +1706,7 @@ function App() {
         const added = next.filter(n => !prev.some(p => p.id === n.id));
         added.forEach(a => saveAnalysisToCloud(userKey, a, 'roadmap').catch(()=>{}));
         const removed = prev.filter(p => !next.some(n => n.id === p.id));
-        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id).catch(()=>{}));
+        removed.forEach(r => deleteAnalysisFromCloud(userKey, r.id, 'roadmap').catch(()=>{}));
       }
       return next;
     });
@@ -3451,6 +3488,84 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     }
   }, shareToast) : null;
 
+  const _syncBusy = React.useRef(false);
+  const _lastSync = React.useRef(0);
+  const syncAccountFromCloud = async (key) => {
+    if (!key || _syncBusy.current) return;
+    _syncBusy.current = true;
+    try {
+      if (!(await whenFirestore())) return;
+      // 1) 잔액: 클라우드 문서가 없으면 로컬 값으로 1회 생성
+      const cloudData = await loadFromCloud(key);
+      if (!cloudData || typeof cloudData.stars !== 'number') {
+        const ls = loadUserData(key, 'stars', 0), lm = loadUserData(key, 'moons', 0);
+        await fsDoc(key).set({ stars: typeof ls==='number'?ls:0, moons: typeof lm==='number'?lm:0, updatedAt: Date.now() }, { merge: true });
+      } else {
+        setStars(cloudData.stars); saveUserData(key, 'stars', cloudData.stars);
+        if (typeof cloudData.moons === 'number') { setMoons(cloudData.moons); saveUserData(key, 'moons', cloudData.moons); }
+      }
+      // 2) 분석 내역: 양방향 병합 (사용자 문서 존재 여부와 무관하게 항상 실행)
+      const lists = [
+        ['saju',     'savedSaju',          setSavedSajuRaw],
+        ['compat',   'savedCompatibility', setSavedCompatibilityRaw],
+        ['yearly',   'savedYearly',        setSavedYearlyRaw],
+        ['roadmap',  'savedRoadmap',       setSavedRoadmapRaw],
+        ['paidSaju', 'savedPaidSaju',      setSavedPaidSajuRaw],
+      ];
+      await Promise.all(lists.map(async ([type, lsKey, setter]) => {
+        const cloud = await loadAnalysesFromCloud(key, type);
+        const local = loadUserData(key, lsKey, []) || [];
+        const deleted = new Set(cloud.filter(c => c.deleted).map(c => String(c._docId || c.id)));
+        const cloudIds = new Set(cloud.filter(c => !c.deleted).map(c => String(c.id)));
+        const merged = local.filter(l => l && l.id != null && !deleted.has(String(l.id)));
+        // 로컬에만 있는 항목은 클라우드로 올림 (예전 저장 실패분 복구)
+        merged.filter(l => !cloudIds.has(String(l.id))).forEach(l => saveAnalysisToCloud(key, l, type).catch(()=>{}));
+        cloud.filter(c => !c.deleted && c.id != null).forEach(c => {
+          if (!merged.some(m => String(m.id) === String(c.id))) {
+            const { _docId, type: _t, ...rest } = c; merged.push(rest);
+          }
+        });
+        merged.sort((a,b) => (Number(a.id)||0) - (Number(b.id)||0));
+        saveUserData(key, lsKey, merged);
+        setter(merged);
+      }));
+      _lastSync.current = Date.now();
+    } catch(e) { console.warn('계정 동기화 실패:', e); }
+    finally { _syncBusy.current = false; }
+  };
+
+  // 앱 재실행(세션 복원) 시에도 클라우드 동기화
+  React.useEffect(() => {
+    if (session?.key) syncAccountFromCloud(session.key);
+  }, []);
+
+  // 다른 기기에서 쓰다가 이 화면으로 돌아오면 다시 동기화 (30초 간격 제한)
+  React.useEffect(() => {
+    if (!userKey) return;
+    const onVis = () => {
+      if (document.visibilityState === 'visible' && Date.now() - _lastSync.current > 30000) syncAccountFromCloud(userKey);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    return () => { document.removeEventListener('visibilitychange', onVis); window.removeEventListener('focus', onVis); };
+  }, [userKey]);
+
+  // 별/달 잔액 실시간 구독 — 폰에서 쓰면 PC에 즉시 반영
+  React.useEffect(() => {
+    if (!userKey) return;
+    let unsub = null, alive = true;
+    whenFirestore().then(fs => {
+      if (!fs || !alive) return;
+      unsub = fsDoc(userKey).onSnapshot(doc => {
+        const d = doc.exists ? doc.data() : null;
+        if (!d) return;
+        if (typeof d.stars === 'number') { setStars(d.stars); try { localStorage.setItem(storageKey(userKey,'stars'), JSON.stringify(d.stars)); } catch(e) {} }
+        if (typeof d.moons === 'number') { setMoons(d.moons); try { localStorage.setItem(storageKey(userKey,'moons'), JSON.stringify(d.moons)); } catch(e) {} }
+      }, e => console.warn('잔액 구독 실패:', e));
+    });
+    return () => { alive = false; if (unsub) unsub(); };
+  }, [userKey]);
+
   const handleLogin = (method, email = '', nickname = '') => {
     const resolvedEmail = email || `user@${method}.com`;
     const emailHash = resolvedEmail.split('').reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) & 0xffffffff, 0).toString(36);
@@ -3479,71 +3594,13 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     setSavedPaidSajuRaw(acctPaidSaju);
     setSavedCompatibilityRaw(acctCompatibility);
     setSavedYearlyRaw(acctYearly);
+    setSavedRoadmapRaw(acctRoadmap);
     setPurchases(acctPurchases);
     // 로컬 값 먼저 적용
     setStars(typeof acctStars === 'number' ? acctStars : 0);
     setMoons(typeof acctMoons === 'number' ? acctMoons : 0);
-    // Firestore에서 최신값 비동기 로드 (크로스 디바이스 동기화)
-    loadFromCloud(resolvedKey).then(cloudData => {
-      if (!cloudData) return; // 클라우드 데이터 없으면 로컬값 유지
-      // ✅ 클라우드 값이 있으면 무조건 클라우드 기준 (정확한 동기화)
-      // 클라우드에 updatedAt이 있으면 최신 기준, 없으면 클라우드 우선
-      const cloudStars = typeof cloudData.stars === 'number' ? cloudData.stars : null;
-      const cloudMoons = typeof cloudData.moons === 'number' ? cloudData.moons : null;
-      const finalStars = cloudStars !== null ? cloudStars : (typeof acctStars === 'number' ? acctStars : 0);
-      const finalMoons = cloudMoons !== null ? cloudMoons : (typeof acctMoons === 'number' ? acctMoons : 0);
-      setStars(finalStars);
-      setMoons(finalMoons);
-      saveUserData(resolvedKey, 'stars', finalStars);
-      saveUserData(resolvedKey, 'moons', finalMoons);
-      // 서브컬렉션에서 분석내역 로드 후 로컬과 병합
-      const mergeWithCloud = (local, cloudList, setter, key) => {
-        // 항상 로컬 + 클라우드 병합 (데이터 손실 방지)
-        // 삭제는 deleteAnalysisFromCloud로 명시적으로만 처리
-        const merged = [...(local||[])];
-        (cloudList||[]).forEach(ci => {
-          if (!merged.some(p => String(p.id) === String(ci.id))) merged.push(ci);
-        });
-        if (merged.length === 0) return;
-        const sorted = merged.sort((a,b) => (b.savedAt||b.id||0)-(a.savedAt||a.id||0)).slice(0,100);
-        saveUserData(resolvedKey, key, sorted);
-        setter(sorted);
-      };
-      // 서브컬렉션에서 비동기 로드 (화면 렌더 후 백그라운드에서)
-      setTimeout(() => {
-        // 기존 localStorage 데이터 → Firestore 마이그레이션 (최초 1회)
-        const migrateKey = `sajuon::${resolvedKey}::migrated_v1`;
-        if (!localStorage.getItem(migrateKey)) {
-          const migrateItems = (items, type) => {
-            (items||[]).forEach(item => {
-              if (item?.id) saveAnalysisToCloud(resolvedKey, item, type).catch(()=>{});
-            });
-          };
-          migrateItems(acctSaju, 'saju');
-          migrateItems(acctCompatibility, 'compat');
-          migrateItems(acctYearly, 'yearly');
-          migrateItems(acctRoadmap, 'roadmap');
-          migrateItems(loadUserData(resolvedKey, 'savedPaidSaju', []), 'paidSaju');
-          localStorage.setItem(migrateKey, '1');
-          console.log('✅ Firestore 마이그레이션 완료');
-        }
-
-        Promise.all([
-          loadAnalysesFromCloud(resolvedKey, 'saju'),
-          loadAnalysesFromCloud(resolvedKey, 'compat'),
-          loadAnalysesFromCloud(resolvedKey, 'yearly'),
-          loadAnalysesFromCloud(resolvedKey, 'roadmap'),
-          loadAnalysesFromCloud(resolvedKey, 'paidSaju'),
-        ]).then(([cloudSaju, cloudCompat, cloudYearly, cloudRoadmap, cloudPaidSaju]) => {
-          mergeWithCloud(acctSaju, cloudSaju, setSavedSajuRaw, 'savedSaju');
-          mergeWithCloud(acctCompatibility, cloudCompat, setSavedCompatibilityRaw, 'savedCompatibility');
-          mergeWithCloud(acctYearly, cloudYearly, setSavedYearlyRaw, 'savedYearly');
-          mergeWithCloud(acctRoadmap, cloudRoadmap, setSavedRoadmapRaw, 'savedRoadmap');
-          const acctPaidSaju = loadUserData(resolvedKey, 'savedPaidSaju', []);
-          mergeWithCloud(acctPaidSaju, cloudPaidSaju, setSavedPaidSajuRaw, 'savedPaidSaju');
-        }).catch(()=>{});
-      }, 1500); // 화면 먼저 띄운 후 백그라운드 동기화
-    }).catch(()=>{}); // 실패해도 로컬값 절대 건드리지 않음
+    // 클라우드와 양방향 동기화 (잔액 + 분석 내역)
+    syncAccountFromCloud(resolvedKey);
 
     // (두 번째 Firestore 로드 제거 - 첫 번째에서 max 비교로 처리)
     setShowLogin(false);
@@ -3555,9 +3612,11 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         s.month === currentInput.month && s.day === currentInput.day
       );
       if (!alreadySaved) {
-        const updated = [...acctSaju, { id: Date.now(), ...currentInput, result: currentResult }];
+        const newItem = { id: Date.now(), ...currentInput, result: currentResult };
+        const updated = [...acctSaju, newItem];
         setSavedSajuRaw(updated);
         saveUserData(resolvedKey, 'savedSaju', updated);
+        saveAnalysisToCloud(resolvedKey, newItem, 'saju').catch(()=>{});
       }
       setScreen('free-result');
     }
@@ -3575,6 +3634,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     setSavedPaidSajuRaw([]);
     setSavedCompatibilityRaw([]);
     setSavedYearlyRaw([]);
+    setSavedRoadmapRaw([]);
+    setStars(0); setMoons(0);
     setPurchases([]);
     setCurrentResult(null);
     setCurrentInput(null);
@@ -3585,7 +3646,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     if (DEV_MODE) { setPaymentProduct(product); handlePaymentComplete(product); return; }
     const requiredStars = product.stars || Math.ceil((product.price || 0) / 100);
     if (stars >= requiredStars) {
-      setStars(p => { const n = p - requiredStars; if(userKey) { saveUserData(userKey,'stars',n); syncToCloud(userKey,'stars',n); } return n; });
+      if (userKey) cloudAdjust(userKey, -requiredStars, 0);
+      setStars(p => { const n = p - requiredStars; if(userKey) saveUserData(userKey,'stars',n); return n; });
       setPaymentProduct(product);
       handlePaymentComplete(product);
     } else if (stars + moons >= requiredStars) {
@@ -3593,7 +3655,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       const newMoons = moons - moonNeeded;
       if (userKey) {
         saveUserData(userKey,'stars',0); saveUserData(userKey,'moons',newMoons);
-        syncToCloud(userKey,'stars',0); syncToCloud(userKey,'moons',newMoons);
+        cloudAdjust(userKey, -stars, -moonNeeded);
       }
       setStars(0); setMoons(newMoons);
       setPaymentProduct(product);
@@ -3635,7 +3697,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       })() : null,
       yearlyResult: (() => {
         const yp = savedSaju.find(s => String(s.id) === String(yearlyPerson));
-        if (yp) return { id: Date.now(), personId: yearlyPerson, personName: yp.name, date: new Date().toLocaleDateString() };
+        if (yp) return { id: Date.now(), personId: yearlyPerson, personName: yp.name, year: FORTUNE_YEAR, date: new Date().toLocaleDateString() };
         return null;
       })(),
     };
@@ -3719,7 +3781,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const nm = moons - n*10, ns = stars + n;
     setMoons(nm); setStars(ns);
     if (userKey) { saveUserData(userKey,'moons',nm); saveUserData(userKey,'stars',ns);
-      syncToCloud(userKey,'moons',nm); syncToCloud(userKey,'stars',ns);
+      cloudAdjust(userKey, n, -n*10);
     }
     alert(`✅ 교환 완료! ⭐ 별 ${n}개 지급됐어요.`);
   };
@@ -3785,20 +3847,22 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         }
       }
       setScreen('compatibility-result');
-    } else if (prod.name === '2026 신년운세') {
+    } else if (prod.type === 'yearly' || (prod.name && prod.name.includes('신년운세'))) {
       // 신년운세 결과 저장
       const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
       if (person) {
-        const alreadySaved = savedYearly.some(y => y.personId === yearlyPerson);
+        const alreadySaved = savedYearly.some(y => String(y.personId) === String(yearlyPerson) && yearlyYearOf(y) === FORTUNE_YEAR);
         if (!alreadySaved) {
           setSavedYearly(prev => [...prev, {
             id: Date.now(),
             personId: yearlyPerson,
             personName: person.name,
+            year: FORTUNE_YEAR,
             date: new Date().toLocaleDateString()
           }]);
         }
       }
+      setYearlyViewYear(FORTUNE_YEAR);
       setScreen('yearly-result');
     } else if (prod.name === '대운 인생 지도') {
       const person = savedSaju.find(s => String(s.id) === String(roadmapPerson));
@@ -4089,7 +4153,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px'} },
               React.createElement('span', { style:{fontSize:'20px'} }, '🎊'),
               React.createElement('div', null,
-                React.createElement('p', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px',marginBottom:'2px'} }, '2026 신년운세'),
+                React.createElement('p', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px',marginBottom:'2px'} }, `${FORTUNE_YEAR} 신년운세`),
                 React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'11px'} }, '올해 전체 흐름 · 월별 운세까지 확인하기')
               )
             ),
@@ -4139,7 +4203,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'32px'} },
           React.createElement('div', null,
             React.createElement('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase'} }, new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'})),
-            React.createElement('p', { style:{color:'rgba(255,255,255,0.12)',fontSize:'9px',marginTop:'2px',letterSpacing:'1px'} }, '2026 병오년(丙午年)')
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.12)',fontSize:'9px',marginTop:'2px',letterSpacing:'1px'} }, `${sajuYearNow} ${yearGanji(sajuYearNow).kr}년(${yearGanji(sajuYearNow).stem}${yearGanji(sajuYearNow).branch}年)`)
           ),
           React.createElement('div', { style:{display:'flex',gap:'4px',alignItems:'center',padding:'6px 10px',background:'rgba(139,92,246,0.1)',borderRadius:'20px',border:'1px solid rgba(139,92,246,0.2)'} },
             React.createElement('span', { style:{width:'6px',height:'6px',borderRadius:'50%',background:'#a855f7',display:'inline-block'} }),
@@ -4205,7 +4269,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px'} },
           React.createElement('span', { style:{fontSize:'22px'} }, '🎊'),
           React.createElement('div', null,
-            React.createElement('p', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px',marginBottom:'2px'} }, '2026 신년운세'),
+            React.createElement('p', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px',marginBottom:'2px'} }, `${FORTUNE_YEAR} 신년운세`),
             React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px'} }, '올해 흐름 · 월별 운세 전체 보기')
           )
         ),
@@ -4297,7 +4361,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           },
             React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'6px',marginBottom:'10px'} },
               React.createElement('div', { style:{width:'40px',height:'40px',borderRadius:'12px',background:'rgba(245,158,11,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'} }, '🐴'),
-              React.createElement('span', { style:{fontSize:'9px',color:'#fbbf24',background:'rgba(245,158,11,0.15)',padding:'2px 6px',borderRadius:'20px',fontWeight:'700'} }, '2026')
+              React.createElement('span', { style:{fontSize:'9px',color:'#fbbf24',background:'rgba(245,158,11,0.15)',padding:'2px 6px',borderRadius:'20px',fontWeight:'700'} }, String(FORTUNE_YEAR))
             ),
             React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'13px',marginBottom:'3px'} }, '신년운세'),
             React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',marginBottom:'8px',lineHeight:'1.4'} }, '월별·재물·연애·건강'),
@@ -8849,25 +8913,26 @@ ${pillarsDesc}
 
     const handleStart = () => {
       if (!selPerson) { alert('사주를 선택해주세요.'); return; }
-      const already = savedYearly.some(y => String(y.personId) === String(selPerson));
+      const already = savedYearly.some(y => String(y.personId) === String(selPerson) && yearlyYearOf(y) === FORTUNE_YEAR);
       setYearlyPerson(selPerson);
+      setYearlyViewYear(FORTUNE_YEAR);
       if (already) { setScreen('yearly-result'); return; }
-      openPayment({ name: `${new Date().getFullYear()} 신년운세`, price: 3000, stars: 3, type: 'yearly' });
+      openPayment({ name: `${FORTUNE_YEAR} 신년운세`, price: 3000, stars: 3, type: 'yearly' });
     };
 
     return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'112px',position:'relative'} },
       React.createElement(StarBg),
       React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
-        React.createElement(PageHeader, { label:'YEARLY FORTUNE', title:'2026 신년운세', backTarget:'home' }),
+        React.createElement(PageHeader, { label:'YEARLY FORTUNE', title:`${FORTUNE_YEAR} 신년운세`, backTarget:'home' }),
 
         // 히어로
         React.createElement('div', { style:{textAlign:'center',padding:'16px 0 24px',position:'relative'} },
           React.createElement('div', { style:{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'180px',height:'180px',background:'radial-gradient(circle,rgba(251,191,36,0.12),transparent 70%)',borderRadius:'50%'} }),
           React.createElement('div', { style:{fontSize:'50px',marginBottom:'14px',lineHeight:1} }, '🎊'),
           React.createElement('h1', { style:{fontSize:'22px',fontWeight:'900',letterSpacing:'-1px',color:'white',marginBottom:'10px'} },
-            React.createElement('span', { style:{background:'linear-gradient(135deg,#fbbf24,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'} }, '2026년 운세')
+            React.createElement('span', { style:{background:'linear-gradient(135deg,#fbbf24,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'} }, `${FORTUNE_LABEL} 운세`)
           ),
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',lineHeight:'1.7',marginBottom:'16px'} }, '총운 · 재물운 · 연애운 · 건강운\n월별 흐름까지 심층 분석합니다'),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',lineHeight:'1.7',marginBottom:'16px'} }, `총운 · 재물운 · 연애운 · 건강운\n월별 흐름까지 심층 분석합니다\n(${FORTUNE_YEAR}년 입춘 ~ ${FORTUNE_YEAR+1}년 입춘 기준)`),
           React.createElement('div', { style:{display:'flex',justifyContent:'center',gap:'6px',flexWrap:'wrap'} },
             ['총운 분석','월별 흐름','재물·연애','건강운'].map((t,i)=>
               React.createElement('span',{key:i,style:{fontSize:'10px',color:'rgba(251,191,36,0.8)',background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.2)',padding:'3px 10px',borderRadius:'20px'}},t)
@@ -8903,7 +8968,7 @@ ${pillarsDesc}
               },
                 React.createElement('option', {value:'', style:{background:'#1a0d3e',color:'rgba(255,255,255,0.4)'}}, '— 선택하세요 —'),
                 savedSaju.map((s,i) => {
-                  const paid = savedYearly.some(y=>String(y.personId)===String(s.id));
+                  const paid = savedYearly.some(y=>String(y.personId)===String(s.id) && yearlyYearOf(y)===FORTUNE_YEAR);
                   return React.createElement('option', {
                     key:i, value:s.id,
                     style:{background:'#1a0d3e',color:'white'}
@@ -8914,7 +8979,7 @@ ${pillarsDesc}
               selPerson && (() => {
                 const s = savedSaju.find(x=>String(x.id)===String(selPerson));
                 if (!s) return null;
-                const paid = savedYearly.some(y=>String(y.personId)===String(s.id));
+                const paid = savedYearly.some(y=>String(y.personId)===String(s.id) && yearlyYearOf(y)===FORTUNE_YEAR);
                 return React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px',marginTop:'8px',padding:'10px 14px',background:'rgba(251,191,36,0.06)',borderRadius:'12px',border:'1px solid rgba(251,191,36,0.15)'} },
                   React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'50%',background:s.gender==='여성'?'linear-gradient(135deg,#ec4899,#db2777)':'linear-gradient(135deg,#3b82f6,#1d4ed8)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',color:'white',fontWeight:'900',flexShrink:0} }, s.gender==='여성'?'♀':'♂'),
                   React.createElement('span', { style:{color:'white',fontWeight:'700',fontSize:'13px'} }, s.name),
@@ -8929,7 +8994,7 @@ ${pillarsDesc}
             React.createElement('p',{style:{color:'rgba(252,211,77,0.6)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'}},'INCLUDES'),
             React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},
               [
-                {icon:'🌟',t:'2026년 총운',d:'올해 전반적인 흐름과 키워드',lock:false},
+                {icon:'🌟',t:`${FORTUNE_YEAR}년 총운`,d:'올해 전반적인 흐름과 키워드',lock:false},
                 {icon:'💰',t:'재물운',d:'돈의 흐름 · 투자 타이밍',lock:true},
                 {icon:'❤️',t:'연애·결혼운',d:'인연 시기 · 관계 변화',lock:true},
                 {icon:'💼',t:'직업·사업운',d:'커리어 전환 · 창업 시기',lock:true},
@@ -8959,11 +9024,11 @@ ${pillarsDesc}
                 },
                   React.createElement('span',{style:{fontSize:'18px',flexShrink:0}},'🎊'),
                   React.createElement('div',{style:{flex:1,minWidth:0}},
-                    React.createElement('p',{style:{color:'white',fontWeight:'600',fontSize:'13px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},yearly.personName+'님'),
-                    React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'}},yearly.date || '2026년')
+                    React.createElement('p',{style:{color:'white',fontWeight:'600',fontSize:'13px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},yearly.personName+'님 · '+yearlyYearOf(yearly)+'년 운세'),
+                    React.createElement('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'}},yearly.date || '')
                   ),
                   React.createElement('span',{
-                    onClick:()=>{ setYearlyPerson(yearly.personId); setScreen('yearly-result'); },
+                    onClick:()=>{ setYearlyPerson(yearly.personId); setYearlyViewYear(yearlyYearOf(yearly)); setScreen('yearly-result'); },
                     style:{color:'#fbbf24',fontSize:'11px',fontWeight:'700',cursor:'pointer',flexShrink:0,padding:'4px 8px',background:'rgba(251,191,36,0.1)',borderRadius:'8px'}
                   },'보기 →'),
                   React.createElement('button',{
@@ -8979,7 +9044,7 @@ ${pillarsDesc}
           React.createElement('div', { style:{background:'linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.06))',borderRadius:'20px',border:'1px solid rgba(251,191,36,0.25)',padding:'16px',marginBottom:'12px'} },
             React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'} },
               React.createElement('div', null,
-                React.createElement('p', { style:{color:'rgba(252,211,77,0.6)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'4px'} }, '2026 신년운세'),
+                React.createElement('p', { style:{color:'rgba(252,211,77,0.6)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'4px'} }, `${FORTUNE_YEAR} 신년운세`),
                 React.createElement('p', { style:{color:'white',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px'} }, '⭐ 3별')
               ),
               React.createElement('div', { style:{textAlign:'right'} },
@@ -8999,12 +9064,12 @@ ${pillarsDesc}
           // CTA 버튼
           React.createElement('button',{
             onClick: handleStart,
-            style:{width:'100%',padding:'18px',background: savedYearly.some(y=>String(y.personId)===String(selPerson)) ? 'linear-gradient(135deg,#4ade80,#22c55e)' : 'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'20px',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.3px',border:'none',cursor:'pointer',color:'#1a0a00',boxShadow:'0 4px 30px rgba(251,191,36,0.4)',position:'relative'}
+            style:{width:'100%',padding:'18px',background: savedYearly.some(y=>String(y.personId)===String(selPerson) && yearlyYearOf(y)===FORTUNE_YEAR) ? 'linear-gradient(135deg,#4ade80,#22c55e)' : 'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'20px',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.3px',border:'none',cursor:'pointer',color:'#1a0a00',boxShadow:'0 4px 30px rgba(251,191,36,0.4)',position:'relative'}
           },
-            savedYearly.some(y=>String(y.personId)===String(selPerson))
-              ? '🎊 2026 신년운세 결과 보기'
+            savedYearly.some(y=>String(y.personId)===String(selPerson) && yearlyYearOf(y)===FORTUNE_YEAR)
+              ? `🎊 ${FORTUNE_YEAR} 신년운세 결과 보기`
               : React.createElement(React.Fragment, null,
-                  '🎊 2026 신년운세 분석받기',
+                  `🎊 ${FORTUNE_LABEL} 신년운세 분석받기`,
                   React.createElement('span', { style:{display:'block',fontSize:'11px',fontWeight:'600',marginTop:'2px',opacity:0.7} }, '⭐ 3별 · 즉시 열람 · 13개 섹션 완전 분석')
                 )
           )
@@ -9022,11 +9087,11 @@ ${pillarsDesc}
       React.createElement('button',{onClick:()=>setScreen('yearly'),style:{padding:'10px 24px',background:'rgba(251,191,36,0.15)',borderRadius:'12px',border:'1px solid rgba(251,191,36,0.3)',color:'#fbbf24',cursor:'pointer'}},'신년운세로 돌아가기')
     );
     const r=person.result||analyzeSaju(person.year,person.month,person.day,person.hour,person.minute,person.isLunar,false);
-    const currentYear=new Date().getFullYear();
+    const currentYear=yearlyViewYear||FORTUNE_YEAR;
     const dayGanKr=STEMS.korean[r.dsi]; const dayEl=STEMS.elements[r.dsi];
     const sewoonStemIdx=(currentYear-4)%10; const sewoonBranchIdx=(currentYear-4)%12;
     const sewoonDesc=`${STEMS.names[sewoonStemIdx]}${BRANCHES.names[sewoonBranchIdx]}(${STEMS.korean[sewoonStemIdx]}${BRANCHES.korean[sewoonBranchIdx]})년`;
-    const _yearlyData=(()=>{try{return generateYearlyInterpretation(r,person);}catch(e){return null;}})();
+    const _yearlyData=(()=>{try{return generateYearlyInterpretation(r,person,currentYear);}catch(e){return null;}})();
     const totalScore=_yearlyData?.totalScore||Math.min(100,Math.max(45,50+(r.dsi%20)));
     const gradeInfo=totalScore>=80?{label:'대길(大吉)',emoji:'🎊',color:'#fbbf24',bg:'rgba(251,191,36,0.1)',border:'rgba(251,191,36,0.3)',glow:'rgba(251,191,36,0.25)',desc:'황금 같은 한 해'}:totalScore>=65?{label:'길(吉)',emoji:'✨',color:'#4ade80',bg:'rgba(74,222,128,0.1)',border:'rgba(74,222,128,0.3)',glow:'rgba(74,222,128,0.2)',desc:'성장과 도약의 한 해'}:totalScore>=50?{label:'평(平)',emoji:'🌱',color:'#60a5fa',bg:'rgba(96,165,250,0.1)',border:'rgba(96,165,250,0.3)',glow:'rgba(96,165,250,0.2)',desc:'내실을 다지는 한 해'}:{label:'흉(凶)',emoji:'⚠️',color:'#f87171',bg:'rgba(248,113,113,0.1)',border:'rgba(248,113,113,0.3)',glow:'rgba(248,113,113,0.2)',desc:'인내와 지혜가 필요한 한 해'};
     const _cacheKey=`ai_yearly_v64_${person.id}_${currentYear}`;
@@ -9039,7 +9104,7 @@ ${pillarsDesc}
     const allSinsal=[...(r.pillarSinsal?.year||[]),...(r.pillarSinsal?.month||[]),...(r.pillarSinsal?.day||[]),...(r.pillarSinsal?.hour||[])].filter((v,i,a)=>a.indexOf(v)===i);
     const pillarsDesc=['year','month','day','hour'].map(k=>{const pl=r.pillars[k];if(!pl)return '';return `${pl.stem}${pl.branch}(${STEMS.korean[pl.si]}${BRANCHES.korean[pl.bi]}) 십성:${pl.tenGod||''}`;}).join(' | ');
     const sajuCurrentYear=currentYear;
-    const prompt=`당신은 한국 최고의 사주 명리학 전문가입니다. 아래 만세력 데이터를 보고 ${person.name}님의 ${sajuCurrentYear}년 신년운세를 작성하세요.\n\n▌만세력 원국\n${pillarsDesc}\n\n▌핵심 데이터\n이름: ${person.name} / 성별: ${person.gender} / 생년월일: ${person.year}.${person.month}.${person.day}\n일간: ${dayGanKr}(${dayEl}행) / 오행 분포: ${feStr}\n용신: ${r.fe.yongshin} / 기신: ${r.fe.gishin}\n신살: ${allSinsal.join(', ')||'없음'} / 세운: ${sewoonDesc}\n\n▌작성 원칙\n① 섹션 13개, 섹션당 800자\n② ${person.name}님 이름을 각 섹션에 직접 호명\n③ ${sajuCurrentYear}년 세운과 원국 용신·기신 관계를 구체적으로 분석\n④ JSON 문자열 내 큰따옴표 금지\n⑤ 한자 표기 시 반드시 바로 옆 괄호 안에 한글 독음 병기\n\n▌S11 월별 운세 형식\n1월: [키워드] — [한 줄 운세]\n...12월까지\n\n▌섹션 구성\nS1:${sajuCurrentYear}년 총운 / S2:직업·커리어 / S3:재물 / S4:연애·결혼\nS5:건강 / S6:인간관계 / S7:가족 / S8:이사·이동\nS9:상반기 흐름 / S10:하반기 흐름 / S11:월별 운세 포인트\nS12:주의할 시기 / S13:${person.name}님께 전하는 메시지\n\n▌출력 형식 (JSON만)\n{"sections":[{"icon":"이모지","color":"tailwind색상","title":"제목","content":"내용"}]}`;
+    const prompt=`당신은 한국 최고의 사주 명리학 전문가입니다. 아래 만세력 데이터를 보고 ${person.name}님의 ${sajuCurrentYear}년 신년운세를 작성하세요.\n\n▌만세력 원국\n${pillarsDesc}\n\n▌핵심 데이터\n이름: ${person.name} / 성별: ${person.gender} / 생년월일: ${person.year}.${person.month}.${person.day}\n일간: ${dayGanKr}(${dayEl}행) / 오행 분포: ${feStr}\n용신: ${r.fe.yongshin} / 기신: ${r.fe.gishin}\n신살: ${allSinsal.join(', ')||'없음'} / 세운: ${sewoonDesc} (${sajuCurrentYear}년 입춘 ~ ${sajuCurrentYear+1}년 입춘)\n\n▌작성 원칙\n① 섹션 13개, 섹션당 800자\n② ${person.name}님 이름을 각 섹션에 직접 호명\n③ ${sajuCurrentYear}년 세운과 원국 용신·기신 관계를 구체적으로 분석\n④ JSON 문자열 내 큰따옴표 금지\n⑤ 한자 표기 시 반드시 바로 옆 괄호 안에 한글 독음 병기\n\n▌S11 월별 운세 형식\n1월: [키워드] — [한 줄 운세]\n...12월까지\n\n▌섹션 구성\nS1:${sajuCurrentYear}년 총운 / S2:직업·커리어 / S3:재물 / S4:연애·결혼\nS5:건강 / S6:인간관계 / S7:가족 / S8:이사·이동\nS9:상반기 흐름 / S10:하반기 흐름 / S11:월별 운세 포인트\nS12:주의할 시기 / S13:${person.name}님께 전하는 메시지\n\n▌출력 형식 (JSON만)\n{"sections":[{"icon":"이모지","color":"tailwind색상","title":"제목","content":"내용"}]}`;
     React.useEffect(()=>{
       try{if(_cached?.sections?.length>0){setAiSections(_cached.sections);setAiLoading(false);return;}}catch(e){}
       setAiSections(null);setAiError(false);setAiLoading(true);
@@ -9082,7 +9147,7 @@ ${pillarsDesc}
           React.createElement('div',{style:{width:'60px',height:'60px',borderRadius:'50%',background:person.gender==='여성'?'linear-gradient(135deg,#ec4899,#f43f5e)':'linear-gradient(135deg,#3b82f6,#0ea5e9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',color:'white',flexShrink:0}},person.gender==='여성'?'♀':'♂'),
           React.createElement('div',{style:{flex:1}},
             React.createElement('h2',{style:{color:'white',fontWeight:'800',fontSize:'18px',marginBottom:'4px'}},`${person.name}님`),
-            React.createElement('p',{style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',marginBottom:'6px'}},`${person.year}.${String(person.month).padStart(2,'0')}.${String(person.day).padStart(2,'0')} · 만 ${currentYear-parseInt(person.year)}세`),
+            React.createElement('p',{style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',marginBottom:'6px'}},`${person.year}.${String(person.month).padStart(2,'0')}.${String(person.day).padStart(2,'0')} · 만 ${new Date().getFullYear()-parseInt(person.year)}세`),
             React.createElement('div',{style:{display:'flex',gap:'6px',flexWrap:'wrap'}},
               React.createElement('span',{style:{fontSize:'11px',fontWeight:'700',color:dayHex,background:`${dayHex}20`,border:`1px solid ${dayHex}44`,padding:'3px 9px',borderRadius:'20px'}},`${dayGanKr}(${dayEl})`),
               React.createElement('span',{style:{fontSize:'11px',color:'#6ee7b7',background:'rgba(16,185,129,0.1)',border:'1px solid rgba(110,231,183,0.2)',padding:'3px 9px',borderRadius:'20px'}},`용신 ${r.fe.yongshin}`),
@@ -9568,6 +9633,7 @@ ${pillarsDesc}
         if (userKey) {
           saveUserData(userKey, 'stars', newStars);
           if (pkg.moons > 0) saveUserData(userKey, 'moons', newMoons);
+          cloudAdjust(userKey, pkg.stars, pkg.moons || 0);
         }
         alert(`[테스트] ⭐ ${pkg.stars}별${pkg.moons > 0 ? ` + 🌙 ${pkg.moons}달` : ''} 충전 완료!`);
         if (pendingProduct && newStars >= pendingStars) {
@@ -9585,7 +9651,7 @@ ${pillarsDesc}
             const newStars = stars + pkg.stars;
             const newMoons = moons + (pkg.moons || 0);
             setStars(newStars); if (pkg.moons > 0) setMoons(newMoons);
-            if (userKey) { saveUserData(userKey,'stars',newStars); if(pkg.moons>0) saveUserData(userKey,'moons',newMoons); }
+            if (userKey) { saveUserData(userKey,'stars',newStars); if(pkg.moons>0) saveUserData(userKey,'moons',newMoons); cloudAdjust(userKey, pkg.stars, pkg.moons || 0); }
             setProcessing(false);
             alert(`✅ 충전 완료!\n⭐ ${pkg.stars}별${pkg.moons > 0 ? ` + 🌙 ${pkg.moons}달` : ''} 지급되었습니다.`);
           },
@@ -9607,14 +9673,13 @@ ${pillarsDesc}
           if (userKey) {
             saveUserData(userKey, 'stars', newStars);
             if (pkg.moons > 0) saveUserData(userKey, 'moons', newMoons);
-            // Firestore에도 동기화 (크로스 디바이스)
-            syncToCloud(userKey, 'stars', newStars);
-            if (pkg.moons > 0) syncToCloud(userKey, 'moons', newMoons);
+            // Firestore에도 동기화 (크로스 디바이스, 원자적 증감)
+            cloudAdjust(userKey, pkg.stars, pkg.moons || 0);
           }
           setProcessing(false);
           if (pendingProduct && newStars >= pendingStars) {
             setStars(newStars - pendingStars);
-            if (userKey) saveUserData(userKey, 'stars', newStars - pendingStars);
+            if (userKey) { saveUserData(userKey, 'stars', newStars - pendingStars); cloudAdjust(userKey, -pendingStars, 0); }
             handlePaymentComplete();
           } else {
             alert(`✅ 충전 완료!\n⭐ ${pkg.stars}별${pkg.moons > 0 ? ` + 🌙 ${pkg.moons}달` : ''} 지급되었습니다.`);
@@ -9907,7 +9972,7 @@ ${pillarsDesc}
               React.createElement('div', { style:{padding:'16px',background:'rgba(245,158,11,0.15)',borderBottom:'1px solid rgba(255,255,255,0.08)'} },
                 React.createElement('h3', { style:{color:'white',fontWeight:'700',fontSize:'14px',display:'flex',alignItems:'center',gap:'8px'} },
                   React.createElement('span', null, '🎊'),
-                  '2026 신년운세'
+                  '신년운세'
                 )
               ),
               React.createElement('div', { style:{padding:'12px',display:'flex',flexDirection:'column',gap:'8px'} },
@@ -9917,16 +9982,16 @@ ${pillarsDesc}
                     style:{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',background:'rgba(255,255,255,0.05)',borderRadius:'12px'}
                   },
                     React.createElement('div', {
-                      onClick: () => { setYearlyPerson(yearly.personId); setScreen('yearly-result'); },
+                      onClick: () => { setYearlyPerson(yearly.personId); setYearlyViewYear(yearlyYearOf(yearly)); setScreen('yearly-result'); },
                       style:{display:'flex',alignItems:'center',gap:'12px',flex:1,cursor:'pointer'}
                     },
                       React.createElement('span', { style:{fontSize:'22px',color:'#fbbf24'} }, '🎊'),
                       React.createElement('div', null,
-                        React.createElement('p', { style:{color:'white',fontWeight:'600',fontSize:'13px'} }, `${yearly.personName}님의 2026 신년운세`),
+                        React.createElement('p', { style:{color:'white',fontWeight:'600',fontSize:'13px'} }, `${yearly.personName}님의 ${yearlyYearOf(yearly)} 신년운세`),
                         React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, yearly.date)
                       )
                     ),
-                    React.createElement('span', { onClick:()=>{ setYearlyPerson(yearly.personId); setScreen('yearly-result'); }, style:{color:'#fcd34d',fontSize:'11px',fontWeight:'700',marginRight:'4px',cursor:'pointer',flexShrink:0} }, '보기 →'),
+                    React.createElement('span', { onClick:()=>{ setYearlyPerson(yearly.personId); setYearlyViewYear(yearlyYearOf(yearly)); setScreen('yearly-result'); }, style:{color:'#fcd34d',fontSize:'11px',fontWeight:'700',marginRight:'4px',cursor:'pointer',flexShrink:0} }, '보기 →'),
                     React.createElement('button', {
                       onClick: (e) => { e.stopPropagation(); if (!window.confirm(`'${yearly.personName}' 신년운세 기록을 삭제할까요?`)) return; setSavedYearly(prev => prev.filter((_,idx)=>idx!==i)); },
                       style:{flexShrink:0,width:'28px',height:'28px',borderRadius:'8px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',color:'rgba(239,68,68,0.7)',fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}
@@ -10216,7 +10281,7 @@ ${pillarsDesc}
           { icon: '🔮', label: '사주 분석', screen: 'input', color: '#c4b5fd' },
           { icon: '🗺️', label: '대운 인생 지도', screen: 'roadmap', color: '#c4b5fd' },
           { icon: '💕', label: '궁합 분석', screen: 'compatibility', color: '#f9a8d4' },
-          { icon: '🎊', label: '2026 운세', screen: 'yearly', color: '#fcd34d' },
+          { icon: '🎊', label: `${FORTUNE_YEAR} 운세`, screen: 'yearly', color: '#fcd34d' },
         ].map((item, i) =>
           React.createElement('button', {
             key: 's'+i,
