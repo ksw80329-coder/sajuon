@@ -724,40 +724,45 @@ function analyzeSaju(year, month, day, hour, minute, isLunar, isLeapMonth) {
 
 // ========== SDK 초기화 ==========
 
-// ========== 리뷰 시스템 ==========
-const REVIEWS_KEY = 'sajuon::public_reviews';
-const SEED_REVIEWS = [
-  { id:'seed1', rating:5, text:'사주 해설이 진짜 나 얘기인 줄... 일간 설명부터 신살까지 하나하나 맞아서 소름돋았어요. 친구한테도 바로 공유했습니다!', name:'지*님', date:'2026.02', tag:'심층 사주' },
-  { id:'seed2', rating:5, text:'궁합 보려고 여러 사이트 써봤는데 여기가 제일 구체적이에요. 충 관계랑 용신 설명이 정말 도움됐습니다.', name:'박*희님', date:'2026.02', tag:'궁합' },
-  { id:'seed3', rating:5, text:'2026년 운세 월별로 이렇게 자세하게 나오는 곳 처음 봤어요. 3월 부분 읽고 진짜 깜짝 놀랐습니다 ㅠㅠ', name:'이*준님', date:'2026.01', tag:'운세' },
-  { id:'seed4', rating:4, text:'만세력이 자동으로 계산돼서 편하고 신살도 다 나와요. 디자인도 예쁘고 쓰기 좋은 앱입니다.', name:'김*연님', date:'2026.01', tag:'만세력' },
-  { id:'seed5', rating:5, text:'대운풀이 기능 생겼길래 해봤는데 현재 대운이 딱 맞아서 신기했어요. 지금 상황이랑 너무 일치해서 소름...', name:'최*아님', date:'2026.02', tag:'대운' },
-  { id:'seed6', rating:5, text:'사주 결과 읽다가 중간에 멈칫했어요. "이게 어떻게 알지?" 싶은 부분이 너무 많았거든요. 강추합니다!', name:'오*진님', date:'2026.02', tag:'심층 사주' },
-];
-
-function loadPublicReviews() {
+// ========== 리뷰 시스템 (Firestore 공용 컬렉션 'reviews') ==========
+// 모든 방문자가 같은 리뷰를 보고, 통계(평균·분포·개수)는 실제 등록된 리뷰로만 계산
+const REVIEW_LAST_KEY = 'sajuon::review_last_at';
+let _reviewCache = null;
+const _reviewSubs = new Set();
+const _waitFirestore = (timeoutMs = 15000) => new Promise(resolve => {
+  if (window._firestore) return resolve(window._firestore);
+  const t0 = Date.now();
+  const iv = setInterval(() => {
+    if (window._firestore) { clearInterval(iv); resolve(window._firestore); }
+    else if (Date.now() - t0 > timeoutMs) { clearInterval(iv); resolve(null); }
+  }, 200);
+});
+async function fetchPublicReviews(force = false) {
+  if (_reviewCache && !force) return _reviewCache;
+  const fs = await _waitFirestore();
+  if (!fs) return _reviewCache || [];
   try {
-    const raw = localStorage.getItem(REVIEWS_KEY);
-    const userReviews = raw ? JSON.parse(raw) : [];
-    // 시드 + 사용자 리뷰 합치기 (시드가 앞에)
-    return [...SEED_REVIEWS, ...userReviews].slice(0, 30);
-  } catch(e) { return SEED_REVIEWS; }
+    const snap = await fs.collection('reviews').orderBy('createdAt', 'desc').limit(500).get();
+    _reviewCache = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(r => !r.hidden && Number.isInteger(r.rating) && r.rating >= 1 && r.rating <= 5 && typeof r.text === 'string');
+  } catch (e) { console.warn('리뷰 로드 실패:', e); _reviewCache = _reviewCache || []; }
+  _reviewSubs.forEach(fn => { try { fn(_reviewCache); } catch (e) {} });
+  return _reviewCache;
 }
-
-function savePublicReview(rating, text, nickname) {
-  try {
-    const raw = localStorage.getItem(REVIEWS_KEY);
-    const reviews = raw ? JSON.parse(raw) : [];
-    reviews.unshift({
-      id: 'u_' + Date.now(),
-      rating,
-      text,
-      name: nickname || '익명님',
-      date: new Date().toISOString().slice(0,7).replace('-','.'),
-      tag: '사주ON',
-    });
-    localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews.slice(0, 24)));
-  } catch(e) {}
+function reviewCooldownLeft() {
+  try { const t = Number(localStorage.getItem(REVIEW_LAST_KEY) || 0); return Math.max(0, 24*3600*1000 - (Date.now() - t)); } catch (e) { return 0; }
+}
+async function submitPublicReview({ rating, text, name, tag, verified, uid }) {
+  const fs = await _waitFirestore();
+  if (!fs) throw new Error('서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.');
+  const now = new Date();
+  await fs.collection('reviews').add({
+    rating, text, name: name || '익명님', tag: tag || '사주ON', verified: !!verified, uid: uid || '',
+    date: `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}`,
+    createdAt: Date.now(),
+  });
+  try { localStorage.setItem(REVIEW_LAST_KEY, String(Date.now())); } catch (e) {}
+  await fetchPublicReviews(true);
 }
 
 const KAKAO_APP_KEY = 'f68dda02192f5417b547eb2db8368d3d';
@@ -3333,13 +3338,32 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 
   // ===== 홈 리뷰 섹션 =====
   const HomeReviewSection = () => {
-    const reviews = React.useMemo(() => loadPublicReviews(), []);
-    const avg = (reviews.reduce((s,r) => s + r.rating, 0) / reviews.length).toFixed(1);
-    const fiveCount = reviews.filter(r => r.rating === 5).length;
-    const pct5 = Math.round(fiveCount / reviews.length * 100);
+    const [reviews, setReviews] = React.useState(_reviewCache || []);
+    const [loaded, setLoaded] = React.useState(!!_reviewCache);
+    React.useEffect(() => {
+      const fn = (list) => { setReviews(list); setLoaded(true); };
+      _reviewSubs.add(fn);
+      fetchPublicReviews().then(fn);
+      return () => { _reviewSubs.delete(fn); };
+    }, []);
+    const total = reviews.length;
+    const avg = total ? (reviews.reduce((s,r) => s + r.rating, 0) / total).toFixed(1) : '0.0';
 
     // 최신 4개만 표시
     const shown = reviews.slice(0, 4);
+    const writeBtn = React.createElement('button', {
+      onClick: () => setScreen('review'),
+      style:{flex:1,width:'100%',padding:'12px',background:'linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.1))',border:'1px solid rgba(251,191,36,0.25)',borderRadius:'14px',color:'#fbbf24',fontWeight:'700',fontSize:'13px',cursor:'pointer'}
+    }, total ? '⭐ 리뷰 남기기' : '⭐ 첫 리뷰 남기기');
+
+    if (!loaded) return null;
+    if (total === 0) return React.createElement('section', { style:{padding:'0 16px 24px',position:'relative',zIndex:1} },
+      React.createElement('div', { style:{background:'linear-gradient(135deg,rgba(251,191,36,0.08),rgba(245,158,11,0.04))',border:'1px solid rgba(251,191,36,0.18)',borderRadius:'18px',padding:'20px',textAlign:'center',marginBottom:'10px'} },
+        React.createElement('p', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'14px',marginBottom:'6px'} }, '아직 등록된 리뷰가 없어요'),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',lineHeight:'1.6'} }, '사주ON을 이용해보셨다면 솔직한 후기를 남겨주세요.')
+      ),
+      writeBtn
+    );
 
     return React.createElement('section', { style:{padding:'0 16px 24px',position:'relative',zIndex:1} },
 
@@ -3357,12 +3381,12 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         React.createElement('div', { style:{textAlign:'center',flexShrink:0} },
           React.createElement('p', { style:{color:'#fbbf24',fontWeight:'900',fontSize:'40px',lineHeight:1,letterSpacing:'-2px'} }, avg),
           React.createElement('p', { style:{color:'#fbbf24',fontSize:'18px',letterSpacing:'1px',marginTop:'2px'} }, '★★★★★'.slice(0, Math.round(parseFloat(avg)))),
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',marginTop:'4px'} }, reviews.length + '개 리뷰')
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',marginTop:'4px'} }, total.toLocaleString() + '개 리뷰')
         ),
         React.createElement('div', { style:{flex:1} },
           [5,4,3,2,1].map(star => {
             const cnt = reviews.filter(r => r.rating === star).length;
-            const pct = Math.round(cnt / reviews.length * 100);
+            const pct = Math.round(cnt / total * 100);
             return React.createElement('div', { key:star, style:{display:'flex',alignItems:'center',gap:'6px',marginBottom:'3px'} },
               React.createElement('span', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',width:'14px',textAlign:'right'} }, star),
               React.createElement('div', { style:{flex:1,height:'5px',borderRadius:'3px',background:'rgba(255,255,255,0.07)',overflow:'hidden'} },
@@ -3382,9 +3406,9 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         // 헤더
         React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'} },
           React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'8px'} },
-            React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',color:'white',fontWeight:'700'} }, rv.name[0]),
+            React.createElement('div', { style:{width:'28px',height:'28px',borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',color:'white',fontWeight:'700'} }, (rv.name||'익')[0]),
             React.createElement('div', null,
-              React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'12px'} }, rv.name),
+              React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'12px'} }, rv.name, rv.verified && React.createElement('span', { style:{marginLeft:'6px',padding:'1px 6px',background:'rgba(74,222,128,0.12)',borderRadius:'8px',color:'#4ade80',fontSize:'9px',fontWeight:'700'} }, '구매 인증')),
               React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'10px'} }, rv.date)
             )
           ),
@@ -3394,16 +3418,11 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           )
         ),
         // 본문
-        React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'13px',lineHeight:'1.7'} }, rv.text)
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'13px',lineHeight:'1.7',whiteSpace:'pre-wrap',wordBreak:'break-word'} }, rv.text)
       )),
 
       // 더보기 + 리뷰 쓰기
-      React.createElement('div', { style:{display:'flex',gap:'8px',marginTop:'4px'} },
-        React.createElement('button', {
-          onClick: () => setScreen('review'),
-          style:{flex:1,padding:'12px',background:'linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.1))',border:'1px solid rgba(251,191,36,0.25)',borderRadius:'14px',color:'#fbbf24',fontWeight:'700',fontSize:'13px',cursor:'pointer'}
-        }, '⭐ 리뷰 남기기')
-      )
+      React.createElement('div', { style:{display:'flex',gap:'8px',marginTop:'4px'} }, writeBtn)
     );
   };
 
@@ -8932,7 +8951,11 @@ ${pillarsDesc}
           React.createElement('h1', { style:{fontSize:'22px',fontWeight:'900',letterSpacing:'-1px',color:'white',marginBottom:'10px'} },
             React.createElement('span', { style:{background:'linear-gradient(135deg,#fbbf24,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'} }, `${FORTUNE_LABEL} 운세`)
           ),
-          React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',lineHeight:'1.7',marginBottom:'16px'} }, `총운 · 재물운 · 연애운 · 건강운\n월별 흐름까지 심층 분석합니다\n(${FORTUNE_YEAR}년 입춘 ~ ${FORTUNE_YEAR+1}년 입춘 기준)`),
+          React.createElement('div', { style:{marginBottom:'16px',textAlign:'center',wordBreak:'keep-all'} },
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'13px',lineHeight:'1.6'} }, '총운 · 재물운 · 연애운 · 건강운'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'13px',lineHeight:'1.6'} }, '월별 흐름까지 심층 분석합니다'),
+            React.createElement('p', { style:{color:'rgba(251,191,36,0.55)',fontSize:'11px',lineHeight:'1.6',marginTop:'6px'} }, `${FORTUNE_YEAR}년 입춘 ~ ${FORTUNE_YEAR+1}년 입춘 기준`)
+          ),
           React.createElement('div', { style:{display:'flex',justifyContent:'center',gap:'6px',flexWrap:'wrap'} },
             ['총운 분석','월별 흐름','재물·연애','건강운'].map((t,i)=>
               React.createElement('span',{key:i,style:{fontSize:'10px',color:'rgba(251,191,36,0.8)',background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.2)',padding:'3px 10px',borderRadius:'20px'}},t)
@@ -10588,7 +10611,10 @@ ${pillarsDesc}
     const [text, setText] = React.useState('');
     const [agree, setAgree] = React.useState(false);
     const [submitted, setSubmitted] = React.useState(false);
+    const [sending, setSending] = React.useState(false);
     const labels = ['', '별로예요', '아쉬워요', '보통이에요', '좋아요', '최고예요!'];
+    const lastProduct = (purchases || []).length ? String(purchases[purchases.length-1].name || '') : '';
+    const reviewTag = /신년운세/.test(lastProduct) ? '신년운세' : /궁합/.test(lastProduct) ? '궁합' : /대운/.test(lastProduct) ? '대운' : /심층|사주/.test(lastProduct) ? '심층 사주' : '사주ON';
     const nickname = userEmail ? (userEmail.split('@')[0].slice(0,1) + '*님') : '익명님';
     if (submitted) return React.createElement(InquiryWrapper, { title: '리뷰 남기기', icon: '⭐' },
       React.createElement(SubmitSuccess, { message: '리뷰 등록 완료!', sub: '소중한 후기가 사주ON의 큰 힘이 됩니다 ⭐' })
@@ -10608,7 +10634,7 @@ ${pillarsDesc}
         React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px',marginBottom:'8px',fontWeight:'600',letterSpacing:'0.5px'} }, '상세 후기'),
         React.createElement('textarea', {
           style:{width:'100%',padding:'14px',background:'rgba(255,255,255,0.06)',borderRadius:'14px',border:'1px solid rgba(139,92,246,0.2)',color:'white',fontSize:'13px',outline:'none',resize:'none',boxSizing:'border-box',lineHeight:'1.7'},
-          rows: 5, value: text, onChange: e => setText(e.target.value),
+          rows: 5, value: text, maxLength: 500, onChange: e => setText(e.target.value),
           placeholder: '사주ON을 이용하신 느낌을 자유롭게 남겨주세요.\n다른 분들께 소중한 참고가 됩니다.'
         })
       ),
@@ -10627,12 +10653,19 @@ ${pillarsDesc}
         onClick: () => {
           if (rating === 0) { alert('별점을 선택해주세요.'); return; }
           if (!text.trim()) { alert('후기 내용을 입력해주세요.'); return; }
+          if (text.trim().length < 10) { alert('후기는 10자 이상 입력해주세요.'); return; }
           if (!agree) { alert('리뷰 활용 동의가 필요합니다.'); return; }
-          savePublicReview(rating, text.trim(), nickname);
-          setSubmitted(true);
+          const left = reviewCooldownLeft();
+          if (left > 0) { alert(`리뷰는 하루에 한 번 남길 수 있어요. (${Math.ceil(left/3600000)}시간 후 가능)`); return; }
+          if (sending) return;
+          setSending(true);
+          submitPublicReview({ rating, text: text.trim().slice(0,500), name: nickname, tag: reviewTag, verified: (purchases||[]).length > 0, uid: userKey || '' })
+            .then(() => setSubmitted(true))
+            .catch(e => { console.warn('리뷰 등록 실패:', e); alert('리뷰 등록에 실패했어요. 잠시 후 다시 시도해주세요.'); })
+            .finally(() => setSending(false));
         },
         style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',fontWeight:'800',fontSize:'15px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 4px 30px rgba(139,92,246,0.3)'}
-      }, '리뷰 등록하기')
+      }, sending ? '등록 중...' : '리뷰 등록하기')
     );
   };
 
