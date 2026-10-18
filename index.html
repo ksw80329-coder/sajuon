@@ -1562,8 +1562,9 @@ function App() {
                     return;
                   }
                 } catch(e) {
-                  console.warn('검증 서버 오류, 진행:', e);
-                  // 검증 서버 오류 시에도 포트원 결제 성공 응답을 신뢰
+                  console.warn('검증 서버 오류:', e);
+                  alert(`결제 확인 중 오류가 발생했어요.\n결제가 완료됐다면 고객센터로 문의해주세요.\n(결제번호: ${impUid})`);
+                  return;
                 }
               }
               // 2) 토스페이먼츠: URL 파라미터 amount로 검증
@@ -2489,10 +2490,10 @@ ${allSinsal.includes('원진') || allSinsal.includes('구추방해') ? '원진�
     const totalScore=Math.min(100,Math.max(45,Math.round(relationScore+yongshinBonus+sinsalBonus+variance)));
     
     // 월별 운세 생성
-    const monthlyFortunes = generateMonthlyFortunes(result, input, totalScore);
+    const monthlyFortunes = generateMonthlyFortunes(result, input, totalScore, targetYear);
     
     // 분야별 운세 생성
-    const categoryFortunes = generateCategoryFortunes(result, input, yearEl);
+    const categoryFortunes = generateCategoryFortunes(result, input, yearEl, targetYear);
     
     // 총운 해설
     const yearSummary = generateYearSummary(result, input, yearEl, yearRelation, totalScore, targetYear);
@@ -2603,12 +2604,12 @@ ${score >= 70 ? '🏆 "도약" · "확장" · "결실" · "인정" · "성취"' 
   };
   
   // 월별 운세 생성 (대폭 확장 - 각 월별 상세 해설 포함)
-  const generateMonthlyFortunes = (result, input, baseScore) => {
+  const generateMonthlyFortunes = (result, input, baseScore, year) => {
     const months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
     const dayEl = STEMS.elements[result.dsi];
     const dayGan = STEMS.names[result.dsi];
     const dayGanKr = STEMS.korean[result.dsi];
-    const _cy=new Date().getFullYear();const _ys=(_cy-4)%10;const _mb=[2,4,6,8,0][_ys%5];
+    const _cy=year||new Date().getFullYear();const _ys=(_cy-4)%10;const _mb=[2,4,6,8,0][_ys%5];
     const monthGanIdxes=Array.from({length:12},(_,i)=>(_mb+i)%10);
     const monthGans=monthGanIdxes.map(i=>`${STEMS.names[i]}(${STEMS.korean[i]})`);
     const monthBrIdxes=[2,3,4,5,6,7,8,9,10,11,0,1];
@@ -2819,7 +2820,8 @@ ${coreAdvice}
   };
   
   // 분야별 운세 생성 (대폭 확장)
-  const generateCategoryFortunes = (result, input, yearEl) => {
+  const generateCategoryFortunes = (result, input, yearEl, year) => {
+    const _catYear = year || new Date().getFullYear();
     const dayEl = STEMS.elements[result.dsi];
     const dayGan = STEMS.names[result.dsi];
     const fe = result.fe;
@@ -2842,7 +2844,7 @@ ${coreAdvice}
         score: Math.round(wealthScore),
         title: '💰 재물운',
         summary: wealthScore >= 75 ? '💎 재물이 쏟아지는 해! 투자와 확장에 유리합니다' : wealthScore >= 55 ? '📈 꾸준히 모으면 성과가 있는 해입니다' : '🛡️ 지키는 것이 버는 것! 절약이 미덕인 해입니다',
-        detail: `[2026년 재물운 심층 분석]
+        detail: `[${_catYear}년 재물운 심층 분석]
 
 ${wealthScore >= 75 ? `올해는 재물운이 상승하는 길년(吉年)입니다! ${dayEl === '토' ? '화생토(火生土)로 올해의 화 기운이 토 일간인 당신의 재물운을 강하게 밀어줍니다. 부동산, 실물 자산에서 특히 이득이 있을 수 있습니다.' : fe.pct['토'] > 20 ? '재성(財星)인 토 기운이 강해 돈이 모이는 해입니다. 저축액이 늘고 예상치 못한 수입도 기대됩니다.' : '올해의 뜨거운 화 기운이 당신의 재물운에 활력을 불어넣습니다.'}
 
@@ -2870,7 +2872,7 @@ ${allSinsal.includes('겁재') ? '⚠️ 겁재가 있으니 친구나 지인에
         score: Math.round(loveScore),
         title: '💕 연애운',
         summary: loveScore >= 75 ? '💘 사랑이 찾아오는 해! 적극적으로 나서세요' : loveScore >= 55 ? '💑 기존 관계가 깊어지는 해입니다' : '💭 내면을 돌보며 진정한 사랑을 준비하세요',
-        detail: `[2026년 연애운 심층 분석]
+        detail: `[${_catYear}년 연애운 심층 분석]
 
 ${loveScore >= 75 ? `올해는 연애운이 꽃피는 해입니다! ${allSinsal.includes('도화살') ? '도화살(桃花煞)이 있어 이성에게 유독 매력적으로 보이는 해입니다. 외모에 투자하면 그 효과가 배가 됩니다.' : allSinsal.includes('홍염살') ? '홍염살(紅艶煞)이 있어 이성을 끄는 묘한 매력이 발산됩니다. 어디를 가든 눈에 띄게 됩니다.' : '화(火)의 열정적인 기운이 당신의 사랑운을 불태웁니다!'} 
 
@@ -2901,7 +2903,7 @@ ${allSinsal.includes('고진살') || allSinsal.includes('과숙살') ? '⚠️ �
         score: Math.round(careerScore),
         title: '💼 직장/사업운',
         summary: careerScore >= 75 ? '🚀 승진과 성취의 해! 적극적으로 도전하세요' : careerScore >= 55 ? '📊 꾸준히 실력을 쌓으면 인정받는 해입니다' : '🔧 현재 위치에서 내실을 다지세요',
-        detail: `[2026년 직장/사업운 심층 분석]
+        detail: `[${_catYear}년 직장/사업운 심층 분석]
 
 ${careerScore >= 75 ? `올해는 직장에서 빛나는 해입니다! ${fe.pct['목'] > 20 ? '목(木) 기운이 강해 새로운 시작과 도전에 유리합니다. 이직, 부서 이동, 새 프로젝트 등 변화가 좋은 결과를 가져옵니다.' : fe.pct['화'] > 20 ? '화(火) 기운이 강해 표현력과 추진력이 빛납니다. 프레젠테이션, 영업, 협상에서 두각을 나타냅니다.' : '올해의 화(火) 에너지가 당신의 업무 능력을 끌어올립니다.'}
 
@@ -2932,7 +2934,7 @@ ${allSinsal.includes('역마살') ? '✅ 역마가 있어 이직, 부서 이동,
         score: Math.round(healthScore),
         title: '❤️ 건강운',
         summary: healthScore >= 75 ? '💪 활력 넘치는 건강한 한 해입니다' : healthScore >= 55 ? '🏃 적당한 운동과 관리로 건강을 유지하세요' : '🏥 건강 관리에 각별히 신경 쓰세요',
-        detail: `[2026년 건강운 심층 분석]
+        detail: `[${_catYear}년 건강운 심층 분석]
 
 ${dayEl === '금' ? `🔥 화극금(火剋金)! 올해 병오년의 강한 화 기운이 금 일간인 당신에게 부담을 줍니다.
 
@@ -3745,17 +3747,20 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             });
             const verifyData = await verifyRes.json();
             if (!verifyData.success) {
+              // 서버 검증 실패 시 절대 지급하지 않음
               console.warn('검증 실패:', verifyData.message);
-              if (verifyData.message && verifyData.message.includes('이미 처리')) {
-                if (onCancel) onCancel(); alert('이미 처리된 결제입니다.'); return;
-              }
-              onSuccess(rsp); return;
+              if (onCancel) onCancel();
+              alert(verifyData.message && verifyData.message.includes('이미 처리')
+                ? '이미 처리된 결제입니다.'
+                : `결제 확인에 실패했어요.\n결제가 완료됐다면 고객센터로 문의해주세요.\n(결제번호: ${rsp.imp_uid})`);
+              return;
             }
           }
           onSuccess(rsp);
         } catch (err) {
-          console.error('검증 오류(스킵):', err);
-          onSuccess(rsp);
+          console.error('검증 오류:', err);
+          if (onCancel) onCancel();
+          alert(`결제 확인 중 네트워크 오류가 발생했어요.\n결제가 완료됐다면 고객센터로 문의해주세요.\n(결제번호: ${rsp.imp_uid})`);
         }
       } else {
         // 취소 또는 실패 → processing 해제
