@@ -1008,7 +1008,7 @@ async function fetchPublicReviews(force = false) {
   const fs = await _waitFirestore();
   if (!fs) return _reviewCache || [];
   try {
-    const snap = await fs.collection('reviews').orderBy('createdAt', 'desc').limit(500).get();
+    const snap = await fs.collection(DEV_FLAG ? 'dev_reviews' : 'reviews').orderBy('createdAt', 'desc').limit(500).get();
     _reviewCache = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .filter(r => !r.hidden && Number.isInteger(r.rating) && r.rating >= 1 && r.rating <= 5 && typeof r.text === 'string');
   } catch (e) { console.warn('리뷰 로드 실패:', e); _reviewCache = _reviewCache || []; }
@@ -1022,7 +1022,7 @@ async function submitPublicReview({ rating, text, name, tag, verified, uid }) {
   const fs = await _waitFirestore();
   if (!fs) throw new Error('서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.');
   const now = new Date();
-  await fs.collection('reviews').add({
+  await fs.collection(DEV_FLAG ? 'dev_reviews' : 'reviews').add({
     rating, text, name: name || '익명님', tag: tag || '사주ON', verified: !!verified, uid: uid || '',
     date: `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}`,
     createdAt: Date.now(),
@@ -1037,7 +1037,11 @@ const CHANNEL_KAKAO   = 'channel-key-6d75150a-64ef-42b7-8b29-7bf222e86997'; // �
 const CHANNEL_TOSS    = 'channel-key-30262341-2209-4aab-93f3-805737438ec0';  // 포트원 토스 채널키
 const PAYMENT_WORKER  = 'https://api.sajuon.kr';
 const AI_WORKER       = 'https://dapper-dingo-54.ksw80329.deno.net';
-const DEV_MODE = false; // 프로덕션 — 항상 false
+const DEV_FLAG = false; // 테스트 파일에서만 true
+// 테스트 모드(무료 결제)는 내 컴퓨터(localhost)에서 열었을 때만 켜짐.
+// test.html이 실수로 sajuon.kr에 올라가도 실제 사이트처럼 결제가 필요하고, 테스트 데이터는 dev_users에만 저장됨.
+const DEV_MODE = DEV_FLAG && ['localhost', '127.0.0.1'].includes(location.hostname);
+const USERS_COL = DEV_FLAG ? 'dev_users' : 'users';
 const IS_IOS_APP = !!(window.Capacitor?.getPlatform?.() === 'ios' || navigator.userAgent.includes('SajuON-iOS'));
 
 // 카카오 SDK는 <head>에서 이미 초기화됨 (중복 방지)
@@ -1197,8 +1201,8 @@ function App() {
   };
   
   // ── Firestore 동기화 유틸 ──
-  const fsDoc = (uid) => window._firestore?.collection('users').doc(uid);
-  const fsAnalyses = (uid) => window._firestore?.collection('users').doc(uid).collection('analyses');
+  const fsDoc = (uid) => window._firestore?.collection(USERS_COL).doc(uid);
+  const fsAnalyses = (uid) => window._firestore?.collection(USERS_COL).doc(uid).collection('analyses');
 
   // Firestore 초기화(window load 이후)를 기다림 — 앱 재실행 직후 동기화 누락 방지
   const whenFirestore = (timeoutMs = 15000) => new Promise(resolve => {
@@ -10215,6 +10219,7 @@ ${dwBlocks}
 
     const packages = [
       { stars: 1,  moons: 0,  price: 1000,  label: '' },
+      { stars: 2,  moons: 0,  price: 2000,  label: '' },
       { stars: 3,  moons: 1,  price: 3000,  label: '🌙 달 1개 보너스' },
       { stars: 5,  moons: 2,  price: 5000,  label: '🌙 달 2개 보너스' },
       { stars: 10, moons: 5,  price: 10000, label: 'BEST', highlight: true },
