@@ -826,6 +826,168 @@ function parseAIJson(text) {
   }
 }
 
+// ========== 무료 결과용 데이터: 신살 한 줄 뜻 / 일주 60개 성격 요약 ==========
+const SINSAL_INFO = {
+  '천을귀인':'귀인운·도움','태극귀인':'운명적 기회','문창귀인':'학문·글재주','학당귀인':'학습운·성장',
+  '천관귀인':'관운·명예','천주귀인':'먹을 복·풍요','복성귀인':'복이 드는 자리','재고귀인':'재물 창고',
+  '천의성':'치유·돌봄 재능','암록':'숨은 재물·도움','금여':'품위·좋은 배우자운','금여록':'품위·좋은 배우자운',
+  '일덕':'덕성·선한 기운','육수':'재능·총명함','진신':'나아가는 힘','퇴신':'물러섬의 지혜',
+  '천상삼기':'비범한 재능','지상삼기':'비범한 재능','인중삼기':'비범한 재능','장군전':'기개·추진력',
+  '도화살':'이성운·매력','홍염살':'강한 매력·연애운','나체도화':'솔직한 매력','음욕살':'풍부한 감성·욕구',
+  '역마살':'이동·변화·해외','지살':'이동수·분주함','화개살':'예술성·학문·종교','장성살':'리더십·추진력',
+  '반안살':'안정·출세운','연살':'인기·끼','겁살':'승부욕·경쟁','재살':'압박 속 인내',
+  '천살':'예측불허·변수','월살':'느린 흐름·준비기','망신살':'구설·실수 주의','육해살':'소모·건강 관리',
+  '백호살':'강력한 에너지·돌발','양인살':'강한 의지·결단력','칠살':'압박을 이기는 힘','괴강살':'강한 카리스마',
+  '현침살':'예리함·전문 기술','탕화살':'감정 조절이 열쇠','평두살':'과로·머리 쓰는 일 주의','귀문관살':'예민한 직관·영감',
+  '효신살':'고집·개성','고신살':'혼자 서는 힘','과숙살':'자기만의 세계','고란살':'독립적인 애정관',
+  '낙정관살':'뜻밖의 함정 주의','철사관':'어릴 때 안전 주의','천라':'얽힌 일 풀어가기','지망':'얽힘 주의·신중함',
+  '의처의부살':'관계 집착 주의','구추방해':'대인관계 마찰 주의','간여지동':'주관 뚜렷·자립심','교신성':'교류·사교성',
+  '금신':'예리한 직관','여연살':'인연의 기운','술미육형':'갈등 속 단련','술미파':'깨짐과 재정비',
+  '유술해':'사소한 오해 주의','유유자형':'스스로에 엄격','유자파':'관계 재조정','자미원진':'미묘한 애증',
+  '자미해':'가까운 사이 손해 주의',
+};
+
+const ILJU_TEXT = {
+  '甲子':['겨울 물가의 큰 나무','생각이 깊고 배움을 좋아하며, 겉은 차분해도 속으로 큰 뜻을 품는 타입이에요. 도움을 잘 받지만 결정을 미루는 습관은 조심하세요.'],
+  '乙丑':['언 땅에 핀 들꽃','부드러워 보여도 끈기가 대단하고 현실 감각이 좋아요. 고생 끝에 결실을 거두는, 늦게 피어 오래가는 꽃이에요.'],
+  '丙寅':['새벽에 떠오르는 해','밝고 활동적이며 사람을 끄는 힘이 있어요. 시작은 누구보다 강하니, 마무리까지 챙기면 더 크게 빛나요.'],
+  '丁卯':['꽃밭을 비추는 등불','섬세한 감수성과 예술 감각, 다정다감한 사람이에요. 상처를 오래 담아두는 편이라 감정 정리가 숙제예요.'],
+  '戊辰':['물을 품은 큰 산','묵직한 신뢰감과 스케일 큰 그릇을 가졌어요. 고집이 세다는 말을 듣지만, 맡은 일은 끝까지 책임져요.'],
+  '己巳':['햇볕 드는 텃밭','꼼꼼하고 실속 있으며 배려가 깊어요. 생각이 많아 걱정을 미리 사서 하는 편이에요.'],
+  '庚午':['불에 달군 쇠','정의감과 추진력, 분명한 원칙을 가졌어요. 말이 직설적이라 오해를 사기도 하지만 뒤끝은 없어요.'],
+  '辛未':['모래 속 보석','겉은 담담해도 자존심과 미적 기준이 높아요. 자기 가치를 알아주는 무대를 만나면 크게 빛나요.'],
+  '壬申':['바위를 감싸 흐르는 강','머리 회전이 빠르고 수완이 좋아요. 다재다능한 만큼 한 우물을 파는 끈기가 관건이에요.'],
+  '癸酉':['바위 틈 맑은 샘','직관이 예리하고 깔끔한 완벽주의자예요. 예민함이 가장 큰 장점이자 피로의 원인이에요.'],
+  '甲戌':['마른 산의 큰 나무','우직하고 의리 있으며 고생을 견디는 힘이 커요. 혼자 다 짊어지는 습관만 내려놓으면 훨씬 편해져요.'],
+  '乙亥':['물 위에 핀 연꽃','온화하고 학구적이며 인복이 좋아요. 흐름에 몸을 맡기다 기회를 놓치지 않도록 주의하세요.'],
+  '丙子':['호수 위의 태양','겉은 화사하고 속은 깊은 반전 매력이 있어요. 책임감이 강해 사회에서 인정받는 타입이에요.'],
+  '丁丑':['겨울밤의 촛불','조용하지만 꺼지지 않는 집념이 있어요. 실속을 챙기는 현실가지만 감정 표현은 서툰 편이에요.'],
+  '戊寅':['호랑이가 사는 산','리더 기질과 배짱을 타고났어요. 도전을 즐기는 만큼 무리한 확장은 조심하세요.'],
+  '己卯':['새싹 돋는 들판','섬세하고 손재주와 감각이 좋아요. 주변 눈치를 많이 보니 나를 지키는 연습이 필요해요.'],
+  '庚辰':['용이 품은 쇠','카리스마와 강한 자존심, 큰일에 강한 사람이에요. 고집을 유연함으로 바꾸면 따르는 사람이 늘어요.'],
+  '辛巳':['불빛에 반짝이는 보석','세련되고 똑똑하며 품위를 중시해요. 차가워 보이는 겉모습 뒤에 따뜻한 열정이 있어요.'],
+  '壬午':['햇살 비치는 바다','낭만적이고 사교적이며 감정이 풍부해요. 기분의 파도를 다스리면 안정감이 생겨요.'],
+  '癸未':['메마른 땅의 단비','헌신적이고 인내심이 강해요. 남을 챙기느라 나를 놓치기 쉬운 타입이에요.'],
+  '甲申':['바위 위에 선 나무','압박 속에서 단련되며 자라는 사람이에요. 원칙과 현실 사이에서 균형을 잡으면 크게 성장해요.'],
+  '乙酉':['칼끝에 핀 꽃','섬세하면서도 예리하고 자기 관리가 철저해요. 날카로운 말이 상처가 되지 않게만 조심하세요.'],
+  '丙戌':['노을 지는 산','정이 많고 의리 있으며 베푸는 데 인색하지 않아요. 예술·철학·종교에 대한 관심이 깊은 편이에요.'],
+  '丁亥':['바다 위의 등대','따뜻한 직관과 영감으로 사람을 이끄는 조용한 힘이 있어요. 걱정이 많아질 땐 몸을 움직이는 게 약이에요.'],
+  '戊子':['물을 품은 산','침착하고 계산이 빠르며 재물 감각이 있어요. 속마음을 잘 드러내지 않아 오해를 사기도 해요.'],
+  '己丑':['겨울 들판','성실하고 끈질긴 노력파예요. 변화엔 느리지만 한번 쌓은 건 쉽게 무너지지 않아요.'],
+  '庚寅':['숲을 다듬는 도끼','행동력과 개척 정신이 강해요. 성급함만 다스리면 추진력이 가장 큰 무기가 돼요.'],
+  '辛卯':['꽃밭의 은장도','섬세한 감각과 날카로운 판단력을 가졌어요. 예민한 만큼 충분한 휴식이 꼭 필요해요.'],
+  '壬辰':['용이 사는 큰 물','스케일이 크고 야망이 있어요. 기복이 큰 편이라 꾸준함이 성공의 열쇠예요.'],
+  '癸巳':['햇볕에 데워진 샘','영리하고 재치 있으며 실속을 잘 챙겨요. 생각을 행동으로 옮기는 속도가 관건이에요.'],
+  '甲午':['불타는 들판의 나무','열정적이고 표현력이 뛰어나요. 에너지를 한 번에 쏟고 지치지 않게 완급을 조절하세요.'],
+  '乙未':['사막의 선인장','생활력이 강하고 알뜰하며 끈기가 있어요. 마음을 여는 데 시간이 걸리는 편이에요.'],
+  '丙申':['강 위로 뜨는 해','재치 있고 다재다능해 어디서든 주목받아요. 관심사가 많아 산만해지지 않게 주의하세요.'],
+  '丁酉':['보석을 비추는 촛불','감각이 세련되고 꼼꼼해요. 완벽을 추구하다 스스로를 몰아붙이기 쉬워요.'],
+  '戊戌':['첩첩산중','묵직한 자기 세계와 강한 고집을 가졌어요. 믿음직하지만 고립되지 않게 사람과의 연결이 중요해요.'],
+  '己亥':['강가의 기름진 땅','온화하고 융통성 있으며 재물 운이 따르는 편이에요. 우유부단함을 결단력으로 바꾸면 좋아요.'],
+  '庚子':['차가운 물속의 쇠','냉철한 판단과 분석력을 가졌어요. 말은 적지만 핵심을 찌르는 사람이에요.'],
+  '辛丑':['흙 속에 묻힌 보석','신중하고 참을성 있으며 내공이 깊어요. 늦게 인정받지만 그만큼 오래가요.'],
+  '壬寅':['숲을 적시는 강','아이디어가 풍부하고 베푸는 성향이에요. 시작한 일을 끝맺는 습관이 성공을 불러요.'],
+  '癸卯':['꽃잎 위의 이슬','다정하고 감수성이 풍부해 사람을 편하게 해줘요. 거절을 잘 못하는 게 약점이에요.'],
+  '甲辰':['기름진 땅의 큰 나무','안정적으로 자라는 힘과 재물을 모으는 능력이 있어요. 고집과 자기 확신 사이의 균형이 필요해요.'],
+  '乙巳':['햇볕 받은 덩굴','사교적이고 센스 있으며 말솜씨가 좋아요. 겉과 속의 온도 차를 줄이면 신뢰가 쌓여요.'],
+  '丙午':['한낮의 태양','에너지와 자신감이 넘치는 주인공 기질이에요. 혼자 달리기보다 함께 가는 법을 익히면 완벽해요.'],
+  '丁未':['화로 속 불씨','따뜻하고 정이 많으며 은근한 고집이 있어요. 감정을 쌓아두지 말고 그때그때 표현해 보세요.'],
+  '戊申':['광맥이 흐르는 산','현실 감각과 사업 수완이 있어요. 이동과 변화가 많은 삶에서 기회를 잡는 타입이에요.'],
+  '己酉':['열매 맺은 들판','손재주와 실력으로 인정받는 전문가형이에요. 비판을 너무 마음에 담아두지 마세요.'],
+  '庚戌':['산속의 무쇠','강직하고 의리 있으며 승부욕이 강해요. 고집을 꺾어야 할 때를 아는 것이 지혜예요.'],
+  '辛亥':['물에 씻긴 보석','맑고 총명하며 언변이 좋아요. 예민함과 외로움을 달래줄 취미가 있으면 좋아요.'],
+  '壬子':['깊고 넓은 바다','포용력과 지혜, 강한 독립심을 가졌어요. 속을 알 수 없다는 말을 듣지만 의리는 깊어요.'],
+  '癸丑':['언 땅 아래 물줄기','인내와 집중력으로 묵묵히 실력을 쌓는 타입이에요. 마음의 짐을 혼자 지지 마세요.'],
+  '甲寅':['숲의 왕 소나무','곧고 당당하며 자존심 강한 리더예요. 남의 의견을 듣는 여유가 큰 그릇을 만들어요.'],
+  '乙卯':['봄 들판의 화초','부드럽고 친화력이 좋으며 생명력이 강해요. 비교하는 마음만 내려놓으면 편안해져요.'],
+  '丙辰':['구름 사이의 태양','낙천적이고 표현력이 좋아 사람을 즐겁게 해요. 감정 기복을 다스리면 신뢰가 깊어져요.'],
+  '丁巳':['활활 타는 횃불','열정적이고 직관이 빠른 승부사예요. 성급한 판단만 조심하면 돌파력이 대단해요.'],
+  '戊午':['불을 품은 화산','뜨거운 열정과 강한 자존심을 가졌어요. 폭발하기 전에 쉬어가는 리듬이 필요해요.'],
+  '己未':['한여름의 밭','묵묵하고 책임감 있으며 자기 고집이 분명해요. 혼자 끙끙 앓기보다 도움을 청해 보세요.'],
+  '庚申':['날 선 강철','결단력과 실행력이 최고 수준이에요. 상대에게 여지를 남기는 말투가 관계를 살려요.'],
+  '辛酉':['순금 보석','깔끔하고 기준이 분명한 완벽주의자예요. 스스로에게 조금 더 관대해지는 연습이 필요해요.'],
+  '壬戌':['산을 품은 호수','깊은 생각과 강한 의지, 리더십을 가졌어요. 고민이 길어질 땐 믿는 사람과 나눠 보세요.'],
+  '癸亥':['끝없는 바다','상상력과 직관, 감수성이 뛰어나요. 현실적인 계획을 세우면 재능이 결과로 이어져요.'],
+};
+
+// ========== 공유 카드 이미지 (1080×1350, 인스타 피드 비율) ==========
+function _wrapLines(ctx, text, maxW) {
+  // 단어(띄어쓰기) 단위로 줄바꿈, 한 단어가 너무 길면 글자 단위
+  const out = [];
+  for (const para of String(text || '').split('\n')) {
+    if (!para.trim()) { out.push(''); continue; }
+    let line = '';
+    for (const word of para.split(' ')) {
+      const t = line ? line + ' ' + word : word;
+      if (ctx.measureText(t).width <= maxW) { line = t; continue; }
+      if (line) out.push(line);
+      if (ctx.measureText(word).width <= maxW) { line = word; continue; }
+      line = '';
+      for (const ch of word) { if (ctx.measureText(line + ch).width > maxW) { out.push(line); line = ch; } else line += ch; }
+    }
+    if (line) out.push(line);
+  }
+  return out;
+}
+// opts: { kicker, title, chips:[...], body, footer, accent }
+async function makeShareCard(opts) {
+  const W = 1080, H = 1350, P = 96;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const accent = opts.accent || '#fbbf24';
+  const g = x.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#160c38'); g.addColorStop(1, '#05030f');
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  const glow = x.createRadialGradient(W*0.8, H*0.15, 10, W*0.8, H*0.15, 520);
+  glow.addColorStop(0, accent + '33'); glow.addColorStop(1, accent + '00');
+  x.fillStyle = glow; x.fillRect(0, 0, W, H);
+  for (let i = 0; i < 60; i++) { x.fillStyle = `rgba(255,255,255,${0.06 + (i % 4) * 0.04})`; x.beginPath(); x.arc((i * 337) % W, (i * 521) % H, (i % 3) * 0.8 + 1, 0, Math.PI * 2); x.fill(); }
+  const font = (w, s) => `${w} ${s}px "Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif`;
+  const maxW = W - P * 2;
+  // 1차: 높이 계산
+  x.font = font(800, 72); const tl = _wrapLines(x, opts.title, maxW);
+  x.font = font(500, 42); const bl = _wrapLines(x, opts.body, maxW).slice(0, 12);
+  x.font = font(700, 40);
+  const chipRows = []; { let row = [], cx = 0; for (const t of (opts.chips || [])) { const w = x.measureText('# ' + t).width + 56; if (cx + w > maxW && row.length) { chipRows.push(row); row = []; cx = 0; } row.push([t, w]); cx += w + 16; } if (row.length) chipRows.push(row); }
+  const hK = 60, hT = tl.length * 92 + 24, hC = chipRows.length ? chipRows.length * 84 + 26 : 0, hB = bl.length * 66;
+  const total = hK + hT + hC + hB;
+  const top = P + 20, bottom = H - P - 140;
+  let y = top + Math.max(0, (bottom - top - total) / 2);
+  // 2차: 그리기
+  x.textBaseline = 'alphabetic';
+  x.fillStyle = 'rgba(255,255,255,0.55)'; x.font = font(600, 36); x.fillText(opts.kicker || '', P, y + 36); y += hK;
+  x.fillStyle = 'white'; x.font = font(800, 72); for (const l of tl) { x.fillText(l, P, y + 72); y += 92; } y += 24;
+  x.font = font(700, 40);
+  for (const row of chipRows) { let cx = P; for (const [t, w] of row) {
+      x.fillStyle = accent + '26'; x.strokeStyle = accent + '99'; x.lineWidth = 2;
+      x.beginPath(); if (x.roundRect) x.roundRect(cx, y, w, 66, 33); else x.rect(cx, y, w, 66); x.fill(); x.stroke();
+      x.fillStyle = accent; x.fillText('# ' + t, cx + 28, y + 46); cx += w + 16; }
+    y += 84; }
+  if (chipRows.length) y += 26;
+  x.font = font(500, 42);
+  for (const l of bl) { x.fillStyle = l.startsWith('“') ? accent : 'rgba(255,255,255,0.85)'; x.fillText(l, P, y + 42); y += 66; }
+  x.fillStyle = accent; x.fillRect(P, H - P - 74, 80, 6);
+  x.fillStyle = 'rgba(255,255,255,0.92)'; x.font = font(800, 42); x.fillText('사주ON', P, H - P - 10);
+  x.fillStyle = 'rgba(255,255,255,0.5)'; x.font = font(500, 32); x.fillText(opts.footer || 'sajuon.kr', P + 180, H - P - 12);
+  return await new Promise(res => c.toBlob(res, 'image/png'));
+}
+// 이미지 공유(지원 시) 또는 저장
+async function shareCardImage(opts, fileName) {
+  try {
+    const blob = await makeShareCard(opts);
+    const file = new File([blob], fileName || 'sajuon-card.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: opts.title, text: 'sajuon.kr' });
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  } catch (e) { if (e && e.name !== 'AbortError') { console.warn('카드 공유 실패:', e); alert('이미지를 만들지 못했어요. 화면을 캡처해서 공유해 주세요.'); } }
+}
+// 용신 오행 기반 행운 요소 (하도 수, 오행 색)
+const LUCKY_BY_EL = { 목:{ color:'초록', num:'3 · 8' }, 화:{ color:'빨강', num:'2 · 7' }, 토:{ color:'노랑', num:'5 · 10' }, 금:{ color:'흰색', num:'4 · 9' }, 수:{ color:'남색', num:'1 · 6' } };
+
 // ========== SDK 초기화 ==========
 
 // ========== 리뷰 시스템 (Firestore 공용 컬렉션 'reviews') ==========
@@ -1404,6 +1566,7 @@ function App() {
   const [yearlyPerson, setYearlyPerson] = useState('');
   const [yearlyViewYear, setYearlyViewYear] = useState(FORTUNE_YEAR);
   const [savedYearly, setSavedYearlyRaw] = useState(() => session ? loadUserData(session.key, 'savedYearly', []) : []);
+  const [savedKeycard, setSavedKeycardRaw] = useState(() => session ? loadUserData(session.key, 'savedKeycard', []) : []);
   const [savedRoadmap, setSavedRoadmapRaw] = useState(() => session ? loadUserData(session.key, 'savedRoadmap', []) : []);
   const [roadmapPerson, setRoadmapPerson] = useState(null); // career|love|money|health|move
   
@@ -1635,62 +1798,27 @@ function App() {
               return;
             }
 
-            // 토스페이 직가맹: payToken으로 서버 승인 후 즉시 충전
-            if (isTossComplete && PAYMENT_WORKER) {
-              const tossPayToken = urlParams.get('payToken');
-              const tossOrderNo  = urlParams.get('orderNo') || tossConfirmOrderId || pending?.orderId;
-              const tossAmount   = urlParams.get('amount')  || (pending?.product?.price);
-              const safeKey = session?.key || userKey;
-              const addStars = pending?.product?.stars || 0;
-              const addMoons = pending?.product?.moons || 0;
-              (async () => {
-                try {
-                  if (tossPayToken) {
-                    const confirmRes = await fetch(`${PAYMENT_WORKER}/toss-pay-confirm`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ payToken: tossPayToken, orderId: tossOrderNo, amount: parseInt(tossAmount) }),
-                    });
-                    const confirmData = await confirmRes.json();
-                    if (!confirmData.success) {
-                      alert('토스페이 승인 실패: ' + (confirmData.message || '고객센터 문의'));
-                      return;
-                    }
-                  }
-                  // ✅ 승인 성공 → 별 충전
-                  if (safeKey) cloudAdjust(safeKey, addStars, addMoons);
-                  setStars(prev => {
-                    const next = prev + addStars;
-                    if (safeKey) { saveUserData(safeKey, 'stars', next); }
-                    return next;
-                  });
-                  if (addMoons > 0) setMoons(prev => {
-                    const next = prev + addMoons;
-                    if (safeKey) { saveUserData(safeKey, 'moons', next); }
-                    return next;
-                  });
-                  alert(`✅ 충전 완료!\n⭐ ${addStars}별${addMoons > 0 ? ` + 🌙 ${addMoons}달` : ''} 지급되었습니다.`);
-                  window.history.replaceState({}, '', window.location.pathname);
-                } catch(e) {
-                  console.warn('토스페이 승인 오류, 직접 충전:', e);
-                  // 서버 오류 시에도 충전 처리
-                  if (safeKey) cloudAdjust(safeKey, addStars, 0);
-                  setStars(prev => {
-                    const next = prev + addStars;
-                    if (safeKey) { saveUserData(safeKey, 'stars', next); }
-                    return next;
-                  });
-                  alert(`✅ 충전 완료!\n⭐ ${addStars}별 지급되었습니다.`);
-                  window.history.replaceState({}, '', window.location.pathname);
-                }
-              })();
-              return; // 아래 verifyAndComplete 실행 방지
-            }
 
             const verifyAndComplete = async () => {
               // 0) 토스페이 직가맹 - autoExecute:true로 이미 승인됨, 바로 통과
               if (isTossComplete) {
-                // 이미 위에서 toss-pay-confirm 호출했으므로 여기서는 바로 충전 처리
+                const orderNo = urlParams.get('orderNo') || tossConfirmOrderId || pending.orderId;
+                try {
+                  const vRes = await fetch(`${PAYMENT_WORKER}/toss-pay-verify`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderNo, amount: pending.product.price })
+                  });
+                  const vData = await vRes.json();
+                  if (!vData.success) {
+                    alert(vData.message && vData.message.includes('이미 처리') ? '이미 처리된 결제입니다.' : `결제 확인에 실패했어요. 고객센터에 문의해주세요.\n(주문번호: ${orderNo})`);
+                    return;
+                  }
+                  if (vData.grant && pending.product.type === 'charge') { pending.product.stars = vData.grant.stars; pending.product.moons = vData.grant.moons; }
+                  else if (vData.grant) pending.bonusMoons = vData.grant.moons || 0;
+                } catch (e) {
+                  alert(`결제 확인 중 오류가 발생했어요. 결제가 완료됐다면 고객센터로 문의해주세요.\n(주문번호: ${orderNo})`);
+                  return;
+                }
               }
               // 1) 카카오페이(imp_uid 방식) → api.sajuon.kr/verify로 서버 검증
               else if (impUid && PAYMENT_WORKER && !PAYMENT_WORKER.includes('YOUR_ID')) {
@@ -1711,7 +1839,7 @@ function App() {
                   if (vData.grant && pending.product.type === 'charge') {
                     pending.product.stars = vData.grant.stars;
                     pending.product.moons = vData.grant.moons;
-                  }
+                  } else if (vData.grant) pending.bonusMoons = vData.grant.moons || 0;
                 } catch(e) {
                   console.warn('검증 서버 오류:', e);
                   alert(`결제 확인 중 오류가 발생했어요.\n결제가 완료됐다면 고객센터로 문의해주세요.\n(결제번호: ${impUid})`);
@@ -1765,6 +1893,11 @@ function App() {
                 alert(`✅ 충전 완료!\n⭐ ${addStars}별${addMoons > 0 ? ` + 🌙 ${addMoons}달` : ''} 지급되었습니다.`);
                 return;
               }
+              // 바로 결제한 상품에도 달 보너스 지급
+              if (pending.bonusMoons && safeKey) {
+                cloudAdjust(safeKey, 0, pending.bonusMoons);
+                setMoons(prev => { const n = prev + pending.bonusMoons; saveUserData(safeKey, 'moons', n); return n; });
+              }
               // 구매 콘텐츠 저장 및 화면 이동
               if ((pending.product.type === 'saju' || pending.product.name === '상세 사주 분석') && pending.currentInput && pending.currentResult) {
                 setCurrentInput(pending.currentInput);
@@ -1776,11 +1909,17 @@ function App() {
                 });
                 setScreen('paid-result');
               } else if (pending.product.type === 'compat' || pending.product.name === '궁합 분석') {
-                if (pending.compatResult) setSavedCompatibility(prev => [...prev, pending.compatResult]);
+                if (pending.compatResult) { setSavedCompatibility(prev => [...prev, pending.compatResult]); setCompatPerson1(pending.compatResult.person1Id); setCompatPerson2(pending.compatResult.person2Id); if (pending.compatResult.relationKey) setCompatRelation(pending.compatResult.relationKey); }
                 setScreen('compatibility-result');
               } else if (pending.product.type === 'yearly' || (pending.product.name && pending.product.name.includes('신년운세'))) {
-                if (pending.yearlyResult) { setSavedYearly(prev => [...prev, pending.yearlyResult]); setYearlyViewYear(pending.yearlyResult.year || FORTUNE_YEAR); }
+                if (pending.yearlyResult) { setSavedYearly(prev => [...prev, pending.yearlyResult]); setYearlyViewYear(pending.yearlyResult.year || FORTUNE_YEAR); setYearlyPerson(pending.yearlyResult.personId); }
                 setScreen('yearly-result');
+              } else if (pending.product.type === 'roadmap' || pending.product.name === '대운 인생 지도') {
+                if (pending.roadmapResult) { setSavedRoadmap(prev => prev.some(r => String(r.personId) === String(pending.roadmapResult.personId)) ? prev : [...prev, pending.roadmapResult]); setRoadmapPerson(pending.roadmapResult.personId); }
+                setScreen('roadmap-result');
+              } else if (pending.product.type === 'keycard') {
+                if (pending.yearlyResult) { setYearlyPerson(pending.yearlyResult.personId); setSavedKeycard(prev => prev.some(k => String(k.personId) === String(pending.yearlyResult.personId) && k.year === FORTUNE_YEAR) ? prev : [...prev, { ...pending.yearlyResult }]); }
+                setScreen('keycard-result');
               }
             };
             verifyAndComplete();
@@ -1855,6 +1994,16 @@ function App() {
       return next;
     });
   };
+  const setSavedKeycard = (updater) => {
+    setSavedKeycardRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (userKey) {
+        saveUserData(userKey, 'savedKeycard', next);
+        next.filter(n => !prev.some(p => p.id === n.id)).forEach(a => saveAnalysisToCloud(userKey, a, 'keycard').catch(()=>{}));
+      }
+      return next;
+    });
+  };
   const setSavedRoadmap = (updater) => {
     setSavedRoadmapRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
@@ -1891,6 +2040,14 @@ function App() {
     if (!purchaseConfirm) return null;
     const { product, onConfirm } = purchaseConfirm;
     const canConfirm = checked1 && checked2;
+    const need = product.stars || Math.ceil((product.price||0)/1000);
+    const haveEnough = stars >= need;
+    const canExchange = !haveEnough && stars + Math.floor(moons / 10) >= need;
+    const won = (product.price || need*1000).toLocaleString() + '원';
+    const payBtn = (label, bg, color, onClick) => React.createElement('button',{
+      onClick: canConfirm ? onClick : undefined,
+      style:{width:'100%',padding:'15px',borderRadius:'14px',border:'none',cursor:canConfirm?'pointer':'not-allowed',marginBottom:'8px',
+        background: canConfirm ? bg : 'rgba(255,255,255,0.08)', color: canConfirm ? color : 'rgba(255,255,255,0.25)', fontWeight:'800',fontSize:'15px'}}, label);
     return React.createElement(React.Fragment, null,
       React.createElement('div', {
         onClick: () => setPurchaseConfirm(null),
@@ -1917,7 +2074,7 @@ function App() {
           ),
           React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
             React.createElement('span',{style:{color:'rgba(255,255,255,0.5)',fontSize:'11px'}},'결제 금액'),
-            React.createElement('span',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'16px'}}, `⭐${product.stars}별`)
+            React.createElement('span',{style:{color:'#fbbf24',fontWeight:'900',fontSize:'16px'}}, `⭐${need}별 (보유 ⭐${stars})`)
           )
         ),
         // 체크박스 1: 청약철회 불가
@@ -1954,20 +2111,18 @@ function App() {
             '로, 재미와 자기 이해 목적으로 활용해주세요. 의학·법률·금융 판단의 근거로 사용하지 마세요. 😊'
           )
         ),
-        // 버튼
-        React.createElement('div',{style:{display:'flex',gap:'8px'}},
-          React.createElement('button',{
-            onClick:()=>setPurchaseConfirm(null),
-            style:{flex:1,padding:'14px',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',background:'transparent',color:'rgba(255,255,255,0.4)',fontSize:'14px',cursor:'pointer'}
-          },'취소'),
-          React.createElement('button',{
-            onClick: canConfirm ? onConfirm : undefined,
-            style:{flex:2,padding:'14px',borderRadius:'14px',border:'none',cursor: canConfirm?'pointer':'not-allowed',
-              background: canConfirm ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'rgba(255,255,255,0.08)',
-              color: canConfirm ? 'white' : 'rgba(255,255,255,0.2)',
-              fontWeight:'700',fontSize:'14px',transition:'all 0.3s'}
-          }, canConfirm ? `⭐${product.stars}별로 결제하기` : '위 항목을 모두 확인해주세요')
-        )
+        // 버튼: 별이 충분하면 별로, 부족하면 바로 결제
+        !canConfirm && React.createElement('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'12px',textAlign:'center',marginBottom:'10px'}},'위 두 항목을 확인하면 결제할 수 있어요'),
+        haveEnough
+          ? payBtn(`⭐${need}별로 바로 열람`, 'linear-gradient(135deg,#7c3aed,#a855f7)', 'white', onConfirm)
+          : React.createElement(React.Fragment, null,
+              canExchange && React.createElement('button', { onClick: () => exchangeMoonsForStars(), style:{width:'100%',padding:'12px',borderRadius:'14px',border:'1px solid rgba(167,139,250,0.4)',background:'rgba(167,139,250,0.1)',color:'#c4b5fd',fontWeight:'700',fontSize:'13px',cursor:'pointer',marginBottom:'8px'} }, `🌙 달 ${Math.floor(moons/10)*10}개 → ⭐${Math.floor(moons/10)}별 교환하고 사용하기`),
+              payBtn(`카카오페이로 ⭐${need}별 충전하고 바로 보기`, '#FEE500', '#191919', () => { setPurchaseConfirm(null); payDirect(product, 'kakao'); }),
+              payBtn(`토스페이로 ⭐${need}별 충전하고 바로 보기`, '#0064FF', 'white', () => { setPurchaseConfirm(null); payDirect(product, 'toss'); }),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px',textAlign:'center',margin:'0 0 8px'} },
+                `결제 금액 ${won} · 충전한 별은 바로 이 상품에 사용돼요` + ((BONUS_MOONS[product.price]||0) ? ` · 🌙 달 ${BONUS_MOONS[product.price]}개 보너스` : ''))
+            ),
+        React.createElement('button',{ onClick:()=>setPurchaseConfirm(null), style:{width:'100%',padding:'12px',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.1)',background:'transparent',color:'rgba(255,255,255,0.5)',fontSize:'13px',cursor:'pointer'} },'취소')
       )
     );
   };
@@ -3683,6 +3838,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         ['saju',     'savedSaju',          setSavedSajuRaw],
         ['compat',   'savedCompatibility', setSavedCompatibilityRaw],
         ['yearly',   'savedYearly',        setSavedYearlyRaw],
+        ['keycard',  'savedKeycard',       setSavedKeycardRaw],
         ['roadmap',  'savedRoadmap',       setSavedRoadmapRaw],
         ['paidSaju', 'savedPaidSaju',      setSavedPaidSajuRaw],
       ];
@@ -3768,6 +3924,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     setSavedPaidSajuRaw(acctPaidSaju);
     setSavedCompatibilityRaw(acctCompatibility);
     setSavedYearlyRaw(acctYearly);
+    setSavedKeycardRaw(loadUserData(resolvedKey, 'savedKeycard', []));
     setSavedRoadmapRaw(acctRoadmap);
     setPurchases(acctPurchases);
     // 로컬 값 먼저 적용
@@ -3808,6 +3965,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     setSavedPaidSajuRaw([]);
     setSavedCompatibilityRaw([]);
     setSavedYearlyRaw([]);
+    setSavedKeycardRaw([]);
     setSavedRoadmapRaw([]);
     setStars(0); setMoons(0);
     setPurchases([]);
@@ -3824,16 +3982,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       setStars(p => { const n = p - requiredStars; if(userKey) saveUserData(userKey,'stars',n); return n; });
       setPaymentProduct(product);
       handlePaymentComplete(product);
-    } else if (stars + moons >= requiredStars) {
-      const moonNeeded = requiredStars - stars;
-      const newMoons = moons - moonNeeded;
-      if (userKey) {
-        saveUserData(userKey,'stars',0); saveUserData(userKey,'moons',newMoons);
-        cloudAdjust(userKey, -stars, -moonNeeded);
-      }
-      setStars(0); setMoons(newMoons);
-      setPaymentProduct(product);
-      handlePaymentComplete(product);
     } else {
       setPaymentProduct(product);
       setScreen('charge');
@@ -3845,6 +3993,34 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     if (DEV_MODE) { _doPurchase(product); return; }
     // 결제 전 최종 확인 모달 표시 (전자상거래법 제17조)
     setPurchaseConfirm({ product, onConfirm: () => { setPurchaseConfirm(null); _doPurchase(product); } });
+  };
+
+  // 결제 후 페이지가 새로 열려도(모바일) 구매를 마무리할 수 있게 필요한 정보를 저장
+  const buildPendingData = (product, orderId) => {
+    const p1 = savedSaju.find(s => String(s.id) === String(compatPerson1));
+    const p2 = savedSaju.find(s => String(s.id) === String(compatPerson2));
+    const yp = savedSaju.find(s => String(s.id) === String(yearlyPerson));
+    const rp = savedSaju.find(s => String(s.id) === String(roadmapPerson));
+    return {
+      product, orderId,
+      currentInput: currentInput || null,
+      currentResult: currentResult || null,
+      compatResult: (p1 && p2) ? { id: Date.now(), person1Id: compatPerson1, person2Id: compatPerson2, person1Name: p1.name, person2Name: p2.name, relation: {'couple':'1','friend':'2','business':'3','parent_child':'4','sibling':'5','etc':'6','grandparent':'7','relative':'8','mentor':'9','rival':'10'}[compatRelation]||'1', relationKey: compatRelation || 'couple', date: new Date().toLocaleDateString() } : null,
+      yearlyResult: yp ? { id: Date.now(), personId: yearlyPerson, personName: yp.name, year: FORTUNE_YEAR, date: new Date().toLocaleDateString() } : null,
+      roadmapResult: rp ? { id: Date.now(), personId: roadmapPerson, personName: rp.name, date: new Date().toLocaleDateString() } : null,
+    };
+  };
+
+  // 별이 부족할 때: 상품 금액만큼 바로 결제하고 즉시 열람
+  const BONUS_MOONS = { 3000: 1, 5000: 2, 10000: 5 };   // 충전 패키지와 같은 달 보너스
+  const payDirect = (product, method) => {
+    const done = () => {
+      const bonus = BONUS_MOONS[product.price] || 0;
+      if (bonus && userKey) { cloudAdjust(userKey, 0, bonus); setMoons(m => { const n = m + bonus; saveUserData(userKey, 'moons', n); return n; }); }
+      setPaymentProduct(product); handlePaymentComplete(product);
+    };
+    if (method === 'toss') { requestTossPayment(product, done, () => {}); return; }
+    requestPortonePayment(product, 'kakao', done, () => {});
   };
 
   // ===== 포트원 결제 요청 (카카오페이 / 토스페이먼츠) =====
@@ -3859,22 +4035,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       : { channelKey: CHANNEL_TOSS, pay_method: 'tosspay' };
 
     // 모바일 리디렉션 대비 결제 정보 sessionStorage 저장
-    const pendingData = {
-      product,
-      currentInput: currentInput || null,
-      currentResult: currentResult || null,
-      compatResult: (method === 'kakao' || method === 'toss') ? (() => {
-        const p1 = savedSaju.find(s => String(s.id) === String(compatPerson1));
-        const p2 = savedSaju.find(s => String(s.id) === String(compatPerson2));
-        if (p1 && p2) return { id: Date.now(), person1Id: compatPerson1, person2Id: compatPerson2, person1Name: p1.name, person2Name: p2.name, relation: {'couple':'1','friend':'2','business':'3','parent_child':'4','sibling':'5','etc':'6','grandparent':'7','mentor':'9','rival':'10'}[compatRelation]||'1', date: new Date().toLocaleDateString() };
-        return null;
-      })() : null,
-      yearlyResult: (() => {
-        const yp = savedSaju.find(s => String(s.id) === String(yearlyPerson));
-        if (yp) return { id: Date.now(), personId: yearlyPerson, personName: yp.name, year: FORTUNE_YEAR, date: new Date().toLocaleDateString() };
-        return null;
-      })(),
-    };
+    const pendingData = buildPendingData(product, orderId);
     try { sessionStorage.setItem('sajuon_pending_payment', JSON.stringify(pendingData)); } catch(e) {}
 
     window.IMP.request_pay({
@@ -3932,7 +4093,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   const requestTossPayment = (product, onSuccess, onCancel) => {
     if (!PAYMENT_WORKER) { alert('결제 서버 설정이 필요합니다.'); if(onCancel) onCancel(); return; }
     const orderId = `SAJUON_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-    const pendingData = { product, currentInput: currentInput||null, currentResult: currentResult||null };
+    const pendingData = buildPendingData(product, orderId);
     try { sessionStorage.setItem('sajuon_pending_payment', JSON.stringify(pendingData)); } catch(e) {}
     fetch(`${PAYMENT_WORKER}/toss-pay-create`, {
       method: 'POST',
@@ -3976,6 +4137,14 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     setPurchases(updatedPurchases);
     if (userKey) saveUserData(userKey, 'purchases', updatedPurchases);
         
+    if (prod.type === 'keycard') {
+      const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
+      if (person && !savedKeycard.some(k => String(k.personId) === String(yearlyPerson) && Number(k.year) === FORTUNE_YEAR)) {
+        setSavedKeycard(prev => [...prev, { id: Date.now(), personId: yearlyPerson, personName: person.name, year: FORTUNE_YEAR, date: new Date().toLocaleDateString() }]);
+      }
+      setScreen('keycard-result');
+      return;
+    }
     if (prod.name === '상세 사주 분석') {
       // 상세 사주 분석 결과 저장
       if (currentInput && currentResult) {
@@ -4490,6 +4659,19 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           )
         ),
 
+        // ⭐1별 맛보기 — 키워드 카드
+        React.createElement('div', { onClick: () => { setScreen('keycard'); window.scrollTo(0,0); },
+          style:{display:'flex',alignItems:'center',gap:'14px',padding:'16px',marginBottom:'10px',borderRadius:'18px',cursor:'pointer',
+            background:'linear-gradient(135deg,rgba(251,191,36,0.12),rgba(245,158,11,0.04))',border:'1px solid rgba(251,191,36,0.3)'} },
+          React.createElement('div', { style:{width:'44px',height:'44px',borderRadius:'14px',background:'rgba(251,191,36,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0} }, '🃏'),
+          React.createElement('div', { style:{flex:1,minWidth:0} },
+            React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'14px',margin:'0 0 3px'} }, `${FORTUNE_YEAR} 나의 키워드 카드`),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'11px',margin:0} }, '키워드 3개 · 행운의 달 · 공유용 카드 이미지')),
+          React.createElement('div', { style:{textAlign:'right',flexShrink:0} },
+            React.createElement('p', { style:{color:'#fbbf24',fontWeight:'900',fontSize:'15px',margin:0} }, '⭐ 1별'),
+            React.createElement('p', { style:{color:'rgba(251,191,36,0.6)',fontSize:'10px',margin:'2px 0 0'} }, '맛보기'))
+        ),
+
         // 상세 사주 — 강조 카드
         React.createElement('div', { 
           onClick: () => {
@@ -4568,28 +4750,20 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       // 리뷰 섹션
       React.createElement(S('HomeReviewSection', HomeReviewSection)),
 
-      // 차별점 3가지
-      React.createElement('section', { style:{padding:'24px 16px 0',position:'relative',zIndex:1} },
-        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'14px'} },
-          React.createElement('div', { style:{flex:1,height:'1px',background:'rgba(255,255,255,0.05)'} }),
-          React.createElement('span', { style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',letterSpacing:'3px',textTransform:'uppercase'} }, 'WHY SAJU ON'),
-          React.createElement('div', { style:{flex:1,height:'1px',background:'rgba(255,255,255,0.05)'} })
-        ),
-        React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px'} },
+      // 이용 방법 (간단 3단계)
+      React.createElement('section', { style:{padding:'20px 16px 0',position:'relative',zIndex:1} },
+        React.createElement('div', { style:{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'18px',padding:'16px'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',marginBottom:'12px'} }, 'HOW IT WORKS'),
           [
-            { emoji:'🗓️', title:'절기 정밀', sub:'만세력 자동 계산', color:'#a78bfa', bg:'rgba(124,58,237,0.08)', border:'rgba(124,58,237,0.12)' },
-            { emoji:'🧠', title:'심층 풀이', sub:'13섹션 해설', color:'#f9a8d4', bg:'rgba(236,72,153,0.08)', border:'rgba(236,72,153,0.12)' },
-            { emoji:'⚡', title:'신살 포함', sub:'30+종 분석', color:'#fcd34d', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.12)' },
-            { emoji:'💞', title:'궁합 분석', sub:'8가지 관계 유형', color:'#f472b6', bg:'rgba(219,39,119,0.08)', border:'rgba(219,39,119,0.12)' },
-            { emoji:'🗺️', title:'대운 지도', sub:'10개 대운 완전 분석', color:'#c4b5fd', bg:'rgba(139,92,246,0.08)', border:'rgba(139,92,246,0.12)' },
-            { emoji:'🔐', title:'보안 결제', sub:'포트원 안전 결제', color:'#6ee7b7', bg:'rgba(16,185,129,0.08)', border:'rgba(16,185,129,0.12)' }
-          ].map((item,i) =>
-            React.createElement('div', { key:i, style:{background:item.bg,borderRadius:'16px',padding:'16px 10px',textAlign:'center',border:'1px solid '+item.border} },
-              React.createElement('span', { style:{fontSize:'22px',display:'block',marginBottom:'8px'} }, item.emoji),
-              React.createElement('p', { style:{fontWeight:'800',fontSize:'13px',color:item.color,marginBottom:'2px',letterSpacing:'-0.3px'} }, item.title),
-              React.createElement('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'10px'} }, item.sub)
-            )
-          )
+            ['1', '생년월일 입력', '만세력 · 일주 성격 · 대운 흐름까지 무료'],
+            ['2', '궁금한 풀이 고르기', '⭐1별부터 · 한 번 사면 계속 다시 보기'],
+            ['3', '별이 없어도 바로 열람', '필요한 만큼만 카카오페이 · 토스페이로 충전'],
+          ].map(([n,t,d],i) => React.createElement('div', { key:i, style:{display:'flex',gap:'12px',alignItems:'flex-start',marginBottom:i<2?'12px':0} },
+            React.createElement('span', { style:{width:'22px',height:'22px',borderRadius:'50%',background:'rgba(139,92,246,0.2)',color:'#c4b5fd',fontSize:'11px',fontWeight:'800',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0} }, n),
+            React.createElement('div', null,
+              React.createElement('p', { style:{color:'white',fontWeight:'700',fontSize:'13px',margin:'1px 0 2px'} }, t),
+              React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'11px',margin:0} }, d))
+          ))
         )
       ),
 
@@ -5051,6 +5225,22 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         )
       ),
 
+      // ── 일주로 보는 나 (무료) ──
+      (() => {
+        const dp = r.pillars.day; const key = dp.stem + dp.branch; const t = ILJU_TEXT[key];
+        if (!t) return null;
+        const c = COLORS[dayEl];
+        return React.createElement('div', { style:{background:`linear-gradient(135deg,${c}14,rgba(255,255,255,0.03))`,borderRadius:'20px',border:`1px solid ${c}33`,padding:'18px',marginBottom:'16px',position:'relative',zIndex:1} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',marginBottom:'10px'} }, '✦ 일주로 보는 나'),
+          React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'17px',marginBottom:'4px',letterSpacing:'-0.3px'} },
+            `${STEMS.korean[dp.si]}${BRANCHES.korean[dp.bi]}(${key})일주 — ${t[0]}`),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.75)',fontSize:'14px',lineHeight:'1.85',wordBreak:'keep-all',margin:'8px 0 0'} }, t[1]),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px',marginTop:'10px'} }, '일주는 태어난 날의 기둥으로, 나 자신의 기본 성향을 보여줘요.'),
+          React.createElement('button', { onClick: () => shareCardImage({ kicker:`${inp.name}님은`, title:`${STEMS.korean[dp.si]}${BRANCHES.korean[dp.bi]}일주 — ${t[0]}`, chips:[`${dayGanKr}(${dayGan}) ${dayEl}`], body:t[1], accent:c, footer:'sajuon.kr · 내 일주 무료로 보기' }, 'sajuon-ilju.png'),
+            style:{marginTop:'12px',width:'100%',padding:'12px',borderRadius:'14px',border:`1px solid ${c}55`,background:'transparent',color:c,fontWeight:'800',fontSize:'13px',cursor:'pointer'} }, '📸 내 일주 카드 저장 · 공유')
+        );
+      })(),
+
       // ── 오행 분포 차트 ──
       React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',padding:'18px',marginBottom:'12px'} },
         React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'14px'} },
@@ -5104,7 +5294,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             topSinsal.map((s,i) =>
               React.createElement('div', { key:i, style:{padding:'8px 12px',background:'rgba(168,85,247,0.1)',border:'1px solid rgba(168,85,247,0.2)',borderRadius:'12px'} },
                 React.createElement('p', { style:{color:'#c4b5fd',fontSize:'12px',fontWeight:'700',marginBottom:'2px'} }, s),
-                React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px'} }, SINSAL_DESC[s]||'신살 영향')
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px'} }, SINSAL_INFO[s]||SINSAL_DESC[s]||'타고난 기운')
               )
             )
           )
@@ -5159,10 +5349,10 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
               React.createElement('span',{style:{color:'rgba(255,255,255,0.45)',fontSize:'11px'}},'결제한 리포트는 어느 기기에서든 같은 내용으로 다시 볼 수 있어요')
             ),
             React.createElement('button',{
-              onClick:()=>setScreen('charge'),
+              onClick:(e)=>{ e.stopPropagation(); openPayment({ name: '상세 사주 분석', price: 3000, stars: 3, type: 'saju' }); },
               style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'14px',textAlign:'center',fontWeight:'900',fontSize:'15px',color:'white',boxShadow:'0 4px 28px rgba(139,92,246,0.5)',border:'none',cursor:'pointer',letterSpacing:'-0.3px'}
             },'지금 바로 심층 분석 보기 →'),
-            React.createElement('p',{style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',textAlign:'center',marginTop:'10px'}},'⭐ 3별 · 즉시 열람 · 카카오/토스페이 지원')
+            React.createElement('p',{style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',textAlign:'center',marginTop:'10px'}},'⭐ 3별 · 별이 없어도 카카오페이·토스페이로 바로 열람')
           )
         );
       })()
@@ -9264,7 +9454,7 @@ ${dwBlocks}
                 React.createElement('div', { style:{background:'rgba(251,191,36,0.15)',borderRadius:'10px',padding:'4px 10px',marginBottom:'4px'} },
                   React.createElement('span', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px'} }, '⭐ 3별')
                 ),
-                React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px'} }, '별 충전 시 할인 가능')
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px'} }, '보유한 별로도 결제할 수 있어요')
               )
             ),
             React.createElement('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap'} },
@@ -9285,7 +9475,8 @@ ${dwBlocks}
                   `${YEAR_ANIMAL} ${FORTUNE_LABEL} 신년운세 분석받기`,
                   React.createElement('span', { style:{display:'block',fontSize:'11px',fontWeight:'600',marginTop:'2px',opacity:0.7} }, '⭐ 3별 · 결제 후 바로 생성 · 근거 포함 리포트')
                 )
-          )
+          ),
+          React.createElement('p', { onClick:()=>{ setYearlyPerson(selPerson); setScreen('keycard'); window.scrollTo(0,0); }, style:{textAlign:'center',color:'rgba(251,191,36,0.75)',fontSize:'12px',marginTop:'12px',cursor:'pointer',textDecoration:'underline'} }, `가볍게 먼저 보고 싶다면 → ${FORTUNE_YEAR} 키워드 카드 ⭐1별`)
         )
       )
     )
@@ -9293,6 +9484,117 @@ ${dwBlocks}
   };
 
   // ── 신년운세 결과 화면 ────────────────────────────────────────────
+  // ===== ⭐1별 맛보기: 올해 키워드 카드 =====
+  const KEYCARD_PRODUCT = { name: `${FORTUNE_YEAR} 키워드 카드`, price: 1000, stars: 1, type: 'keycard' };
+  const KeycardScreen = () => {
+    const [sel, setSel] = React.useState(() => (yearlyPerson && savedSaju.some(s => String(s.id) === String(yearlyPerson))) ? yearlyPerson : (savedSaju[0]?.id || ''));
+    const paid = (id) => savedKeycard.some(k => String(k.personId) === String(id) && Number(k.year) === FORTUNE_YEAR);
+    const start = () => {
+      if (!sel) { alert('사주를 선택해주세요.'); return; }
+      setYearlyPerson(sel);
+      if (paid(sel)) { setScreen('keycard-result'); return; }
+      openPayment(KEYCARD_PRODUCT);
+    };
+    return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'112px',position:'relative',overflow:'hidden'} },
+      React.createElement(S('StarBg', StarBg)),
+      React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
+        React.createElement(S('PageHeader', PageHeader), { label:'KEYWORD CARD', title:`${FORTUNE_YEAR} 키워드 카드`, backTarget:'home' }),
+        React.createElement('div', { style:{textAlign:'center',padding:'12px 0 22px'} },
+          React.createElement('div', { style:{fontSize:'46px',marginBottom:'10px'} }, '🃏'),
+          React.createElement('h1', { style:{color:'white',fontWeight:'900',fontSize:'22px',margin:'0 0 8px'} }, `${FORTUNE_GANJI.kr}년, 나를 움직일 키워드 3개`),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'13px',lineHeight:'1.7',margin:0} }, '한 줄 요약 · 행운의 달 · 행운 색과 숫자까지\n카드 한 장으로 저장하고 친구에게 공유하세요'),
+          React.createElement('p', { style:{color:'#fbbf24',fontWeight:'900',fontSize:'26px',margin:'14px 0 0'} }, '⭐ 1별')
+        ),
+        !isLoggedIn && React.createElement('button', { onClick:()=>setShowLogin(true), style:{width:'100%',padding:'16px',borderRadius:'16px',border:'none',background:'linear-gradient(135deg,#7c3aed,#a855f7)',color:'white',fontWeight:'800',fontSize:'15px',cursor:'pointer'} }, '로그인하고 시작하기'),
+        isLoggedIn && savedSaju.length === 0 && React.createElement('button', { onClick:()=>{ setForm({name:'',gender:'여성',calendar:'양력',year:'',month:'',day:'',hour:'',minute:''}); setReturnScreen('keycard'); setScreen('input'); }, style:{width:'100%',padding:'16px',borderRadius:'16px',border:'none',background:'linear-gradient(135deg,#7c3aed,#a855f7)',color:'white',fontWeight:'800',fontSize:'15px',cursor:'pointer'} }, '먼저 사주 입력하기'),
+        isLoggedIn && savedSaju.length > 0 && React.createElement(React.Fragment, null,
+          React.createElement('select', { value: sel, onChange: e => setSel(e.target.value),
+            style:{width:'100%',padding:'14px',borderRadius:'14px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.12)',color:'white',fontSize:'15px',marginBottom:'14px'} },
+            savedSaju.map(s => React.createElement('option', { key:s.id, value:String(s.id), style:{background:'#1a0d3e'} }, `${s.gender==='여성'?'♀':'♂'} ${s.name} (${s.year}.${String(s.month).padStart(2,'0')}.${String(s.day).padStart(2,'0')})${paid(s.id)?' ✓':''}`))),
+          React.createElement('button', { onClick: start, style:{width:'100%',padding:'17px',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'900',fontSize:'15px',
+              background: paid(sel) ? 'linear-gradient(135deg,#4ade80,#22c55e)' : 'linear-gradient(135deg,#fbbf24,#f59e0b)', color:'#1c1300'} },
+            paid(sel) ? '내 키워드 카드 보기 →' : '⭐1별로 키워드 카드 받기'),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px',textAlign:'center',marginTop:'10px'} }, '더 자세한 풀이는 신년운세(⭐3별)에서 볼 수 있어요')
+        )
+      )
+    );
+  };
+
+  const KeycardResultScreen = () => {
+    const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
+    if (!person) return React.createElement('div', { style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)',minHeight:'100vh',background:'#070514'} }, '사주를 찾을 수 없어요');
+    return React.createElement(S('KeycardResultBody', KeycardResultBody), { key: person.id, person });
+  };
+  const KeycardResultBody = ({ person }) => {
+    const r = person.result || analyzeSaju(person.year,person.month,person.day,person.hour,person.minute,(person.isLunar===true||person.calendar==='음력'),person.isLeapMonth||false);
+    const year = FORTUNE_YEAR, yg = yearGanji(year);
+    const basis = React.useMemo(() => { try { return buildYearlyBasis(r, year); } catch (e) { return null; } }, [person.id]);
+    const key = `ai_keycard_v1_${person.id}_${year}`;
+    const read = () => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } };
+    const [card, setCard] = React.useState(read);
+    const [loading, setLoading] = React.useState(!read());
+    const [err, setErr] = React.useState(false);
+    const [retry, setRetry] = React.useState(0);
+    const lucky = LUCKY_BY_EL[r.fe.yongshin] || null;
+    const focus = (basis?.months || []).filter(m => m.flag === 'focus').map(m => `${m.calMonth}월`);
+    const sw = basis?.sewoon;
+    React.useEffect(() => {
+      let dead = false; const ctrl = new AbortController();
+      aiCloudPrime([key]).then(async () => {
+        if (dead) return;
+        const c = read(); if (c) { setCard(c); setLoading(false); return; }
+        setLoading(true); setErr(false);
+        const rel = sw ? (sw.rel.map(x=>x.text).concat(sw.el.map(x=>x.text)).join(', ') || '특별한 합충 없음') : '';
+        const prompt = `당신은 명리학자입니다. ${person.name}님의 ${year}년 ${yg.kr}년 키워드 카드를 만들어주세요.\n일간 ${STEMS.korean[r.dsi]}(${STEMS.names[r.dsi]}) / 일주 ${r.pillars.day.stem}${r.pillars.day.branch} / 용신 ${r.fe.yongshin} / 기신 ${r.fe.gishin}\n세운 ${sw?.ganji}: 천간 ${sw?.stemGod}, 지지 본기 ${sw?.branchGod}, 12운성 ${sw?.twelve}\n원국과의 관계: ${rel}\n\n규칙: 위 데이터에 근거하되 쉬운 말로, 공포 조장 금지, JSON 문자열에 큰따옴표 금지.\n출력(JSON만): {"title":"올해를 한 줄로 (25자 이내)","keywords":["2~5자","2~5자","2~5자"],"line":"키워드가 왜 나왔는지 쉬운 설명 (120~180자)","advice":"올해 꼭 기억할 한 문장 (40자 이내)"}`;
+        try {
+          const data = await callAI({ t:'4', prompt, max_tokens: 1200 }, ctrl.signal);
+          const parsed = parseAIJson((data.content||[]).map(x=>x.text||'').join(''));
+          if (!parsed?.keywords?.length) throw new Error('empty');
+          localStorage.setItem(key, JSON.stringify(parsed)); aiCloudPut(key);
+          if (!dead) setCard(parsed);
+        } catch (e) { if (e.name !== 'AbortError' && !dead) setErr(true); }
+        finally { if (!dead) setLoading(false); }
+      });
+      return () => { dead = true; ctrl.abort(); };
+    }, [key, retry]);
+    const accent = '#fbbf24';
+    const shareOpts = card ? {
+      kicker: `${person.name}님의 ${year} ${yg.kr}년`, title: card.title, chips: card.keywords,
+      body: `${card.line}\n\n행운의 달  ${focus.join(', ') || '-'}\n행운 색  ${lucky?.color || '-'}   행운 숫자  ${lucky?.num || '-'}\n\n“${card.advice}”`, accent,
+    } : null;
+    return React.createElement('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'112px',position:'relative',overflow:'hidden'} },
+      React.createElement(S('StarBg', StarBg)),
+      React.createElement('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
+        React.createElement(S('PageHeader', PageHeader), { label:'KEYWORD CARD', title:`${person.name}님의 ${year} 키워드`, backTarget:'keycard' }),
+        loading && React.createElement(S('AiLoadingCard', AiLoadingCard), { message:'키워드 카드를 만들고 있어요' }),
+        err && React.createElement('div', { style:{textAlign:'center',padding:'24px',background:'rgba(239,68,68,0.08)',borderRadius:'16px',border:'1px solid rgba(239,68,68,0.2)',marginBottom:'14px'} },
+          React.createElement('p', { style:{color:'#f87171',marginBottom:'10px'} }, '카드를 만드는 중 오류가 났어요'),
+          React.createElement('button', { onClick:()=>setRetry(n=>n+1), style:{padding:'10px 24px',borderRadius:'12px',border:'none',background:accent,fontWeight:'800',cursor:'pointer'} }, '다시 만들기')),
+        card && React.createElement('div', { style:{background:'linear-gradient(160deg,#1a1040,#07051a)',borderRadius:'24px',border:'1px solid rgba(251,191,36,0.3)',padding:'26px 22px',marginBottom:'14px',boxShadow:'0 10px 40px rgba(251,191,36,0.08)'} },
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'12px',margin:'0 0 10px'} }, `${person.name}님의 ${year} ${yg.kr}년`),
+          React.createElement('p', { style:{color:'white',fontWeight:'900',fontSize:'22px',lineHeight:'1.4',margin:'0 0 16px',wordBreak:'keep-all'} }, card.title),
+          React.createElement('div', { style:{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'16px'} },
+            (card.keywords||[]).map((k,i) => React.createElement('span', { key:i, style:{color:accent,fontWeight:'800',fontSize:'14px',background:'rgba(251,191,36,0.12)',border:'1px solid rgba(251,191,36,0.4)',padding:'6px 13px',borderRadius:'20px'} }, `# ${k}`))),
+          React.createElement('p', { style:{color:'rgba(255,255,255,0.8)',fontSize:'14px',lineHeight:'1.85',margin:'0 0 16px',wordBreak:'keep-all'} }, card.line),
+          React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'16px'} },
+            [['행운의 달', focus.join(', ') || '-'], ['행운 색', lucky?.color || '-'], ['행운 숫자', lucky?.num || '-']].map(([a,b],i) =>
+              React.createElement('div', { key:i, style:{background:'rgba(255,255,255,0.05)',borderRadius:'12px',padding:'10px 6px',textAlign:'center'} },
+                React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'10px',margin:'0 0 4px'} }, a),
+                React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'13px',margin:0} }, b)))),
+          React.createElement('p', { style:{color:accent,fontWeight:'700',fontSize:'14px',margin:0,textAlign:'center'} }, `“${card.advice}”`)
+        ),
+        card && React.createElement('button', { onClick:()=>shareCardImage(shareOpts, `sajuon-${year}-keyword.png`), style:{width:'100%',padding:'16px',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'800',fontSize:'15px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',color:'#1c1300',marginBottom:'10px'} }, '📸 카드 이미지로 저장 · 공유'),
+        card && React.createElement('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px',textAlign:'center',margin:'0 0 18px'} }, '행운의 달은 올해 월운이 원국과 가장 잘 맞는 달, 행운 색·숫자는 용신 오행 기준이에요'),
+        card && React.createElement('div', { onClick:()=>{ setScreen('yearly'); window.scrollTo(0,0); }, style:{cursor:'pointer',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'18px',padding:'16px',display:'flex',alignItems:'center',gap:'12px'} },
+          React.createElement('span', { style:{fontSize:'26px'} }, YEAR_ANIMAL),
+          React.createElement('div', { style:{flex:1} },
+            React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'14px',margin:'0 0 2px'} }, '왜 이 키워드인지, 달마다 자세히'),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'12px',margin:0} }, `${FORTUNE_YEAR} 신년운세 · ⭐3별`)),
+          React.createElement('span', { style:{color:'rgba(255,255,255,0.4)'} }, '›'))
+      )
+    );
+  };
+
   const YearlyResultScreen = () => {
     const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
     if (!person) return React.createElement('div', { style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)'} },
@@ -11190,6 +11492,8 @@ ${dwBlocks}
       case 'roadmap-result': return React.createElement(S('RoadmapResultScreen', RoadmapResultScreen));
       case 'yearly': return React.createElement(S('YearlyScreen', YearlyScreen));
       case 'yearly-result': return React.createElement(S('YearlyResultScreen', YearlyResultScreen));
+      case 'keycard': return React.createElement(S('KeycardScreen', KeycardScreen));
+      case 'keycard-result': return React.createElement(S('KeycardResultScreen', KeycardResultScreen));
       case 'daewoon': return React.createElement(S('DaewoonScreen', DaewoonScreen));
       case 'mypage': return React.createElement(S('MyPageScreen', MyPageScreen));
       case 'inquiry': return React.createElement(S('InquiryScreen', InquiryScreen));
