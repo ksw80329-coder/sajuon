@@ -1248,6 +1248,36 @@ function App() {
       whenFirestore().then(fs => { if (fs) fsAnalyses(uid).doc(_aiDocId(key)).set({ type: 'aiReport', key, value, savedAt: Date.now() }).catch(e => console.warn('리포트 업로드 실패:', e)); });
     } catch (e) {}
   };
+  // 결제한 리포트를 완전히 삭제: 기기 캐시 + 클라우드 원문 (복원 불가)
+  const purgeAiReports = (keys, prefixes = []) => {
+    const all = new Set(keys.filter(Boolean));
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && prefixes.some(px => k.startsWith(px))) all.add(k); } } catch (e) {}
+    const uid = _aiUid();
+    all.forEach(k => {
+      try { localStorage.removeItem(k); } catch (e) {}
+      if (uid) whenFirestore().then(fs => { if (fs) fsAnalyses(uid).doc(_aiDocId(k)).set({ type: 'aiReport', key: k, value: '', deleted: true, savedAt: Date.now() }).catch(() => {}); });
+    });
+  };
+  const REL_KEY = {'1':'couple','2':'friend','3':'business','4':'parent_child','5':'sibling','6':'etc','7':'grandparent','8':'relative','9':'mentor','10':'rival'};
+  const purgeRecord = (kind, rec) => {
+    if (!rec) return;
+    if (kind === 'paidSaju') purgeAiReports([], [`ai_saju_v46_${rec.name}_${rec.year}_${rec.month}_${rec.day}_`]);
+    if (kind === 'compat') {
+      const rk = REL_KEY[String(rec.relation)] || rec.relationKey || 'couple';
+      purgeAiReports([`ai_compat_v46_${rec.person1Id}_${rec.person2Id}_${rk}`, `ai_compat_v46_${rec.person2Id}_${rec.person1Id}_${rk}`],
+        [`ai_compat_v46_${rec.person1Id}_${rec.person2Id}_`, `ai_compat_v46_${rec.person2Id}_${rec.person1Id}_`]);
+    }
+    if (kind === 'yearly') { const y = yearlyYearOf(rec); purgeAiReports([`ai_yearly_v70ov_${rec.personId}_${y}`, `ai_yearly_v70mo_${rec.personId}_${y}`, `ai_yearly_v64_${rec.personId}_${y}`]); }
+    if (kind === 'roadmap') {
+      const ps = savedSaju.find(x => String(x.id) === String(rec.personId));
+      const base = ps ? `${ps.name}_${ps.year}_${ps.month}_${ps.day}` : null;
+      purgeAiReports(base ? [`ai_roadmap_v14_${base}`, `ai_roadmap_v14_${base}_peak`, `ai_roadmap_v13_${base}`, `ai_roadmap_v13_${base}_peak`] : [],
+        [`ai_roadmap_v14_${rec.personName}_`, `ai_roadmap_v13_${rec.personName}_`]);
+    }
+  };
+  const [deleteAsk, setDeleteAsk] = useState(null); // { title, onConfirm }
+  const askDelete = (title, onConfirm) => setDeleteAsk({ title, onConfirm });
+
   // 로컬에 없는 리포트를 클라우드에서 받아 localStorage에 채움 (최대 6초 대기 후 진행)
   const aiCloudPrime = (keys) => {
     const uid = _aiUid();
@@ -1256,7 +1286,7 @@ function App() {
     const work = whenFirestore(6000).then(fs => {
       if (!fs) return;
       return Promise.all(missing.map(k => fsAnalyses(uid).doc(_aiDocId(k)).get().then(d => {
-        const v = d.exists ? d.data()?.value : null;
+        const v = d.exists && !d.data()?.deleted ? d.data()?.value : null;
         if (v) { try { localStorage.setItem(k, v); } catch (e) {} }
       }).catch(() => {})));
     });
@@ -2038,9 +2068,36 @@ function App() {
 
 
   // ===== 결제 최종 확인 모달 (전자상거래법 제17조) =====
+  const DeleteConfirmModal = () => {
+    const [ok, setOk] = React.useState(false);
+    React.useEffect(() => { setOk(false); }, [deleteAsk]);
+    if (!deleteAsk) return null;
+    const close = () => setDeleteAsk(null);
+    return React.createElement(React.Fragment, null,
+      React.createElement('div', { onClick: close, style:{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:700} }),
+      React.createElement('div', { style:{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(92vw,380px)',zIndex:701,background:'#0f0c1e',borderRadius:'22px',border:'1px solid rgba(239,68,68,0.3)',padding:'22px',boxShadow:'0 20px 60px rgba(0,0,0,0.8)'} },
+        React.createElement('p', { style:{fontSize:'30px',textAlign:'center',margin:'0 0 8px'} }, '🗑️'),
+        React.createElement('h3', { style:{color:'white',fontWeight:'800',fontSize:'17px',textAlign:'center',margin:'0 0 6px'} }, '기록을 삭제할까요?'),
+        React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'13px',textAlign:'center',margin:'0 0 16px'} }, deleteAsk.title),
+        React.createElement('div', { style:{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'14px',padding:'12px 14px',marginBottom:'12px'} },
+          ['삭제하면 이 리포트는 복원할 수 없어요.', '다시 보려면 새로 결제해야 하고, 풀이도 새로 생성돼요.', '이미 결제한 금액(별)은 환불되지 않아요.'].map((t,i) =>
+            React.createElement('p', { key:i, style:{color:'#fca5a5',fontSize:'12px',lineHeight:'1.7',margin:0} }, '· ' + t))),
+        React.createElement('label', { style:{display:'flex',gap:'10px',alignItems:'center',padding:'10px 12px',borderRadius:'12px',background:'rgba(255,255,255,0.04)',cursor:'pointer',marginBottom:'14px'} },
+          React.createElement('input', { type:'checkbox', checked: ok, onChange: e => setOk(e.target.checked), style:{width:'18px',height:'18px',accentColor:'#ef4444'} }),
+          React.createElement('span', { style:{color:'white',fontSize:'13px',fontWeight:'600'} }, '위 내용을 확인했으며, 삭제에 동의합니다')),
+        React.createElement('div', { style:{display:'flex',gap:'8px'} },
+          React.createElement('button', { onClick: close, style:{flex:1,padding:'13px',borderRadius:'12px',border:'1px solid rgba(255,255,255,0.12)',background:'transparent',color:'rgba(255,255,255,0.6)',fontSize:'14px',cursor:'pointer'} }, '취소'),
+          React.createElement('button', { onClick: ok ? () => { const f = deleteAsk.onConfirm; close(); f(); } : undefined,
+            style:{flex:1.4,padding:'13px',borderRadius:'12px',border:'none',fontWeight:'800',fontSize:'14px',cursor: ok ? 'pointer' : 'not-allowed',
+              background: ok ? '#ef4444' : 'rgba(255,255,255,0.08)', color: ok ? 'white' : 'rgba(255,255,255,0.25)'} }, '영구 삭제'))
+      )
+    );
+  };
+
   const PurchaseConfirmModal = () => {
     const [checked1, setChecked1] = React.useState(false);
     const [checked2, setChecked2] = React.useState(false);
+    React.useEffect(() => { setChecked1(false); setChecked2(false); }, [purchaseConfirm]);
     if (!purchaseConfirm) return null;
     const { product, onConfirm } = purchaseConfirm;
     const canConfirm = checked1 && checked2;
@@ -6011,7 +6068,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                 style:{position:'relative',flexShrink:0}
               },
                 React.createElement('button', {
-                  onClick:(e)=>{e.stopPropagation();if(window.confirm('이 궁합 기록을 삭제할까요?')){setSavedCompatibility(prev=>prev.filter((_,idx)=>idx!==i));}},
+                  onClick:(e)=>{e.stopPropagation();askDelete(`${compat.person1Name} & ${compat.person2Name} 궁합`, ()=>{ purgeRecord('compat', compat); setSavedCompatibility(prev=>prev.filter(x=>x.id!==compat.id)); });},
                   style:{position:'absolute',top:'-7px',right:'-7px',width:'18px',height:'18px',borderRadius:'50%',background:'rgba(239,68,68,0.9)',border:'1.5px solid rgba(7,5,20,0.8)',color:'white',fontSize:'10px',fontWeight:'900',cursor:'pointer',zIndex:10,padding:0,display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1}
                 },'✕'),
                 React.createElement('button', {
@@ -9439,7 +9496,7 @@ ${dwBlocks}
                     style:{color:'#fbbf24',fontSize:'11px',fontWeight:'700',cursor:'pointer',flexShrink:0,padding:'4px 8px',background:'rgba(251,191,36,0.1)',borderRadius:'8px'}
                   },'보기 →'),
                   React.createElement('button',{
-                    onClick:(e)=>{e.stopPropagation();if(window.confirm(yearly.personName+'님의 신년운세 기록을 삭제할까요?')){setSavedYearly(prev=>prev.filter((_,idx)=>idx!==yi));}},
+                    onClick:(e)=>{e.stopPropagation();askDelete(`${yearly.personName}님의 ${yearlyYearOf(yearly)} 신년운세`, ()=>{ purgeRecord('yearly', yearly); setSavedYearly(prev=>prev.filter(x=>x.id!==yearly.id)); });},
                     style:{flexShrink:0,width:'28px',height:'28px',borderRadius:'8px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',color:'#f87171',fontSize:'13px',fontWeight:'700',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0}
                   },'✕')
                 );
@@ -10518,7 +10575,7 @@ ${dwBlocks}
                     ),
                     React.createElement('span', { onClick:()=>{ setCurrentInput({ name:saju.name, gender:saju.gender, year:saju.year, month:saju.month, day:saju.day, hour:saju.hour, minute:saju.minute, calendar:saju.calendar }); setCurrentResult(saju.result); setScreen('paid-result'); }, style:{color:'#c4b5fd',fontSize:'11px',fontWeight:'700',marginRight:'4px',cursor:'pointer',flexShrink:0} }, '보기 →'),
                     React.createElement('button', {
-                      onClick: (e) => { e.stopPropagation(); if (!window.confirm(`'${saju.name}' 분석 기록을 삭제할까요?`)) return; setSavedPaidSaju(prev => prev.filter((_,idx)=>idx!==i)); },
+                      onClick: (e) => { e.stopPropagation(); askDelete(`${saju.name}님의 상세 사주 분석`, () => { purgeRecord('paidSaju', saju); setSavedPaidSaju(prev => prev.filter(x => x.id !== saju.id)); }); },
                       style:{flexShrink:0,width:'28px',height:'28px',borderRadius:'8px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',color:'rgba(239,68,68,0.7)',fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}
                     }, '✕')
                   )
@@ -10563,8 +10620,7 @@ ${dwBlocks}
                     React.createElement('button', {
                       onClick: (e) => {
                         e.stopPropagation();
-                        if (!window.confirm(`'${compat.person1Name} & ${compat.person2Name}' 궁합 기록을 삭제할까요?\n삭제하면 복구할 수 없습니다.`)) return;
-                        setSavedCompatibility(prev => prev.filter((_, idx) => idx !== i));
+                        askDelete(`${compat.person1Name} & ${compat.person2Name} 궁합`, () => { purgeRecord('compat', compat); setSavedCompatibility(prev => prev.filter(x => x.id !== compat.id)); });
                       },
                       style:{flexShrink:0,width:'28px',height:'28px',borderRadius:'8px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',color:'#f87171',fontSize:'13px',fontWeight:'700',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0}
                     }, '✕')
@@ -10598,7 +10654,7 @@ ${dwBlocks}
                     ),
                     React.createElement('span', { onClick:()=>{ setYearlyPerson(yearly.personId); setYearlyViewYear(yearlyYearOf(yearly)); setScreen('yearly-result'); }, style:{color:'#fcd34d',fontSize:'11px',fontWeight:'700',marginRight:'4px',cursor:'pointer',flexShrink:0} }, '보기 →'),
                     React.createElement('button', {
-                      onClick: (e) => { e.stopPropagation(); if (!window.confirm(`'${yearly.personName}' 신년운세 기록을 삭제할까요?`)) return; setSavedYearly(prev => prev.filter((_,idx)=>idx!==i)); },
+                      onClick: (e) => { e.stopPropagation(); askDelete(`${yearly.personName}님의 ${yearlyYearOf(yearly)} 신년운세`, () => { purgeRecord('yearly', yearly); setSavedYearly(prev => prev.filter(x => x.id !== yearly.id)); }); },
                       style:{flexShrink:0,width:'28px',height:'28px',borderRadius:'8px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',color:'rgba(239,68,68,0.7)',fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}
                     }, '✕')
                   )
@@ -10625,7 +10681,7 @@ ${dwBlocks}
                     ),
                     React.createElement('span', { style:{color:'rgba(167,139,250,0.6)',fontSize:'11px'} }, '보기 →'),
                     React.createElement('button', {
-                      onClick: (e) => { e.stopPropagation(); if(window.confirm(rm.personName + '님의 인생 지도 분석을 삭제할까요?')) { setSavedRoadmap(prev => prev.filter((_,idx)=>idx!==i)); } },
+                      onClick: (e) => { e.stopPropagation(); askDelete(`${rm.personName}님의 대운 인생 지도`, () => { purgeRecord('roadmap', rm); setSavedRoadmap(prev => prev.filter(x => x.id !== rm.id)); }); },
                       style:{flexShrink:0,width:'28px',height:'28px',borderRadius:'8px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',color:'#f87171',fontSize:'13px',fontWeight:'700',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0}
                     }, '✕')
                   )
@@ -11563,6 +11619,7 @@ ${dwBlocks}
     ),
     React.createElement(S('OnboardingOverlay', OnboardingOverlay)),
     React.createElement(S('PurchaseConfirmModal', PurchaseConfirmModal)),
+    React.createElement(S('DeleteConfirmModal', DeleteConfirmModal)),
     React.createElement(S('PremiumSheet', PremiumSheet)),
     showLogin && React.createElement(S('LoginModal', LoginModal)),
     React.createElement(S('ShareToast', ShareToast)),
