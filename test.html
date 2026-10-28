@@ -4666,7 +4666,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             boxShadow:'0 4px 24px rgba(124,58,237,0.35)'
           }
         },
-          React.createElement('span', { style:{ fontSize:'20px' } }, '✨'),
+          React.createElement('span', { style:{ fontSize:'20px' } }, '🔮'),
           React.createElement('span', { style:{ color:'white', fontWeight:'800', fontSize:'15px', letterSpacing:'-0.3px' } }, '+ 새로운 사주 입력하기')
         )
       ),
@@ -4771,7 +4771,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                     React.createElement('button', {
                       onClick: () => { setYearlyPerson(saju.id); setScreen('yearly'); },
                       style:{ flex:1, padding:'11px 8px', background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.35)', fontSize:'11px', fontWeight:'600', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px' }
-                    }, '🎊 신년운세'),
+                    }, YEAR_ANIMAL+' 신년운세'),
 
                     React.createElement('div', { style:{ width:'1px', background:'rgba(255,255,255,0.04)', margin:'8px 0' } }),
 
@@ -4888,6 +4888,72 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     )
   )
   );
+  };
+
+  // ===== 무료 결과 화면: 내 대운 10개 미리보기 (대운 인생 지도 입구) =====
+  const DaewoonPreview = ({ inp, r }) => {
+    let dw = null, scored = [];
+    try {
+      dw = calcDaewoon(parseInt(inp.year), parseInt(inp.month), parseInt(inp.day),
+        (inp.hour===null||inp.hour===''||inp.hour==='unknown') ? 12 : parseInt(inp.hour), inp.minute ? parseInt(inp.minute) : 0,
+        inp.gender, (inp.calendar==='음력'||inp.isLunar===true), inp.isLeapMonth||false, r.pillars);
+      scored = scoreDaewoons(dw.daewoons, r);
+    } catch (e) { return null; }
+    if (!dw || !dw.daewoons.length) return null;
+    const now = new Date();
+    const had = (now.getMonth()+1 > parseInt(inp.month)) || (now.getMonth()+1 === parseInt(inp.month) && now.getDate() >= parseInt(inp.day));
+    const age = now.getFullYear() - parseInt(inp.year) - (had ? 0 : 1);
+    const curIdx = dw.daewoons.findIndex((d,i) => { const nx = dw.daewoons[i+1]; return age >= d.age && (!nx || age < nx.age); });
+    let best = 0, worst = 0;
+    scored.forEach((x,i) => { if (x.score > scored[best].score) best = i; if (x.score < scored[worst].score) worst = i; });
+    const person = savedSaju.find(s => s.name === inp.name && String(s.year) === String(inp.year) && String(s.month) === String(inp.month) && String(s.day) === String(inp.day));
+    const paid = person && savedRoadmap.some(x => String(x.personId) === String(person.id));
+    const go = () => {
+      if (person) setRoadmapPerson(person.id);
+      setScreen(paid ? 'roadmap-result' : 'roadmap'); window.scrollTo(0,0);
+    };
+    const elHex = { 목:'#4ade80', 화:'#f87171', 토:'#fbbf24', 금:'#e2e8f0', 수:'#60a5fa' };
+    const cur = curIdx >= 0 ? dw.daewoons[curIdx] : null;
+    return React.createElement('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'22px',border:'1px solid rgba(14,165,233,0.25)',padding:'18px',marginBottom:'16px',position:'relative',zIndex:1} },
+      React.createElement('div', { style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'} },
+        React.createElement('p', { style:{color:'white',fontWeight:'800',fontSize:'16px',margin:0} }, '🗺️ 내 대운 10개 미리보기'),
+        React.createElement('span', { style:{fontSize:'10px',color:'#34d399',background:'rgba(52,211,153,0.1)',border:'1px solid rgba(52,211,153,0.25)',padding:'2px 8px',borderRadius:'10px',fontWeight:'700'} }, '무료')
+      ),
+      React.createElement('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'12px',lineHeight:'1.6',marginBottom:'12px'} },
+        `대운은 10년마다 바뀌는 인생의 큰 계절이에요. ${inp.name}님의 대운은 ${dw.startAge}세부터 ${dw.isForward?'순행':'역행'}으로 흘러가요.`),
+      React.createElement(S('DaewoonCurveChart', DaewoonCurveChart), { daewoons: dw.daewoons, currentAge: age, elColor: elHex, currentDaewoonIdx: curIdx, scores: scored.map(x=>x.score) }),
+      // 10개 대운 가로 목록
+      React.createElement('div', { style:{display:'flex',gap:'8px',overflowX:'auto',paddingBottom:'6px',marginBottom:'12px',WebkitOverflowScrolling:'touch'} },
+        dw.daewoons.map((d,i) => {
+          const isCur = i === curIdx, isBest = i === best, isWorst = i === worst && worst !== best;
+          const c = elHex[d.el] || '#c4b5fd';
+          return React.createElement('div', { key:i, style:{flex:'0 0 auto',width:'74px',textAlign:'center',padding:'10px 4px',borderRadius:'14px',
+              background: isCur ? `${c}1f` : 'rgba(255,255,255,0.03)', border:`1px solid ${isCur ? c+'88' : isBest ? 'rgba(251,191,36,0.5)' : isWorst ? 'rgba(248,113,113,0.45)' : 'rgba(255,255,255,0.07)'}`} },
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.4)',fontSize:'10px',margin:'0 0 4px'} }, `${d.age}~${d.endAge}세`),
+            React.createElement('p', { style:{color:c,fontWeight:'900',fontSize:'17px',margin:0,fontFamily:'serif'} }, d.stem+d.branch),
+            React.createElement('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'10px',margin:'2px 0 0'} }, `${d.stemKr}${d.branchKr} · ${d.tenGod}`),
+            (isCur || isBest || isWorst) && React.createElement('p', { style:{fontSize:'9px',fontWeight:'800',margin:'5px 0 0',color: isCur ? c : isBest ? '#fbbf24' : '#f87171'} },
+              isCur ? '지금' : isBest ? '★ 가장 유리' : '▲ 가장 조심')
+          );
+        })
+      ),
+      // 잠긴 해설 미리보기
+      React.createElement('div', { style:{position:'relative',borderRadius:'14px',overflow:'hidden',marginBottom:'12px',border:'1px solid rgba(255,255,255,0.06)'} },
+        React.createElement('div', { style:{padding:'12px 14px',filter:'blur(4px)',userSelect:'none',pointerEvents:'none'} },
+          [cur, dw.daewoons[best], dw.daewoons[worst]].filter(Boolean).slice(0,3).map((d,i) =>
+            React.createElement('p', { key:i, style:{color:'rgba(255,255,255,0.6)',fontSize:'12px',lineHeight:'1.8',margin:'0 0 6px'} },
+              `${d.age}~${d.endAge}세 ${d.stemKr}${d.branchKr}대운 — 이 시기에는 ${d.tenGod}의 기운이 강해지면서 일과 관계에서 새로운 흐름이 만들어집니다.`))
+        ),
+        React.createElement('div', { style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(7,5,20,0.45)'} },
+          React.createElement('p', { style:{color:'white',fontSize:'12px',fontWeight:'700',textAlign:'center',lineHeight:'1.6',margin:0,padding:'0 12px'} },
+            `🔒 ${dw.daewoons[best].age}세 대운이 왜 가장 유리한지,\n지금 대운에서 무엇을 해야 하는지`))
+      ),
+      React.createElement('button', { onClick: go, style:{width:'100%',padding:'15px',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'800',fontSize:'14px',
+          color: paid ? '#052e16' : 'white', background: paid ? 'linear-gradient(135deg,#4ade80,#22c55e)' : 'linear-gradient(135deg,#0ea5e9,#6366f1)', boxShadow:'0 4px 24px rgba(14,165,233,0.25)'} },
+        paid ? '🗺️ 내 대운 인생 지도 다시 보기 →' : '🗺️ 대운 10개 전체 해설 보기 (⭐3별)'),
+      React.createElement('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',textAlign:'center',margin:'8px 0 0',lineHeight:'1.6'} },
+        '유리·불리는 용신·기신과 원국과의 합충으로 계산했어요.' + ((inp.hour===null||inp.hour==='') ? ' 태어난 시간을 모르면 대운 시작 나이가 1년 정도 달라질 수 있어요.' : ''))
+    );
   };
 
   const FreeResultScreen = () => {
@@ -5044,6 +5110,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           )
         );
       })(),
+      React.createElement(S('DaewoonPreview', DaewoonPreview), { inp, r }),
       (() => {
         const alreadyPaid = inp && savedPaidSaju.some(p => p.name === inp.name && p.year === inp.year && p.month === inp.month && p.day === inp.day);
         if (alreadyPaid) {
@@ -8406,7 +8473,7 @@ ${isSangsaeng
 
   // ===== 대운 인생 지도 입력 =====
   const RoadmapScreen = () => {
-    const [selPerson, setSelPerson] = React.useState(savedSaju.length > 0 ? savedSaju[0].id : null);
+    const [selPerson, setSelPerson] = React.useState(() => (roadmapPerson && savedSaju.some(s => String(s.id) === String(roadmapPerson))) ? roadmapPerson : (savedSaju.length > 0 ? savedSaju[0].id : null));
 
     const handleStart = () => {
       if (!selPerson) { alert('사주를 선택해주세요.'); return; }
