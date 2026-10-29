@@ -1,14 +1,13 @@
 {
-  "name": "사주ON",
+  "name": "사주ON — 정통 명리 사주",
   "short_name": "사주ON",
-  "description": "전통 명리학 기반 사주 심층분석 · 궁합 · 신년운세",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#070514",
-  "theme_color": "#7c3aed",
-  "orientation": "portrait",
+  "background_color": "#F3ECDF",
+  "theme_color": "#F3ECDF",
+  "lang": "ko",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png?v=2", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png?v=2", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }
