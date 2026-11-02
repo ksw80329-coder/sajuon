@@ -52,7 +52,7 @@
         "name": "2027년 신년운세는 어떻게 보나요?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "사주ON에서 생년월일과 태어난 시각을 입력하면 2027 정미년(丁未年) 신년운세를 분석해 드립니다. 정미년 세운이 내 사주 원국과 만드는 합·충과 지금 대운의 흐름을 계산해 근거와 함께 풀이하고, 월별 운세는 절기(입춘~소한) 기준으로 12달을 자세히 다룹니다. 기본 만세력 사주 분석은 무료입니다."
+          "text": "사주ON에서 생년월일과 태어난 시각을 입력하면 2027 정미년(丁未年) 신년운세를 분석해 드립니다. 정미년 세운이 내 사주 원국과 만드는 합·충과 지금 대운의 흐름을 계산해 근거와 함께 풀이하고, 월별 운세는 2027년 1월부터 2028년 1월까지 13개월을 절기 기준으로 자세히 다룹니다(사주의 한 해는 입춘에 시작). 기본 만세력 사주 분석은 무료입니다."
         }
       },
       {
@@ -432,6 +432,13 @@ const COLORS = { 목:'#22c55e', 화:'#ef4444', 토:'#eab308', 금:'#9ca3af', 수
 // 10월 1일부터는 다음 해 신년운세만 판매 (예: 2026.10~2027.09 → 2027년)
 const getFortuneYear = (d = new Date()) => d.getMonth() >= 9 ? d.getFullYear() + 1 : d.getFullYear();
 const FORTUNE_YEAR = getFortuneYear();
+// ===== 2027 신년운세 출시 기념 할인 — 2027년 1월 1일 0시(한국시간)가 되면 자동으로 정가(⭐3)로 돌아감 =====
+const YEARLY_PROMO_END = Date.UTC(2026, 11, 31, 15, 0, 0);   // = 2027-01-01 00:00 KST
+const yearlyPromoOn = () => FORTUNE_YEAR === 2027 && Date.now() < YEARLY_PROMO_END;
+const yearlyPrice = () => yearlyPromoOn() ? { stars: 2, price: 2000 } : { stars: 3, price: 3000 };
+// 묶음: 상세 사주(⭐3) + 신년운세 — 따로 사는 것보다 ⭐1 저렴
+const bundlePrice = () => yearlyPromoOn() ? { stars: 4, price: 4000 } : { stars: 5, price: 5000 };
+const PROMO_BADGE = '12/31까지 출시 할인';
 const yearGanji = (y) => { const si=((y-4)%10+10)%10, bi=((y-4)%12+12)%12; return { stem:STEMS.names[si], branch:BRANCHES.names[bi], kr:STEMS.korean[si]+BRANCHES.korean[bi] }; };
 const FORTUNE_GANJI = yearGanji(FORTUNE_YEAR);
 const FORTUNE_LABEL = `${FORTUNE_YEAR} ${FORTUNE_GANJI.kr}년`;
@@ -1059,7 +1066,28 @@ function buildYearlyBasis(r, year) {
       rel, el, score, flag: '',
     };
   });
-  const byScore = [...months].sort((a,b) => b.score - a.score);
+  // 양력 1월(소한~입춘 전날)은 아직 지난해 세운의 마지막 달 — 사용자가 1월부터 보길 원해 '준비하는 달'로 앞에 붙임
+  {
+    const pys = ((year-1-4)%10+10)%10, pyb = ((year-1-4)%12+12)%12;
+    const msi = getMonthStemIndex(pys, 12), mbi = sajuMonthToBranchIndex(12);
+    const st = findTerm('소한', year), nx = findTerm('입춘', year);
+    let start = null, end = null;
+    if (st) start = new Date(st.year, st.month-1, st.day);
+    if (nx) { end = new Date(nx.year, nx.month-1, nx.day); end.setDate(end.getDate()-1); }
+    const rel = ganjiRelations(msi, mbi, [...wonguk, { key:'sewoon', label:`${year-1}년 세운`, si:pys, bi:pyb }]);
+    const el = elNote(msi, mbi);
+    let score = 0;
+    [...rel, ...el].forEach(x => { const w = x.w * (x.on === 'day' ? 1.5 : 1); score += x.good ? w : -w; });
+    months.unshift({
+      idx: 0, isPre: true, calMonth: 1, calYear: year, prevYearKr: `${STEMS.korean[pys]}${BRANCHES.korean[pyb]}`,
+      range: start && end ? `${fmt(start)} ~ ${fmt(end)}` : '',
+      si: msi, bi: mbi, ganji: `${STEMS.names[msi]}${BRANCHES.names[mbi]}`, kr: `${STEMS.korean[msi]}${BRANCHES.korean[mbi]}`,
+      stemGod: getTenGod(dsi, msi), branchGod: godOfBranch(mbi), twelve: getTwelve(dStem, mbi),
+      rel, el, score, flag: '',
+    });
+  }
+  months.forEach(m => { m.key = `${m.calYear}-${m.calMonth}`; });
+  const byScore = months.filter(m => !m.isPre).sort((a,b) => b.score - a.score);
   byScore.filter(m => m.score >= 2).slice(0,2).forEach(m => { m.flag = 'focus'; });
   [...byScore].reverse().filter(m => m.score <= -2 && !m.flag).slice(0,2).forEach(m => { m.flag = 'caution'; });
   return { sewoon, months };
@@ -1558,7 +1586,7 @@ function App() {
       purgeAiReports([`ai_compat_v46_${rec.person1Id}_${rec.person2Id}_${rk}`, `ai_compat_v46_${rec.person2Id}_${rec.person1Id}_${rk}`],
         [`ai_compat_v46_${rec.person1Id}_${rec.person2Id}_`, `ai_compat_v46_${rec.person2Id}_${rec.person1Id}_`]);
     }
-    if (kind === 'yearly') { const y = yearlyYearOf(rec); purgeAiReports([`ai_yearly_v70ov_${rec.personId}_${y}`, `ai_yearly_v70mo_${rec.personId}_${y}`, `ai_yearly_v64_${rec.personId}_${y}`]); }
+    if (kind === 'yearly') { const y = yearlyYearOf(rec); purgeAiReports([`ai_yearly_v70ov_${rec.personId}_${y}`, `ai_yearly_v70mo_${rec.personId}_${y}`, `ai_yearly_v71mo_${rec.personId}_${y}`, `ai_yearly_v64_${rec.personId}_${y}`]); }
     if (kind === 'roadmap') {
       const ps = savedSaju.find(x => String(x.id) === String(rec.personId));
       const base = ps ? `${ps.name}_${ps.year}_${ps.month}_${ps.day}` : null;
@@ -2242,12 +2270,21 @@ function App() {
               } else if (pending.product.type === 'compat' || pending.product.name === '궁합 분석') {
                 if (pending.compatResult) { setSavedCompatibility(prev => [...prev, pending.compatResult]); setCompatPerson1(pending.compatResult.person1Id); setCompatPerson2(pending.compatResult.person2Id); if (pending.compatResult.relationKey) setCompatRelation(pending.compatResult.relationKey); }
                 setScreen('compatibility-result');
-              } else if (pending.product.type === 'yearly' || (pending.product.name && pending.product.name.includes('신년운세'))) {
+              } else if (pending.product.type === 'yearly' || (pending.product.type !== 'bundle' && pending.product.name && pending.product.name.includes('신년운세'))) {
                 if (pending.yearlyResult) { setSavedYearly(prev => [...prev, pending.yearlyResult]); setYearlyViewYear(pending.yearlyResult.year || FORTUNE_YEAR); setYearlyPerson(pending.yearlyResult.personId); }
                 setScreen('yearly-result');
               } else if (pending.product.type === 'roadmap' || pending.product.name === '대운 인생 지도') {
                 if (pending.roadmapResult) { setSavedRoadmap(prev => prev.some(r => String(r.personId) === String(pending.roadmapResult.personId)) ? prev : [...prev, pending.roadmapResult]); setRoadmapPerson(pending.roadmapResult.personId); }
                 setScreen('roadmap-result');
+              } else if (pending.product.type === 'bundle' && pending.bundlePerson) {
+                const bp = pending.bundlePerson;
+                const inp = { name: bp.name, gender: bp.gender, calendar: bp.calendar, year: bp.year, month: bp.month, day: bp.day, hour: bp.hour, minute: bp.minute };
+                const res = bp.result || analyzeSaju(bp.year, bp.month, bp.day, bp.hour, bp.minute, bp.calendar === '음력', false);
+                const same = (p) => p.name === inp.name && String(p.year) === String(inp.year) && String(p.month) === String(inp.month) && String(p.day) === String(inp.day);
+                setSavedPaidSaju(prev => prev.some(same) ? prev : [...prev, { id: Date.now(), ...inp, result: res, date: new Date().toLocaleDateString('ko-KR') }]);
+                setSavedYearly(prev => prev.some(y => String(y.personId) === String(bp.id) && yearlyYearOf(y) === FORTUNE_YEAR) ? prev : [...prev, { id: Date.now() + 1, personId: bp.id, personName: bp.name, year: FORTUNE_YEAR, date: new Date().toLocaleDateString() }]);
+                setCurrentInput(inp); setCurrentResult(res); setYearlyPerson(bp.id); setYearlyViewYear(FORTUNE_YEAR);
+                setScreen('yearly-result');
               } else if (pending.product.type === 'keycard') {
                 if (pending.yearlyResult) { setYearlyPerson(pending.yearlyResult.personId); setSavedKeycard(prev => prev.some(k => String(k.personId) === String(pending.yearlyResult.personId) && k.year === FORTUNE_YEAR) ? prev : [...prev, { ...pending.yearlyResult }]); }
                 setScreen('keycard-result');
@@ -4301,6 +4338,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       compatResult: (p1 && p2) ? { id: Date.now(), person1Id: compatPerson1, person2Id: compatPerson2, person1Name: p1.name, person2Name: p2.name, relation: {'couple':'1','friend':'2','business':'3','parent_child':'4','sibling':'5','etc':'6','grandparent':'7','relative':'8','mentor':'9','rival':'10'}[compatRelation]||'1', relationKey: compatRelation || 'couple', date: new Date().toLocaleDateString() } : null,
       yearlyResult: yp ? { id: Date.now(), personId: yearlyPerson, personName: yp.name, year: FORTUNE_YEAR, date: new Date().toLocaleDateString() } : null,
       roadmapResult: rp ? { id: Date.now(), personId: roadmapPerson, personName: rp.name, date: new Date().toLocaleDateString() } : null,
+      bundlePerson: product.type === 'bundle' && yp ? { id: yp.id, name: yp.name, gender: yp.gender, calendar: yp.calendar, year: yp.year, month: yp.month, day: yp.day, hour: yp.hour, minute: yp.minute, result: yp.result || null } : null,
     };
   };
 
@@ -4435,6 +4473,20 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     setPurchases(updatedPurchases);
     if (userKey) saveUserData(userKey, 'purchases', updatedPurchases);
         
+    if (prod.type === 'bundle') {   // 상세 사주 + 신년운세 묶음
+      const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
+      if (person) {
+        const inp = { name: person.name, gender: person.gender, calendar: person.calendar, year: person.year, month: person.month, day: person.day, hour: person.hour, minute: person.minute };
+        const res = person.result || analyzeSaju(person.year, person.month, person.day, person.hour, person.minute, (person.calendar === '음력' || person.isLunar === true), person.isLeapMonth || false);
+        const same = (p) => p.name === inp.name && String(p.year) === String(inp.year) && String(p.month) === String(inp.month) && String(p.day) === String(inp.day);
+        setSavedPaidSaju(prev => prev.some(same) ? prev : [...prev, { id: Date.now(), ...inp, result: res, date: new Date().toLocaleDateString() }]);
+        setSavedYearly(prev => prev.some(y => String(y.personId) === String(person.id) && yearlyYearOf(y) === FORTUNE_YEAR) ? prev : [...prev, { id: Date.now() + 1, personId: person.id, personName: person.name, year: FORTUNE_YEAR, date: new Date().toLocaleDateString() }]);
+        setCurrentInput(inp); setCurrentResult(res); setYearlyPerson(person.id);
+      }
+      setYearlyViewYear(FORTUNE_YEAR);
+      setScreen('yearly-result');
+      return;
+    }
     if (prod.type === 'keycard') {
       const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
       if (person && !savedKeycard.some(k => String(k.personId) === String(yearlyPerson) && Number(k.year) === FORTUNE_YEAR)) {
@@ -4491,7 +4543,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         }
       }
       setScreen('compatibility-result');
-    } else if (prod.type === 'yearly' || (prod.name && prod.name.includes('신년운세'))) {
+    } else if (prod.type === 'yearly' || (prod.type !== 'bundle' && prod.name && prod.name.includes('신년운세'))) {
       // 신년운세 결과 저장
       const person = savedSaju.find(s => String(s.id) === String(yearlyPerson));
       if (person) {
@@ -4965,7 +5017,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             background: ownKey ? 'rgba(156,118,49,0.12)' : 'rgba(35,31,28,0.05)', color: ownKey ? HJ.gold : HJ.faint, border:`1px dashed ${ownKey ? 'rgba(156,118,49,0.4)' : HJ.line}`} }, `# ${k}`))),
         ownKey ? link('키워드 카드 보기', () => { setYearlyPerson(person.id); setScreen('keycard-result'); window.scrollTo(0,0); }, true)
                : link('⭐1별로 올해 키워드 열기', () => { setYearlyPerson(person.id); setScreen('keycard'); window.scrollTo(0,0); }, true),
-        link('신년운세 전체 ⭐3', () => { setYearlyPerson(person.id); setScreen('yearly'); window.scrollTo(0,0); })),
+        link(`신년운세 전체 ⭐${yearlyPrice().stars}${yearlyPromoOn() ? ' 할인' : ''}`, () => { setYearlyPerson(person.id); setScreen('yearly'); window.scrollTo(0,0); })),
 
       // ③ 지금 대운
       dw && dw.idx >= 0 && _h('div', { className:'hj-rise', style:hjCard({animationDelay:'0.35s'}) },
@@ -4993,7 +5045,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   const HomeShelf = () => {
     const items = [
       { icon:'🔖', t:`${FORTUNE_YEAR} 키워드 카드`, d:'키워드 3개 · 행운의 달 · 공유 카드', p:1, go:()=>setScreen('keycard') },
-      { icon:YEAR_ANIMAL, t:`${FORTUNE_YEAR} 신년운세`, d:'정미년이 내 사주에 들어오는 방식 · 월별 운세', p:3, go:()=>setScreen('yearly') },
+      { icon:YEAR_ANIMAL, t:`${FORTUNE_YEAR} 신년운세`, d: yearlyPromoOn() ? `${PROMO_BADGE} · 13개월 월별 운세` : '정미년이 내 사주에 들어오는 방식 · 월별 운세', p:yearlyPrice().stars, was: yearlyPromoOn() ? 3 : null, go:()=>setScreen('yearly') },
       { icon:'📜', t:'상세 사주 분석', d:'성격 · 직업 · 재물 · 연애 · 지금 대운 전략', p:3, go:()=>setScreen(savedSaju.length ? 'saju-list' : 'input') },
       { icon:'💞', t:'궁합', d:'연인 · 친구 · 가족 · 동료 맞춤', p:2, go:()=>setScreen('compatibility') },
       { icon:'🗺️', t:'대운 인생 지도', d:'10년 단위 인생 흐름과 전성기', p:3, go:()=>setScreen('roadmap') },
@@ -5006,7 +5058,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           _h('div', { style:{flex:1,minWidth:0} },
             _h('p', { style:{color:HJ.ink,fontWeight:700,fontSize:'14px',margin:'0 0 2px'} }, it.t),
             _h('p', { style:{color:HJ.faint,fontSize:'11px',margin:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'} }, it.d)),
-          _h('span', { style:{color:HJ.gold,fontWeight:800,fontSize:'14px',flexShrink:0} }, `⭐${it.p}`),
+          it.was && _h('span', { style:{color:HJ.faint,fontSize:'12px',textDecoration:'line-through',flexShrink:0} }, `⭐${it.was}`),
+          _h('span', { style:{color: it.was ? HJ.red : HJ.gold,fontWeight:800,fontSize:'14px',flexShrink:0} }, `⭐${it.p}`),
           _h('span', { style:{color:HJ.faint} }, '›'))))
     );
   };
@@ -9400,7 +9453,7 @@ ${dwBlocks}
       setYearlyPerson(selPerson);
       setYearlyViewYear(FORTUNE_YEAR);
       if (already) { setScreen('yearly-result'); return; }
-      openPayment({ name: `${FORTUNE_YEAR} 신년운세`, price: 3000, stars: 3, type: 'yearly', personId: selPerson });
+      openPayment({ name: `${FORTUNE_YEAR} 신년운세`, ...yearlyPrice(), type: 'yearly', personId: selPerson });
     };
 
     return _h('div', { style:{minHeight:'100vh',background:'#070514',paddingBottom:'112px',position:'relative'} },
@@ -9484,7 +9537,7 @@ ${dwBlocks}
                 {icon:'🧭',t:`${FORTUNE_GANJI.kr}년이 내 사주에 들어오는 방식`,d:'세운 십성 · 원국과의 합충을 직접 계산',lock:true},
                 {icon:'🔭',t:'지금 대운과 겹치는 흐름',d:'10년 흐름 속에서 올해의 위치',lock:true},
                 {icon:'🧩',t:'일 · 재물 · 관계 · 건강',d:'분야별 해석 + 근거 보기',lock:true},
-                {icon:'📅',t:'월별 운세',d:'절기 기준 12달 · 주목할 달과 조심할 달은 더 자세히',lock:true},
+                {icon:'📅',t:'월별 운세',d:`${FORTUNE_YEAR}년 1월 ~ ${FORTUNE_YEAR+1}년 1월 13개월 · 주목할 달·조심할 달은 더 자세히`,lock:true},
                 {icon:'✅',t:'올해 실천할 것 3가지',d:'근거에서 나온 구체적인 행동',lock:true},
               ].map((item,i)=>_h('div',{key:i,style:{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',background:'rgba(255,255,255,0.03)',borderRadius:'12px'}},
                 _h('span',{style:{fontSize:'18px'}},item.icon),
@@ -9532,11 +9585,13 @@ ${dwBlocks}
             _h('div', { style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'} },
               _h('div', null,
                 _h('p', { style:{color:'rgba(252,211,77,0.6)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'4px'} }, `${FORTUNE_YEAR} 신년운세`),
-                _h('p', { style:{color:'white',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px'} }, '⭐ 3별')
+                _h('p', { style:{color:'white',fontWeight:'900',fontSize:'20px',letterSpacing:'-0.5px'} },
+                  yearlyPromoOn() && _h('span', { style:{fontSize:'14px',fontWeight:'600',textDecoration:'line-through',opacity:0.45,marginRight:'6px'} }, '⭐ 3'),
+                  `⭐ ${yearlyPrice().stars}별`)
               ),
               _h('div', { style:{textAlign:'right'} },
-                _h('div', { style:{background:'rgba(251,191,36,0.15)',borderRadius:'10px',padding:'4px 10px',marginBottom:'4px'} },
-                  _h('span', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px'} }, '⭐ 3별')
+                _h('div', { style:{background: yearlyPromoOn() ? '#B5382A' : 'rgba(251,191,36,0.15)',borderRadius:'10px',padding:'4px 10px',marginBottom:'4px'} },
+                  _h('span', { style:{color: yearlyPromoOn() ? '#FFF6EE' : '#fbbf24',fontWeight:'800',fontSize:'12px'} }, yearlyPromoOn() ? PROMO_BADGE : `⭐ ${yearlyPrice().stars}별`)
                 ),
                 _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px'} }, '보유한 별로도 결제할 수 있어요')
               )
@@ -9557,9 +9612,27 @@ ${dwBlocks}
               ? `${YEAR_ANIMAL} ${FORTUNE_YEAR} 신년운세 결과 보기`
               : _h(React.Fragment, null,
                   `${YEAR_ANIMAL} ${FORTUNE_LABEL} 신년운세 분석받기`,
-                  _h('span', { style:{display:'block',fontSize:'11px',fontWeight:'600',marginTop:'2px',opacity:0.7} }, '⭐ 3별 · 결제 후 바로 생성 · 근거 포함 리포트')
+                  _h('span', { style:{display:'block',fontSize:'11px',fontWeight:'600',marginTop:'2px',opacity:0.7} }, `⭐ ${yearlyPrice().stars}별${yearlyPromoOn() ? ' (출시 할인)' : ''} · 결제 후 바로 생성 · 근거 포함 리포트`)
                 )
           ),
+          (() => {
+            const p = savedSaju.find(s => String(s.id) === String(selPerson));
+            if (!p) return null;
+            const ownY = savedYearly.some(y => String(y.personId) === String(selPerson) && yearlyYearOf(y) === FORTUNE_YEAR);
+            const ownS = savedPaidSaju.some(x => x.name === p.name && String(x.year) === String(p.year) && String(x.month) === String(p.month) && String(x.day) === String(p.day));
+            if (ownY || ownS) return null;
+            const bp = bundlePrice(), sep = 3 + yearlyPrice().stars;
+            return _h('button', {
+              onClick: () => { setYearlyPerson(selPerson); setYearlyViewYear(FORTUNE_YEAR); openPayment({ name: `상세 사주 + ${FORTUNE_YEAR} 신년운세`, ...bp, type: 'bundle', personId: selPerson }); },
+              style:{width:'100%',marginTop:'10px',padding:'14px 16px',borderRadius:'16px',cursor:'pointer',textAlign:'left',background:'#FFFCF6',border:'1.5px dashed rgba(181,56,42,0.45)',display:'flex',alignItems:'center',gap:'12px'} },
+              _h('span', { style:{fontSize:'24px'} }, '🎁'),
+              _h('span', { style:{flex:1,minWidth:0} },
+                _h('span', { style:{display:'block',color:'#231F1C',fontWeight:'800',fontSize:'14px'} }, `${p.name}님 상세 사주까지 함께`),
+                _h('span', { style:{display:'block',color:'#6B6056',fontSize:'11px',marginTop:'2px'} }, `상세 사주 + 신년운세 묶음 · 따로 사면 ⭐${sep}`)),
+              _h('span', { style:{textAlign:'right',flexShrink:0} },
+                _h('span', { style:{display:'block',color:'#A39584',fontSize:'11px',textDecoration:'line-through'} }, `⭐${sep}`),
+                _h('span', { style:{display:'block',color:'#B5382A',fontWeight:'900',fontSize:'16px'} }, `⭐${bp.stars}`)));
+          })(),
           _h('p', { onClick:()=>{ setYearlyPerson(selPerson); setScreen('keycard'); window.scrollTo(0,0); }, style:{textAlign:'center',color:'rgba(251,191,36,0.75)',fontSize:'12px',marginTop:'12px',cursor:'pointer',textDecoration:'underline'} }, `가볍게 먼저 보고 싶다면 → ${FORTUNE_YEAR} 키워드 카드 ⭐1별`)
         )
       )
@@ -9598,7 +9671,7 @@ ${dwBlocks}
           _h('button', { onClick: start, style:{width:'100%',padding:'17px',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'900',fontSize:'15px',
               background: paid(sel) ? 'linear-gradient(135deg,#4ade80,#22c55e)' : 'linear-gradient(135deg,#fbbf24,#f59e0b)', color:'#1c1300'} },
             paid(sel) ? '내 키워드 카드 보기 →' : '⭐1별로 키워드 카드 받기'),
-          _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px',textAlign:'center',marginTop:'10px'} }, '더 자세한 풀이는 신년운세(⭐3별)에서 볼 수 있어요')
+          _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px',textAlign:'center',marginTop:'10px'} }, `더 자세한 풀이는 신년운세(⭐${yearlyPrice().stars}별)에서 볼 수 있어요`)
         )
       )
     );
@@ -9674,7 +9747,7 @@ ${dwBlocks}
           _h('span', { style:{fontSize:'26px'} }, YEAR_ANIMAL),
           _h('div', { style:{flex:1} },
             _h('p', { style:{color:'white',fontWeight:'800',fontSize:'14px',margin:'0 0 2px'} }, '왜 이 키워드인지, 달마다 자세히'),
-            _h('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'12px',margin:0} }, `${FORTUNE_YEAR} 신년운세 · ⭐3별`)),
+            _h('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'12px',margin:0} }, `${FORTUNE_YEAR} 신년운세 · ⭐${yearlyPrice().stars}별${yearlyPromoOn() ? ' (할인)' : ''}`)),
           _h('span', { style:{color:'rgba(255,255,255,0.4)'} }, '›'))
       )
     );
@@ -9712,7 +9785,7 @@ ${dwBlocks}
     }, [person.id, year]);
 
     const ovKey = `ai_yearly_v70ov_${person.id}_${year}`;
-    const moKey = `ai_yearly_v70mo_${person.id}_${year}`;
+    const moKey = `ai_yearly_v71mo_${person.id}_${year}`;   // v71: 1월(입춘 전)~다음 해 1월 13개월
     const legacyKey = `ai_yearly_v64_${person.id}_${year}`;
     const readLS = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
     const [ov, setOv] = React.useState(() => readLS(ovKey));
@@ -9737,8 +9810,8 @@ ${dwBlocks}
     const commonData = `▌원국\n${pillarsDesc}\n일간 ${dayGanKr}(${STEMS.names[r.dsi]}) ${dayEl}행 / 오행 ${feStr} / 용신 ${r.fe.yongshin} / 기신 ${r.fe.gishin}\n신살: ${allSinsal.join(', ')||'없음'}${person.hour===null||person.hour===''?'\n(태어난 시간 미상: 시주 없이 해석)':''}\n\n▌${year}년 세운 ${sw?.ganji}(${sw?.kr})\n천간 ${STEMS.korean[sw?.si]} = ${sw?.stemGod} / 지지 ${BRANCHES.korean[sw?.bi]} 본기 = ${sw?.branchGod} / 일간 기준 12운성 ${sw?.twelve}\n원국과의 관계: ${relText(sw?.rel)}\n용신·기신: ${relText(sw?.el)}\n\n▌대운\n${dwLine}\n\n▌기간\n${year}년 입춘 ~ ${year+1}년 입춘 전날`;
     const rules = `▌작성 원칙\n- 위 계산 데이터만 근거로 쓰고, 데이터에 없는 합충·신살을 지어내지 마세요.\n- ${person.name}님을 자연스럽게 호명하고, 근거(십성·합충·용신)를 문장 안에서 밝혀주세요.\n- 글자 수 제한은 없습니다. 생활 장면 예시와 구체적인 행동 제안을 넣어 풍부하게 써주세요.\n- 공포를 주는 단정적 예언은 피하고, 건강·투자·법률은 전문가 상담을 권하는 정도로만.\n- 한자는 한글 뒤 괄호로 병기: 상관(傷官).\n- JSON 문자열 안에 큰따옴표를 쓰지 말고, 줄바꿈은 \\n 으로 표기하세요.`;
     const ovPrompt = `당신은 정통 명리학자입니다. 아래 계산된 만세력 데이터로 ${person.name}님의 ${year}년 ${yg.kr}년 신년운세 본문을 작성하세요.\n\n${commonData}\n\n${rules}\n\n▌출력 (JSON만)\n{"summary":"올해를 요약하는 한 문장","keywords":["키워드","키워드","키워드"],"intake":"${sw?.kr}년 기운이 원국에 들어오는 방식 해설. 세운 십성과 합충이 삶에서 어떻게 드러나는지 (최소 900자)","daewoon":"현재 대운과 올해 세운이 겹치며 만드는 흐름 (최소 600자)","areas":[{"key":"work","title":"일·커리어","content":"최소 900자","basis":["근거 한 줄","근거 한 줄"]},{"key":"money","title":"재물","content":"최소 900자","basis":["..."]},{"key":"relation","title":"관계·연애","content":"최소 900자","basis":["..."]},{"key":"health","title":"건강·컨디션","content":"최소 700자","basis":["..."]}],"actions":[{"title":"실천 제목","detail":"왜, 어떻게"},{"title":"","detail":""},{"title":"","detail":""}],"message":"${person.name}님께 전하는 마무리 (300자 내외)"}`;
-    const monthLines = (basis?.months || []).map(m => `${m.calMonth}월(${m.range}) ${m.ganji}(${m.kr})월: 천간 ${m.stemGod}, 지지 본기 ${m.branchGod}, 12운성 ${m.twelve} | 관계: ${relText(m.rel)} | 용신·기신: ${relText(m.el)}${m.flag==='focus'?' | ★주목할 달':m.flag==='caution'?' | ▲조심할 달':''}`).join('\n');
-    const moPrompt = `당신은 정통 명리학자입니다. 아래 계산된 데이터로 ${person.name}님의 ${year}년 월별 운세를 작성하세요. 사주의 달은 절기(절입일) 기준입니다.\n\n${commonData}\n\n▌월별 데이터 (절기 순서)\n${monthLines}\n\n${rules}\n- 모든 달은 최소 500자로, 그 달의 십성과 합충이 일·돈·관계·컨디션에 어떻게 나타나는지 구체적으로.\n- ★주목할 달과 ▲조심할 달은 최소 1,200자로 훨씬 자세히: 왜 그런지 근거를 단계적으로 설명하고, 그 달에 할 일과 피할 일을 구체적으로 제시하세요.\n- 12개 달을 데이터 순서 그대로 모두 작성하세요.\n\n▌출력 (JSON만)\n{"months":[{"m":2,"theme":"그 달을 표현하는 한 줄","content":"본문","basis":["근거 한 줄","근거 한 줄"]}]}`;
+    const monthLines = (basis?.months || []).map(m => `[m=${m.key}] ${m.calYear}년 ${m.calMonth}월(${m.range})${m.isPre ? ` — 입춘 전, 아직 ${m.prevYearKr}년의 마지막 달(${yg.kr}년으로 넘어가기 전 준비하는 달로 해석)` : ''} ${m.ganji}(${m.kr})월: 천간 ${m.stemGod}, 지지 본기 ${m.branchGod}, 12운성 ${m.twelve} | 관계: ${relText(m.rel)} | 용신·기신: ${relText(m.el)}${m.flag==='focus'?' | ★주목할 달':m.flag==='caution'?' | ▲조심할 달':''}`).join('\n');
+    const moPrompt = `당신은 정통 명리학자입니다. 아래 계산된 데이터로 ${person.name}님의 ${year}년 월별 운세를 작성하세요. 사주의 달은 절기(절입일) 기준입니다.\n\n${commonData}\n\n▌월별 데이터 (절기 순서)\n${monthLines}\n\n${rules}\n- 모든 달은 최소 500자로, 그 달의 십성과 합충이 일·돈·관계·컨디션에 어떻게 나타나는지 구체적으로.\n- ★주목할 달과 ▲조심할 달은 최소 1,200자로 훨씬 자세히: 왜 그런지 근거를 단계적으로 설명하고, 그 달에 할 일과 피할 일을 구체적으로 제시하세요.\n- 13개 달(${year}년 1월 ~ ${year+1}년 1월)을 데이터 순서 그대로 모두 작성하세요.\n\n▌출력 (JSON만)\n{"months":[{"m":"${year}-1","theme":"그 달을 표현하는 한 줄","content":"본문","basis":["근거 한 줄","근거 한 줄"]}]}\n- m 값은 위 데이터의 [m=...] 값을 그대로 쓰세요 (${year}-1 ~ ${year+1}-1, 모두 13개)`;
 
     // 생성: 클라우드 → 로컬 → 없을 때만 AI 호출 (본문 먼저, 월별은 이어서)
     React.useEffect(() => {
@@ -9813,7 +9886,7 @@ ${dwBlocks}
     }
 
     const months = basis?.months || [];
-    const moText = (m) => (mo?.months || []).find(x => Number(x.m) === m.calMonth) || null;
+    const moText = (m) => (mo?.months || []).find(x => String(x.m) === m.key) || (m.isPre ? null : (mo?.months || []).find(x => typeof x.m === 'number' && x.m === m.calMonth)) || null;
 
     return _h('div',{style:{background:'#070514',minHeight:'100vh',paddingBottom:'112px',position:'relative',overflow:'hidden'}},
       _h(S('StarBg', StarBg)),
@@ -9884,7 +9957,7 @@ ${dwBlocks}
         // ⑤ 월별 운세
         months.length > 0 && _h('div',{style:{margin:'22px 0 10px'}},
           _h('p',{style:{color:'white',fontWeight:'800',fontSize:'16px',marginBottom:'4px'}},'월별 운세'),
-          _h('p',{style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',lineHeight:'1.6'}},'사주의 달은 절기(절입일) 기준이에요. ★ 주목할 달과 ▲ 조심할 달은 더 자세히 풀었어요.')),
+          _h('p',{style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',lineHeight:'1.6'}},`사주의 한 해는 양력 1월 1일이 아니라 입춘(2월 4일 무렵)에 시작해요. 그래서 ${year}년 ${yg.kr}년의 기운은 ${year}년 2월 4일부터 ${year+1}년 2월 3일까지 이어지고, 월별 운세도 ${year+1}년 1월까지 표시돼요. ${year}년 1월은 아직 지난해의 마지막 달이라 ${yg.kr}년으로 넘어가기 전 '준비하는 달'로 함께 풀었어요. 각 달은 절기(절입일)로 바뀌며, ★ 주목할 달과 ▲ 조심할 달은 더 자세히 풀었어요.`)),
         moLoading && _h(S('AiLoadingCard', AiLoadingCard),{message:'월별 운세를 쓰고 있어요'}),
         moError && _h('div',{style:card({textAlign:'center',border:'1px solid rgba(239,68,68,0.25)'})},
           _h('p',{style:{color:'#f87171',fontSize:'13px',marginBottom:'12px'}},'월별 운세 작성 중 오류가 발생했어요'), retryBtn('다시 시도')),
@@ -9894,6 +9967,7 @@ ${dwBlocks}
           return _h('div',{key:'mo'+i,style:card({padding:0,overflow:'hidden',border:fc?`1px solid ${fc}55`:'1px solid rgba(255,255,255,0.08)',background:fc?`${fc}0d`:'rgba(255,255,255,0.04)'})},
             _h('div',{onClick:()=>setOpenMonth(p=>({...p,[i]:!p[i]})),style:{display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',cursor:'pointer'}},
               _h('div',{style:{width:'52px',flexShrink:0,textAlign:'center'}},
+                (m.calMonth === 1) && _h('p',{style:{color:m.isPre?'#9C7631':'rgba(255,255,255,0.45)',fontSize:'9px',fontWeight:'800',margin:0,letterSpacing:'0.5px'}}, m.isPre ? `${m.calYear} · 입춘 전` : `${m.calYear}`),
                 _h('p',{style:{color:fc||'white',fontWeight:'900',fontSize:'17px',margin:0}},`${m.calMonth}월`),
                 _h('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',margin:0}},m.range)),
               _h('div',{style:{flex:1,minWidth:0}},
