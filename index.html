@@ -1284,7 +1284,7 @@ const IMP_CODE        = 'imp60556156';                                   // 포�
 const CHANNEL_KAKAO   = 'channel-key-6d75150a-64ef-42b7-8b29-7bf222e86997'; // 카카오페이 채널키
 const CHANNEL_TOSS    = 'channel-key-30262341-2209-4aab-93f3-805737438ec0';  // 포트원 토스 채널키
 const PAYMENT_WORKER  = 'https://api.sajuon.kr';
-const AI_WORKER       = 'https://dapper-dingo-54.ksw80329.deno.net';
+const AI_WORKER       = 'https://api.sajuon.kr';   // AI 풀이도 결제 서버(Cloudflare Worker)의 /q 로 처리 (2026.11 Deno에서 이전)
 const DEV_FLAG = false; // 테스트 파일에서만 true
 // 테스트 모드(무료 결제)는 내 컴퓨터(localhost)에서 열었을 때만 켜짐.
 // test.html이 실수로 sajuon.kr에 올라가도 실제 사이트처럼 결제가 필요하고, 테스트 데이터는 dev_users에만 저장됨.
@@ -1342,13 +1342,7 @@ function App() {
 
   // 브라우저 뒤로가기/앞으로가기 이벤트 처리
   // ===== Deno 서버 워밍업 핑 (콜드스타트 방지) =====
-  React.useEffect(() => {
-    fetch(`${AI_WORKER}/q`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ping: true })
-    }).catch(() => {});
-  }, []);
+  // (Cloudflare Worker는 콜드스타트가 없어 워밍업 요청 불필요)
 
   React.useEffect(() => {
     const handlePopState = (e) => {
