@@ -252,7 +252,11 @@
 
 </head>
 <body style="color:#231F1C">
-<div id="app"></div>
+<div id="app"><div style="max-width:512px;margin:0 auto;padding:80px 18px 40px;font-family:'Noto Sans KR',sans-serif;color:#231F1C;line-height:1.7">
+  <h1 style="font-family:'Noto Serif KR',serif;font-size:26px;margin:0 0 8px">사주ON(사주온) — 2027 정미년 신년운세·무료 사주·궁합</h1>
+  <p style="color:#6B6056;margin:0 0 14px">생년월일만 입력하면 만세력, 일주 성격, 오행과 용신, 대운 흐름까지 무료로 확인할 수 있어요. 신살·합충을 근거로 풀이하는 정통 명리 사주 서비스예요.</p>
+  <p style="margin:0"><a href="/2027-ddi/">2027년 띠별 운세</a> · <a href="/ilju/">60일주 성격</a> · <a href="/gunghap/">띠 궁합</a></p>
+</div></div>
 
 <script type="module">
 // ========== 만세력 라이브러리 ==========
@@ -708,8 +712,42 @@ function calcFiveEl(pillars) {
   const t = Object.values(c).reduce((a,b) => a+b, 0);
   const pct = {};
   Object.keys(c).forEach(e => { pct[e] = t > 0 ? Math.round(c[e] / t * 100) : 0; });
-  const sorted = Object.entries(c).sort((a,b) => a[1] - b[1]);
-  return { counts: c, pct, yongshin: sorted[0][0], gishin: sorted[sorted.length-1][0] };
+  // ── 용신 판단: 억부(신강·신약) + 조후(계절의 한난) ──
+  // 일간을 돕는 힘(비겁·인성)이 위치별 가중치로 얼마나 되는지 보고 신강/신약을 정한 뒤,
+  //  · 신강: 인성이 많으면 재성, 비겁이 많으면 관성(없으면 식상)으로 덜어냄
+  //  · 신약: 관성·식상이 누르면 인성, 재성이 누르면 비겁으로 도움
+  //  · 한여름(巳午未)에 화가 넘치고 수가 마르면 수, 한겨울(亥子丑)에 수가 넘치고 화가 없으면 화를 우선(조후)
+  const EL = ['목','화','토','금','수'];
+  const dayP = pillars.day;
+  const dEl = EL.indexOf(STEMS.elements[dayP.si]);
+  const rel = (e) => ['비겁','식상','재성','관성','인성'][((EL.indexOf(e) - dEl) % 5 + 5) % 5];
+  const relEl = (r) => EL[(dEl + ['비겁','식상','재성','관성','인성'].indexOf(r)) % 5];
+  const W = { yearS:0.8, monthS:1.0, hourS:0.8, yearB:1.0, monthB:3.0, dayB:1.5, hourB:1.0 };
+  const wRel = { 비겁:0, 식상:0, 재성:0, 관성:0, 인성:0 }; const wEl = { 목:0, 화:0, 토:0, 금:0, 수:0 }; let total = 0;
+  const addW = (e, w) => { wRel[rel(e)] += w; wEl[e] += w; total += w; };
+  if (pillars.year) { addW(STEMS.elements[pillars.year.si], W.yearS); addW(BRANCHES.elements[pillars.year.bi], W.yearB); }
+  if (pillars.month) { addW(STEMS.elements[pillars.month.si], W.monthS); addW(BRANCHES.elements[pillars.month.bi], W.monthB); }
+  addW(BRANCHES.elements[dayP.bi], W.dayB);
+  if (pillars.hour) { addW(STEMS.elements[pillars.hour.si], W.hourS); addW(BRANCHES.elements[pillars.hour.bi], W.hourB); }
+  const support = wRel.비겁 + wRel.인성;
+  const ratio = total ? support / total : 0.5;
+  const strength = ratio >= 0.55 ? '신강' : ratio <= 0.42 ? '신약' : '중화';
+  let yongRel, reason;
+  if (ratio >= 0.5) {
+    if (wRel.인성 > wRel.비겁) { yongRel = '재성'; reason = '인성이 많아 신강 — 재성으로 인성을 덜어냄'; }
+    else if (wRel.관성 > 0) { yongRel = '관성'; reason = '비겁이 많아 신강 — 관성으로 다스림'; }
+    else { yongRel = '식상'; reason = '비겁이 많아 신강 — 식상으로 힘을 빼냄'; }
+  } else {
+    const drain = [['관성', wRel.관성], ['식상', wRel.식상], ['재성', wRel.재성]].sort((a,b) => b[1] - a[1])[0][0];
+    if (drain === '재성') { yongRel = '비겁'; reason = '재성에 눌려 신약 — 비겁으로 버팀'; }
+    else { yongRel = '인성'; reason = (drain === '관성' ? '관성' : '식상') + '에 눌려 신약 — 인성으로 도움'; }
+  }
+  let yongshin = relEl(yongRel), method = '억부';
+  const mbi = pillars.month ? pillars.month.bi : -1;
+  if ([5,6,7].includes(mbi) && total && wEl.화 / total >= 0.4 && wEl.수 < 1.5 && yongshin !== '수') { yongshin = '수'; yongRel = rel('수'); method = '조후'; reason = '한여름에 화(火)가 넘치고 물이 말라 조후로 수(水)가 급함'; }
+  if ([11,0,1].includes(mbi) && total && wEl.수 / total >= 0.4 && wEl.화 < 1.5 && yongshin !== '화') { yongshin = '화'; yongRel = rel('화'); method = '조후'; reason = '한겨울에 수(水)가 넘치고 불이 꺼져 조후로 화(火)가 급함'; }
+  const gishin = EL[(EL.indexOf(yongshin) + 3) % 5];   // 용신을 극하는 오행
+  return { counts: c, pct, yongshin, gishin, strength, strengthRatio: Math.round(ratio * 100), yongRel, method, yongReason: reason };
 }
 
 function calcPillarSinsal(stem, br, dayGan, dayBr, pillarType, yearBr) {
@@ -1650,7 +1688,7 @@ function App() {
       tag: '전통 명리학',
       title: '나를 가장 잘 아는\n사주 분석',
       desc: '생년월일시로 계산하는 만세력·신살·오행.\n단순 운세가 아닌, 내 본질적인 성향과\n삶의 패턴을 깊게 풀어드립니다.',
-      points: ['만세력 자동 계산', '신살 · 충합 포함', '13섹션 심층 해설'],
+      points: ['만세력 자동 계산', '신살 · 충합 포함', '결론·근거 중심 심층 해설'],
     },
     {
       emoji: '💕',
@@ -1658,7 +1696,7 @@ function App() {
       tag: '궁합 · 대운',
       title: '두 사람의 에너지,\n그리고 10년의 흐름',
       desc: '연인, 친구, 비즈니스 파트너까지.\n궁합으로 관계를 이해하고,\n대운으로 내 인생의 큰 물결을 파악하세요.',
-      points: ['5가지 관계 유형 분석', '대운 10개 순행/역행 계산', '오늘의 일진 매일 업데이트'],
+      points: ['8가지 관계 유형 분석', '대운 10개 순행/역행 계산', '오늘의 일진 매일 업데이트'],
     },
     {
       emoji: '⭐',
@@ -2714,7 +2752,7 @@ function App() {
         } catch(e) {}
         return null;
       };
-  const AccordionItem = ({ icon, color, title, subtitle, content, idx }) => {
+  const AccordionItem = ({ icon, color, title, subtitle, content, idx, verdict, basis }) => {
     const [isOpen, setIsOpen] = useState(false);
     const itemRef = React.useRef(null);
     const borderColors = ['#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#a78bfa','#f472b6','#fbbf24'];
@@ -2738,19 +2776,25 @@ function App() {
           ? _h('div', { style:{width:'34px',height:'34px',borderRadius:'10px',background:isOpen?bColor:'rgba(255,255,255,0.07)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',color:'white',fontWeight:'800',flexShrink:0,transition:'all 0.2s'} }, subtitle.replace('월',''))
           : _h('div', { style:{width:'36px',height:'36px',borderRadius:'12px',background:isOpen?bColor:'rgba(255,255,255,0.07)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',flexShrink:0,transition:'all 0.2s'} }, icon),
         _h('div', { style:{flex:1,minWidth:0} },
-          _h('span', { style:{fontWeight:'700',fontSize:'14px',color:isOpen?'white':'rgba(255,255,255,0.75)',lineHeight:'1.4',letterSpacing:'-0.2px'} }, (title||'').replace(/^S\d+[.:\s]+/,''))
+          _h('span', { style:{fontWeight:'700',fontSize:'14px',color:isOpen?'white':'rgba(255,255,255,0.75)',lineHeight:'1.4',letterSpacing:'-0.2px'} }, (title||'').replace(/^S\d+[.:\s]+/,'')),
+          // 한 줄 결론은 접혀 있어도 보이게 → 목차만 훑어도 핵심이 보임
+          verdict && _h('p', { style:{margin:'5px 0 0',fontSize:'12.5px',lineHeight:'1.55',color:'#8E2F23',fontWeight:'600',wordBreak:'keep-all'} }, '→ ' + verdict)
         ),
         _h('div', { style:{width:'22px',height:'22px',borderRadius:'50%',background:'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'transform 0.3s',transform:isOpen?'rotate(180deg)':'rotate(0deg)'} },
           _h('span', { style:{color:'rgba(255,255,255,0.4)',fontSize:'10px',lineHeight:'1'} }, '▼')
         )
       ),
       isOpen && _h('div', { className:'hj-open', style:{padding:'0 16px 18px'} },
-        _h('div', { style:{background:'rgba(0,0,0,0.2)',borderRadius:'16px',padding:'18px',borderLeft:'3px solid '+bColor} },
+        _h('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'16px',padding:'18px',borderLeft:'3px solid '+bColor} },
           typeof content === 'string' 
             ? content.split('\n\n').map((para, i) => 
                 _h('p', { key: i, style:{fontSize:'14px',color:'rgba(255,255,255,0.72)',lineHeight:'1.9',marginBottom:i < content.split('\n\n').length-1 ? '14px' : '0'} }, para)
               )
-            : _h('p', { style:{fontSize:'14px',color:'rgba(255,255,255,0.72)',lineHeight:'1.9'} }, content)
+            : _h('p', { style:{fontSize:'14px',color:'rgba(255,255,255,0.72)',lineHeight:'1.9'} }, content),
+          Array.isArray(basis) && basis.length > 0 && _h('div', { style:{marginTop:'14px',paddingTop:'12px',borderTop:'1px dashed rgba(255,255,255,0.12)'} },
+            _h('p', { style:{fontSize:'11px',fontWeight:'700',letterSpacing:'1px',color:'rgba(255,255,255,0.4)',margin:'0 0 6px'} }, '이렇게 판단한 근거'),
+            _h('div', { style:{display:'flex',flexWrap:'wrap',gap:'5px'} },
+              basis.slice(0, 6).map((b, i) => _h('span', { key:'b'+i, style:{fontSize:'11px',padding:'3px 9px',borderRadius:'8px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',color:'rgba(255,255,255,0.6)'} }, String(b)))))
         )
       )
     );
@@ -4984,6 +5028,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   const HomeFooterLight = () => _h('div', { style:{margin:'28px 0 0',paddingTop:'18px',borderTop:`1px solid ${HJ.line}`} },
     _h('div', { style:{display:'flex',justifyContent:'center',gap:'14px',marginBottom:'14px'} },
       [['회사소개','about'],['이용약관','terms'],['개인정보처리방침','privacy']].map(([t,sc]) => _h('span', { key:sc, onClick:()=>setScreen(sc), style:{color:HJ.sub,fontSize:'11px',cursor:'pointer'} }, t))),
+    _h('div', { style:{display:'flex',justifyContent:'center',gap:'14px',marginBottom:'14px',flexWrap:'wrap'} },
+      [['2027 띠별 운세','/2027-ddi/'],['60일주 성격','/ilju/'],['띠 궁합','/gunghap/']].map(([t,href]) => _h('a', { key:href, href, style:{color:HJ.ink,fontSize:'12px',fontWeight:700,textDecoration:'none'} }, t))),
     _h('div', { style:{color:HJ.faint,fontSize:'11px',lineHeight:1.8,textAlign:'center'} },
       '상호 사주ON · 대표 고승우 · 사업자등록번호 294-18-02476', _h('br'),
       '통신판매업신고 2026-경남진주-0110 · 경상남도 진주시 도동천로 48, 104-1504', _h('br'),
@@ -5488,8 +5534,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             )
           )
         ),
-        _h('div', { style:{marginTop:'10px',padding:'10px',background:'rgba(255,255,255,0.03)',borderRadius:'10px',fontSize:'11px',color:'rgba(255,255,255,0.35)',lineHeight:'1.7'} },
-          `💡 용신(${r.fe.yongshin})은 보강이 필요한 에너지 — ${r.fe.yongshin==='목'?'초록·나무·동쪽이 유리':r.fe.yongshin==='화'?'빨강·밝음·남쪽이 유리':r.fe.yongshin==='토'?'노랑·안정·중앙이 유리':r.fe.yongshin==='금'?'흰색·금속·서쪽이 유리':'파랑·물·북쪽이 유리'}. 기신(${r.fe.gishin}) 방향은 조심.`
+        _h('div', { style:{marginTop:'10px',padding:'10px',background:'rgba(255,255,255,0.03)',borderRadius:'10px',fontSize:'11px',color:'rgba(255,255,255,0.35)',lineHeight:'1.7',whiteSpace:'pre-line'} },
+          `${r.fe.strength ? `⚖️ ${r.fe.strength}(일간을 돕는 힘 ${r.fe.strengthRatio}%) · ${r.fe.yongReason||''}\n` : ''}💡 용신(${r.fe.yongshin})은 내게 가장 필요한 기운 — ${r.fe.yongshin==='목'?'초록·나무·동쪽이 유리':r.fe.yongshin==='화'?'빨강·밝음·남쪽이 유리':r.fe.yongshin==='토'?'노랑·안정·중앙이 유리':r.fe.yongshin==='금'?'흰색·금속·서쪽이 유리':'파랑·물·북쪽이 유리'}. 기신(${r.fe.gishin}) 방향은 조심.`
         )
       ),
 
@@ -5556,10 +5602,10 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
               _h('span', null, '🔒'),
               _h('span', { style:{color:'#fbbf24',fontSize:'11px',fontWeight:'800',letterSpacing:'0.5px'} }, '여기까지만 무료 · 지금부터 진짜 핵심')
             ),
-            _h('h3', { style:{color:'white',fontWeight:'900',fontSize:'19px',marginBottom:'8px',letterSpacing:'-0.5px'} }, '용신 · 대운 · 연애 · 재물 · 건강까지'),
-            _h('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'12px',lineHeight:'1.7',marginBottom:'16px'} }, '지금 보신 것 너머 — 천간·지지·신살을 종합해\n13개 섹션으로 깊게 풀어드립니다'),
+            _h('h3', { style:{color:'white',fontWeight:'900',fontSize:'19px',marginBottom:'8px',letterSpacing:'-0.5px'} }, '용신 · 직업 · 재물 · 연애 · 지금 대운까지'),
+            _h('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'12px',lineHeight:'1.7',marginBottom:'16px'} }, '지금 보신 것 너머 — 8가지 주제마다\n한 줄 결론 · 근거 · 실천법을 분명하게 풀어드려요'),
             _h('div', { style:{display:'flex',flexWrap:'wrap',gap:'6px',marginBottom:'16px'} },
-              ['📜 핵심 정체성','💕 연애 패턴','💰 재물 구조','⚡ 신살 해설','🗺️ 지금 전략'].map((tag, i) =>
+              ['📜 타고난 나','💼 일·직업','💰 재물','💞 연애·결혼','🧭 지금 대운 전략'].map((tag, i) =>
                 _h('span', { key: i, style:{fontSize:'11px',color:'rgba(196,181,253,0.7)',background:'rgba(124,58,237,0.1)',border:'1px solid rgba(124,58,237,0.15)',padding:'4px 10px',borderRadius:'20px'} }, tag)
               )
             ),
@@ -5687,10 +5733,12 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       let dwPayloadDesc = '없음';
       let curDwPayload = '';
       try {
+        // (이전 코드는 원국·음력 정보를 넘기지 않아 항상 계산 실패 → AI가 대운 없이 풀이하고 있었음)
         const dwCalc = calcDaewoon(
-          currentInput.year, currentInput.month, currentInput.day,
-          currentInput.hour !== 'unknown' ? parseInt(currentInput.hour) : 12,
-          0, currentInput.gender, false
+          parseInt(currentInput.year), parseInt(currentInput.month), parseInt(currentInput.day),
+          (currentInput.hour===null||currentInput.hour===''||currentInput.hour==='unknown') ? 12 : parseInt(currentInput.hour),
+          currentInput.minute ? parseInt(currentInput.minute) : 0, currentInput.gender,
+          (currentInput.calendar==='음력'||currentInput.isLunar===true), currentInput.isLeapMonth||false, currentResult.pillars
         );
         if (dwCalc && dwCalc.daewoons) {
           const currentAge = new Date().getFullYear() - currentInput.year;
@@ -5723,151 +5771,64 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 ▌대운: ${dwPayloadDesc} ${curDwPayload}
 ▌기본: ${currentInput.name}/${currentInput.gender}/${currentInput.year}.${currentInput.month}.${currentInput.day} ${currentInput.hour !== 'unknown' ? currentInput.hour+'시생' : ''}
 일간: ${STEMS.korean[currentResult.dsi]}(${STEMS.names[currentResult.dsi]}) — ${STEMS.elements[currentResult.dsi]}오행
+▌일간 강약: ${currentResult.fe.strength}(일간을 돕는 힘 ${currentResult.fe.strengthRatio}%) / 용신 판단: ${currentResult.fe.method} — ${currentResult.fe.yongReason}
+▌공망: ${(currentResult.gm||[]).join('')}
 
-━━━ 공통 작성 원칙 ━━━
-① 섹션 13개, 섹션당 800자, 후반도 초반과 동일한 밀도
-② 원국 데이터(십성·십이운성·신살·오행수치) 근거 필수 — 일반론 금지
-③ 언어 톤: 친한 선배가 진심으로 봐주는 구어체. 슬랭 적극 허용
-   (겉바속촉, 능력캐, 쿨내 진동, 포텐, 찐한, 손절, 멘탈 바사삭, 끝판왕 등)
-④ ${currentInput.name}님 이름을 각 섹션에 자연스럽게 1~2회 언급
-⑤ 신살은 삶의 장면으로 서술 — 이름 나열 금지
-⑥ 불확실한 내용은 '~경향이 있다' '~가능성이 높다'로 표현
-⑦ JSON 문자열 내 큰따옴표 사용 금지
+━━━ 이 리포트의 원칙: 친근하지만, 기준이 분명하고 결론이 명확하게 ━━━
+① 말투: 믿을 만한 선배가 마주 앉아 말해주는 친근한 존댓말('~해요'). 유행어는 섹션당 많아야 1개, 억지로 넣지 않기.
+② 결론 먼저: 각 섹션은 verdict(한 줄 결론)로 시작합니다. '맞다/아니다', '이쪽이 낫다'처럼 판정이 분명해야 합니다.
+   - 좋은 예: "조직의 관리자보다 전문 기술로 이름을 거는 일이 맞아요" / "돈은 한 번에 크게보다 꾸준히 모을 때 남는 구조예요"
+   - 나쁜 예: "다양한 가능성이 있어요" / "노력하면 좋아질 수 있어요" (판정이 없음 — 금지)
+③ 근거 분명: 모든 판단은 위 데이터(십성·십이운성·신살·오행 비율·신강/신약·용신·충합·대운)에서 나와야 합니다. 데이터에 없는 충합·신살을 지어내지 마세요.
+   - basis 배열에 이 섹션 판단의 근거를 2~4개, 짧은 명사구로 적습니다. 예: "월지 未 = 식상, 득령 실패", "일지 午 제왕", "용신 목(인성)", "현재 대운 丙戌 비견"
+④ 실천 가능: content 마지막 부분에 '이렇게 하세요' 2~3가지를 구체적으로(무엇을·언제·어떻게) 적습니다. '긍정적으로', '균형 있게' 같은 추상어 금지.
+⑤ 이 사람만의 제목: title은 이 원국에서만 나올 수 있는 한 줄 이미지로. 정해진 문구('누구보다~', '겉바속촉~' 등)로 시작하지 말고, 섹션끼리 같은 표현을 반복하지 마세요.
+⑥ 단정하되 선 넘지 않기: 성향·적성·관계·돈의 흐름은 분명하게 말하되, 질병·사고·수명·이혼 같은 일은 단정하지 말고 '이런 시기에 이 부분을 챙기세요' 식으로.
+⑦ 성별 고정관념 금지: 연애·결혼은 성별이 아니라 실제 관성·재성·식상·일지 구조로 판단합니다.
+⑧ 이름(${currentInput.name}님)은 섹션마다 1~2회 자연스럽게. JSON 문자열 안에 큰따옴표 금지, 문단 구분은 \\n\\n.
 
-━━━ 일간 자연물 치환표 ━━━
-甲갑=소나무·거목 / 乙을=화초·덩굴·장미 / 丙병=태양·불꽃 / 丁정=촛불·등불
-戊무=산·대지 / 己기=논밭·습지 / 庚경=도끼·바위 / 辛신=칼·보석·다이아몬드
-壬임=강·바다 / 癸계=빗물·샘물
+━━━ 일간 자연물 (비유가 필요할 때만) ━━━
+甲 소나무·거목 / 乙 화초·덩굴 / 丙 태양 / 丁 촛불·등불 / 戊 산·대지 / 己 논밭 / 庚 바위·쇠 / 辛 보석·칼 / 壬 강·바다 / 癸 빗물·샘물
 
-━━━ 출력 형식 (JSON만) ━━━
-{"sections":[{"icon":"이모지","color":"tailwind색상클래스","title":"제목","content":"800자"}]}
+━━━ 출력 형식 (JSON만, 다른 말 없이) ━━━
+{"sections":[{"icon":"이모지 1개","title":"이 사람만의 한 줄 제목","verdict":"한 줄 결론","content":"800~900자 본문","basis":["근거1","근거2"]}]}
 
-━━━ 섹션 13개 — 제목 공식 + 내용 필수 포인트 ━━━
+━━━ 섹션 8개 (순서 고정, 각 800~900자, 8번째도 1번째와 같은 밀도) ━━━
 
-[S1 💫 일간 정체성]
-제목: 일간 자연물 + 원국 핵심 모순 한 컷 이미지
-예) 칼날 위에서 춤추는 고고한 소나무 / 용암 위를 서핑하는 쿨한 검은 호랑이
-내용 필수:
-- ${STEMS.korean[currentResult.dsi]}일간의 핵심 기질 — 이 일간이 세상을 대하는 방식
-- 겉으로 보이는 모습 vs 실제 내면의 간극 (일지와 일간의 관계로 근거)
-- 이 사람이 스스로도 설명하기 어려운 자신의 면
-- 일주 신살이 있다면 정체성에 미치는 구체적 영향
+[1 타고난 나] 일간 ${STEMS.korean[currentResult.dsi]}(${STEMS.names[currentResult.dsi]})과 일주가 만드는 기본 성향.
+ - verdict: 이 사람을 한 문장으로 정의 (예: "속도는 느려도 한번 정하면 끝까지 가는 사람이에요")
+ - 겉으로 보이는 모습과 속마음의 차이(일간·월지 vs 일지·시주), 일주 신살이 성격에 주는 영향, 주변에서 자주 듣는 말
 
-[S2 🌊 오행 구조]
-제목: 오행 과다·결핍을 직관 장면으로, 빠진 것을 직접 요청하는 말투
-예) 사막에 핀 꽃, 제발 물 좀 주세요! / 물 한 방울 없는 불바다, 브레이크 없는 페라리
-내용 필수:
-- 오행 분포 수치(${feFullDesc}) 기반으로 어떤 오행이 넘치고 어떤 게 없는지 장면으로 묘사
-- 과다 오행이 삶에서 만드는 구체적 패턴 (에너지 과잉, 고집, 번아웃 등)
-- 결핍 오행이 만드는 빈자리 (무엇이 항상 부족하게 느껴지는지)
-- 용신(${currentResult.fe.yongshin})이 들어올 때 이 사람에게 어떤 변화가 생기는지
+[2 내게 필요한 기운 — 용신] ${currentResult.fe.strength}인 이유와 용신 ${currentResult.fe.yongshin}·기신 ${currentResult.fe.gishin}의 의미.
+ - verdict: "○○ 기운을 채울 때 일이 풀리는 사주예요"처럼 용신을 분명히
+ - 오행 비율(${feFullDesc})을 근거로 무엇이 넘치고 무엇이 모자라 생활에서 어떤 패턴이 생기는지
+ - 용신을 채우는 실제 방법: 색, 방향(목=동·화=남·토=중앙·금=서·수=북), 환경, 사람, 습관 / 기신이 강해질 때의 신호
 
-[S3 🐯 일주 특성·신살]
-제목: 일주 이름 직접 언급 + 성격 캐릭터 라벨
-예) 백호살을 품은 청룡, 압박 속에 핀 꽃 / 무진일주 백호살의 위엄, 건드리면 폭발하는 화산
-내용 필수:
-- 일주(일간+일지) 조합이 만드는 특수한 성격 — 이 조합에서만 나오는 것
-- 핵심 신살 1~2개를 골라 실제 삶의 장면으로 풀어낼 것
-  (예: 역마살 = 가만히 있으면 몸이 근질거리는 사람, 백호살 = 한번 터지면 주변이 조용해지는 폭발력)
-- 이 일주를 가진 사람이 반복적으로 듣는 말
+[3 강점과 약점]
+ - verdict: 가장 큰 무기 1개와 가장 조심할 약점 1개를 한 문장에
+ - 강점이 빛나는 조건, 약점이 터지는 상황(흉살·충이 있으면 그 장면), 약점을 다루는 구체적 방법
 
-[S4 💢 단점·약점]
-제목: 슬랭으로 단점을 직접 2인칭 지적
-예) 스스로를 고문하는 완벽주의자 / 고집불통 독재자? 남들은 숨 막혀 죽을 맛이라구요!
-내용 필수:
-- 기신(${currentResult.fe.gishin}) 오행이 활성화될 때 반복되는 실수 패턴
-- 약한 오행(${weakEl[0]})이 만드는 구조적 한계
-- 본인은 인식하지만 고치기 어려운 이유 (명리학적 구조로 설명)
-- 흉살이 있다면 어떤 상황에서 발동하는지 구체적 장면
+[4 일과 직업]
+ - verdict: 맞는 일하는 방식을 분명히 (혼자/팀, 기획/실행, 조직/독립 중 판정)
+ - 관성·식상·재성·인성 구조 근거, 맞는 직업군 3~5개(근거 포함), 피해야 할 업무 환경, 일에서 인정받는 방법
 
-[S5 🔥 생존력 공감]
-제목: 반드시 '누구보다 치열하게~'로 시작
-예) 누구보다 치열하게 버텨온 당신의 품격 / 누구보다 치열하게 살아온 당신, 그 무거운 왕관의 무게를 압니다
-내용 필수:
-- 이 원국이 만드는 삶의 무게 — 왜 이 사람이 남들보다 더 치열하게 살 수밖에 없는지
-- 충·합 구조나 오행 편중이 만드는 반복되는 긴장
-- 그럼에도 버텨온 힘의 원천 (원국 어디서 오는지)
-- 이 사람이 공감받아야 할 포인트를 직접적으로 인정해줄 것
+[5 재물]
+ - verdict: 돈이 들어오는 방식과 새는 곳을 한 문장에
+ - 재성의 위치·강약과 용신 관계, 맞는 돈 관리 방식(저축·투자·사업 중 판정), 돈이 새는 습관과 막는 방법
 
-[S6 🎭 반전 매력]
-제목: 반드시 '겉바속촉'으로 시작 + 내면 반전 이미지
-예) 겉바속촉 츤데레, 알고 보면 진국인 볼매 / 겉바속촉, 차가운 도시 여자 같지만 내면은 활화산
-내용 필수:
-- 겉으로 보이는 모습(일간·월지 기준)과 속 모습(일지·시주 기준)의 대비
-- 처음 만난 사람이 오해하는 부분 vs 오래 알수록 드러나는 진짜 모습
-- 이 사람의 반전 매력이 발동하는 구체적 상황
-- 자신도 모르는 매력 포인트
+[6 연애와 결혼]
+ - verdict: 이 사람에게 맞는 관계의 형태를 분명히
+ - 배우자 자리(일지)와 관성·재성 구조로 끌리는 유형과 실제로 잘 맞는 유형, 반복되는 관계 패턴, 관계 신살(도화·홍염 등)이 있으면 실제 모습, 좋은 관계를 위해 할 것
 
-[S7 💼 직업·일하는 방식]
-제목: 일하는 방식 캐릭터 + 맞는 직업 유형 직접 제시
-예) 남 밑에서는 절대 못 일하는 프리랜서 재질 / 칼을 쥐고 생사를 다루거나, 펜으로 세상을 베거나
-내용 필수:
-- 관성·식상·재성 구조로 어떤 방식의 일이 맞는지 (혼자 vs 팀, 창작 vs 실행, 관리 vs 현장)
-- 직장 내에서 자연스럽게 맡게 되는 역할
-- 맞는 직업군 3~5개 구체적으로 제시 (명리 근거와 함께)
-- 일할 때 강점이 발휘되는 조건과 스트레스 받는 상황
+[7 가족과 인간관계]
+ - verdict: 사람을 대하는 방식과 적정 거리를 한 문장에
+ - 인성·비겁·식상 구조로 본 가족 관계 패턴, 친구·동료 관계 방식, 곁에 두면 좋은 사람과 거리를 둘 사람
 
-[S8 💰 재물 구조]
-제목: 재물 들어오는 구조 + 새는 구멍 경고
-예) 돈은 버는 게 아니라 지키는 것이 관건 / 돈벼석 예약, 하지만 밑 빠진 독 막아야 부자
-내용 필수:
-- 재성의 위치·강도와 용신 관계 → 돈이 어떤 방식으로 들어오는 구조인지
-- 재물이 잘 들어오는 시기·방식 (구체적으로)
-- 돈이 새는 구조적 원인 — 어디서 어떻게 빠지는지
-- 투자·저축·소비 중 이 사주에 맞는 방식
-
-[S9 💞 연애 패턴] ★ 성별 구분 필수
-현재 성별: ${currentInput.gender}
-- 여성이면: 제목은 '나쁜 남자에게 끌리는~' 패턴 + 직접 경고 또는 대안 제시
-  예) 나쁜 남자 자석? 이제는 벤츠남을 찾아 떠날 때 / 나쁜 남자에게 끌리는 본능을 멈춰라
-- 남성이면: 제목은 진짜 필요한/어울리는 여자 유형 + 용신 오행 이미지
-  예) 나를 존중해주는 따뜻한 난로 같은 여자 / 나를 받아줄 수 있는 넉넉한 대지 같은 사람
-내용 필수:
-- 관성(여성에게는 관성=남자, 남성에게는 재성=여자)의 위치·강도 분석
-- 연애에서 자기도 모르게 반복하는 행동 패턴 (명리 근거로)
-- 끌리는 유형의 명리학적 이유
-- 도화살·홍염살 등 관계 신살이 있다면 연애에서 구체적으로 어떻게 나타나는지
-- 여성: 나쁜 상대에게 끌리는 원인 + 좋은 관계를 만드는 조건
-- 남성: 실제로 잘 맞는 여자의 오행·성격 유형 + 주의할 관계 패턴
-
-[S10 🏠 가족 관계]
-제목: 부모 특수 관계 구도 직접 묘사 + 해결책 한 마디
-예) 엄마의 빈자리와 형제와의 갈등 / 가족을 위해 희생한 K-장녀, 이제는 독립이 답이다
-내용 필수:
-- 인성(어머니)·재성(아버지, 남성 기준) 또는 관성·식상(자녀)의 위치와 강도로 가족 관계 분석
-- 부모와의 관계에서 반복되는 패턴 — 가까운지 먼지, 의존인지 갈등인지
-- 형제자매 관계 (비견·겁재 구조 기반)
-- 가족 관계에서 이 사람이 가장 지치는 포인트와 건강한 거리두기 방법
-
-[S11 🤝 인간관계]
-제목: 군중 속 고독·소수정예 구조
-예) 군중 속의 고독, 소수정예가 답이다 / 넓고 얕은 관계보다는 좁고 깊은 관계
-내용 필수:
-- 관계 맺는 방식 (적극적 vs 수동적, 넓게 vs 깊게) — 오행 구조 근거
-- 사회적으로 보이는 모습 vs 실제 친한 사람에게 보이는 모습
-- 자연스럽게 모이는 사람 유형과 피해야 할 유형
-- 진짜 내 편이 몇 명인지, 그것으로 충분한 이유
-
-[S12 🧭 환경·방향 조언]
-제목: 용신 방향·온도로 이사·환경 조언
-예) 차가운 북쪽을 피해 따뜻한 남쪽으로 / 나무가 많은 동쪽이나 물 건너 해외로
-용신 방향: 목=동쪽 / 화=남쪽 / 금=서쪽 / 수=북쪽 / 토=중앙
-용신 환경: 화=따뜻한·밝은·활기찬 도시 / 수=물가·시원한·조용한 / 목=숲·자연·산 / 금=서늘한·세련된 도시 / 토=안정적·중심가
-내용 필수:
-- 용신(${currentResult.fe.yongshin}) 오행을 기준으로 맞는 방향·도시·환경 구체적 제시
-- 기신(${currentResult.fe.gishin}) 환경에서 나타나는 현상 (피곤함, 일이 안 풀림 등)
-- 인테리어·색상·소품 조언 (용신 오행 활용)
-- 해외 여부: 역마살 있으면 해외·이동이 유리함을 언급
-
-[S13 ✨ 위로·재해석 마무리]
-제목: 원국의 약점·특수 구조를 강점으로 재해석 → 반드시 '당신은 ~입니다' 또는 '너의 ~은 ~야' 마무리
-예) 압력을 견딘 탄소만이 다이아몬드가 된다 / 당신은 파도를 다스리는 포세이돈입니다
-    당신은 이미 울창한 숲을 품은 거대한 산입니다 / 너의 불꽃은 꺼지지 않아, 잠시 숨을 고를 뿐
-내용 필수:
-- 현재 대운(${curDwPayload||'확인 필요'})이 원국과 만드는 반응 — 지금 이 시기의 의미
-- 지금 당장 실행할 수 있는 행동 1~3가지 (구체적, 추상어 금지)
-- 이 사람 원국의 가장 힘든 구조를 다른 시각으로 재해석
-- 마지막 문장: 이 사주가 ${currentInput.name}님에게 전하는 핵심 메시지 한 문장 ('당신은 ~입니다' 형식)`;
+[8 지금 대운과 앞으로 3년]
+ - verdict: 지금이 '밀어붙일 때'인지 '다질 때'인지 분명히 판정
+ - 현재 대운(${curDwPayload||'정보 없음'})이 원국·용신과 만드는 반응, 다음 대운으로 넘어갈 때의 변화
+ - 앞으로 3년 동안 할 일 3가지(구체적 행동·시기), 하지 말아야 할 것 1가지
+ - 마지막 문장은 ${currentInput.name}님에게 전하는 분명한 한마디로 마무리`;
 
       const sajuPayload = {
         t: '4',
@@ -6120,8 +6081,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
               _h('span', { style:{width:'30px',textAlign:'right',fontSize:'12px',color:el===r.fe.yongshin?'#6ee7b7':el===r.fe.gishin?'#fca5a5':'rgba(255,255,255,0.4)',fontWeight:el===r.fe.yongshin||el===r.fe.gishin?'700':'400'} }, (r.fe.pct[el]||0)+'%')
             )
           ),
-          _h('div', { style:{marginTop:'10px',padding:'10px 14px',background:'rgba(255,255,255,0.03)',borderRadius:'12px',fontSize:'11px',color:'rgba(255,255,255,0.35)',lineHeight:'1.8'} },
-            '💡 용신('+r.fe.yongshin+')은 보강이 필요한 에너지 — '+(r.fe.yongshin==='목'?'초록·나무·동쪽이 유리':r.fe.yongshin==='화'?'빨강·밝음·남쪽이 유리':r.fe.yongshin==='토'?'노랑·안정·중앙이 유리':r.fe.yongshin==='금'?'흰색·금속·서쪽이 유리':'파랑·물·북쪽이 유리')+'. 기신('+r.fe.gishin+') 방향은 조심.'
+          _h('div', { style:{marginTop:'10px',padding:'10px 14px',background:'rgba(255,255,255,0.03)',borderRadius:'12px',fontSize:'11px',color:'rgba(255,255,255,0.35)',lineHeight:'1.8',whiteSpace:'pre-line'} },
+            (r.fe.strength ? '⚖️ '+r.fe.strength+'(일간을 돕는 힘 '+r.fe.strengthRatio+'%) · '+(r.fe.yongReason||'')+'\n' : '')+'💡 용신('+r.fe.yongshin+')은 내게 가장 필요한 기운 — '+(r.fe.yongshin==='목'?'초록·나무·동쪽이 유리':r.fe.yongshin==='화'?'빨강·밝음·남쪽이 유리':r.fe.yongshin==='토'?'노랑·안정·중앙이 유리':r.fe.yongshin==='금'?'흰색·금속·서쪽이 유리':'파랑·물·북쪽이 유리')+'. 기신('+r.fe.gishin+') 방향은 조심.'
           )
         ),
 
@@ -6154,7 +6115,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                   ),
                   _h('p', { style:{padding:'12px 16px 8px',textAlign:'center',color:'rgba(255,255,255,0.25)',fontSize:'11px'} }, '제목을 눌러 풀이를 펼쳐보세요'),
                   displaySections.map((section, i) =>
-                    _h(S('AccordionItem', AccordionItem), { key:i, idx:i, icon:section.icon==='🔮'?'📜':section.icon, color:section.color, title:section.title, content:section.content })
+                    _h(S('AccordionItem', AccordionItem), { key:i, idx:i, icon:section.icon==='🔮'?'📜':section.icon, verdict: section.verdict, basis: section.basis, color:section.color, title:section.title, content:section.content })
                   )
                 )
               : aiError
@@ -6406,11 +6367,11 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         const brs2 = ['year','month','day','hour'].filter(k=>r2.pillars[k]).map(k=>({k,b:r2.pillars[k].branch,s:r2.pillars[k].stem}));
         const ch=[],ha=[],sh=[];
         brs1.forEach(a=>brs2.forEach(b=>{
-          const p=[a.b,b.b].sort().join('');
-          if(CHUNG_C[p]||CHUNG_C[a.b+b.b]) ch.push(`${a.b}(${a.k})·${b.b}(${b.k}) 충`);
-          if(HAP6_C[p]||HAP6_C[a.b+b.b]) ha.push(`${a.b}(${a.k})·${b.b}(${b.k}) 육합`);
-          const sp=[a.s,b.s].sort().join('');
-          if(STEMHAP_C[sp]||STEMHAP_C[a.s+b.s]) sh.push(`${a.s}·${b.s} 천간합`);
+          // 표의 키가 한 방향만 있어서 양쪽 순서를 모두 확인 (이전엔 순서가 반대면 놓쳤음)
+          const both=(T,x,y)=>T[x+y]||T[y+x];
+          if(both(CHUNG_C,a.b,b.b)) ch.push(`${a.b}(${a.k})·${b.b}(${b.k}) 충`);
+          if(both(HAP6_C,a.b,b.b)) ha.push(`${a.b}(${a.k})·${b.b}(${b.k}) 육합`);
+          if(both(STEMHAP_C,a.s,b.s)) sh.push(`${a.s}·${b.s} 천간합`);
         }));
         return { chungs: ch.join(', ')||'없음', haps: ha.join(', ')||'없음', stemHaps: sh.join(', ')||'없음' };
       };
@@ -6443,199 +6404,56 @@ ${p2PillarDesc}
 지지 관계: ${b1&&b2?(YUKAP_SC[b1+b2]?'육합 (좋음)':SAMHAP_PAIRS[b1+b2]?'삼합 (좋음)':CHUNG_SC[b1+b2]?'지지충 (충돌 주의)':'중립'):'정보없음'}
 교차 충: ${crossRel.chungs||'없음'} / 교차 합: ${crossRel.haps||'없음'} / 천간합: ${crossRel.stemHaps||'없음'}
 종합 궁합 점수: ${totalScore}점 (이 점수를 S1 제목에 반드시 반영할 것)
+${person1.name}: ${r1.fe.strength}(일간을 돕는 힘 ${r1.fe.strengthRatio}%) — ${r1.fe.yongReason}
+${person2.name}: ${r2.fe.strength}(일간을 돕는 힘 ${r2.fe.strengthRatio}%) — ${r2.fe.yongReason}
 
-━━━ 작성 원칙 ━━━
-① 섹션 13개, 섹션당 800자, 후반도 초반과 동일한 밀도
-② 두 사람 이름(${person1.name}, ${person2.name})을 각 섹션에 반드시 포함
-③ 오행·일간·신살·충합 근거를 자연스러운 줄글에 녹여낼 것
-④ 구어체·슬랭 허용 (겉바속촉, 찐한, 쿨내 진동, 멘탈 바사삭, 고구마, 끝판왕 등)
-⑤ 구체적 일상 장면으로 서술 — 추상어 금지
-⑥ JSON 문자열 내 큰따옴표 금지
-⑦ 관계 유형은 반드시 [${relationLabel}]이며, 모든 섹션 내용은 이 관계에 맞게 작성
-   - 연인/부부: 연애·결혼·갈등·성적 케미 중심
-   - 친구: 우정·의리·취미·소통 중심
-   - 비즈니스: 협업·신뢰·역할분담·성과 중심
-   - 부모자식: 양육·이해·세대차이·유대 중심
-   - 형제자매: 경쟁·공감·가족유대·독립 중심
-   - 조부모-손자녀: 세대차이·지혜전수·애정·의존 중심
-   - 멘토-멘티: 성장·배움·영향력·독립 중심
-   - 라이벌: 경쟁·자극·인정·성장 중심
-   - 기타: 일반 인간관계 중심
+━━━ 이 리포트의 원칙: 친근하지만, 기준이 분명하고 결론이 명확하게 ━━━
+① 말투: 두 사람을 잘 아는 믿을 만한 선배의 친근한 존댓말('~해요'). 유행어는 섹션당 많아야 1개.
+② 결론 먼저: 각 섹션은 verdict(한 줄 결론)로 시작합니다. '잘 맞는다/부딪힌다', '누가 무엇을 맡으면 된다'처럼 판정이 분명해야 합니다. 두루뭉술한 말 금지.
+③ 근거 분명: 모든 판단은 위 데이터(두 사람의 일간·오행·십성·신살·용신, 교차 충·합, 점수)에서 나와야 합니다. 데이터에 없는 충합·신살을 지어내지 마세요. basis 배열에 근거 2~4개를 짧은 명사구로.
+④ 실천 가능: content 마지막에 두 사람이 할 일 2~3가지를 구체적으로(무엇을·언제·어떻게).
+⑤ 두 사람만의 제목: title은 이 두 원국에서만 나올 한 줄 이미지로, 정해진 문구 반복 금지.
+⑥ 관계 유형은 [${relationLabel}] — 모든 섹션을 이 관계에 맞게 씁니다. (연인/부부가 아니면 연애·스킨십 이야기 금지)
+⑦ 성별 고정관념 금지, 이별·불륜·질병 같은 일은 단정하지 말 것.
+⑧ 두 사람 이름(${person1.name}, ${person2.name})을 섹션마다 자연스럽게. JSON 문자열 안에 큰따옴표 금지, 문단 구분은 \\n\\n.
 
-━━━ 일간 자연물 치환표 ━━━
-甲갑=소나무·거목 / 乙을=화초·장미 / 丙병=태양·불꽃 / 丁정=촛불·등불
-戊무=산·대지 / 己기=논밭·습지 / 庚경=도끼·바위 / 辛신=칼·보석·다이아몬드
-壬임=강·바다 / 癸계=빗물·샘물
+━━━ 출력 형식 (JSON만, 다른 말 없이) ━━━
+{"sections":[{"icon":"이모지 1개","title":"두 사람만의 한 줄 제목","verdict":"한 줄 결론","content":"800~900자 본문","basis":["근거1","근거2"]}]}
 
-━━━ 섹션 13개 — 제목 공식 + 내용 필수 포인트 ━━━
+━━━ 섹션 8개 (순서 고정, 각 800~900자, 8번째도 1번째와 같은 밀도) ━━━
 
-[S1 💫 점수 + 두 일간 조합 이미지]
-★ 반드시 종합 궁합 점수 ${totalScore}점을 제목에 그대로 사용할 것 (임의 변경 절대 금지)
-제목 공식: "${totalScore}점: [두 일간 자연물 조합 한 컷 이미지], [관계 핵심 특성 한 마디]"
-예) 72점: 끌림은 강렬하지만, 서로의 고집 버튼을 누르면 핵폭발 주의보
-    82점: 차가운 보석과 뜨거운 용광로의 만남, 원진살만 조심하면 대박
-    86점: 보석을 비추는 태양, 흙더미 속 보물을 캐내는 운명적 케미
-내용 필수:
-- 이 점수가 나온 이유 — 오행 상생/상극/비화 구조 근거로 설명
-- 두 일간 자연물이 만났을 때 생기는 장면 (서로에게 어떻게 작용하는지)
-- 이 관계의 가장 큰 매력과 가장 큰 리스크 각 한 가지
-- 관계 유형(${relationLabel})에서 이 점수의 의미
+[1 한눈에 보는 궁합] 종합 점수 ${totalScore}점의 의미.
+ - title은 반드시 "${totalScore}점: "으로 시작 (점수 변경 금지)
+ - verdict: 이 관계를 한 문장으로 판정 (예: "끌림은 강하지만 속도 조절이 관건인 관계예요")
+ - 점수가 이렇게 나온 이유(일간 오행 관계·천간·지지·교차 충합), 가장 큰 장점 1개와 가장 큰 위험 1개
 
-[S2 🎭 두 사람 성격 캐릭터 대비]
-제목 공식: "[person1 캐릭터] + [person2 캐릭터]의 조합" 또는 "둘이 만나면 생기는 장면"
-예) 돌직구 던지는 불도저와 생각 많은 철학자의 2인3각 달리기
-    게으른 천재 남편과 그를 조련하는 유능한 매니저 아내
-    너는 나의 비타민, 나는 너의 안정제! 근데 가끔 목에 걸린 가시?
-내용 필수:
-- ${person1.name}의 성격 캐릭터 (일간·오행·신살 기반으로 별명/라벨 부여)
-- ${person2.name}의 성격 캐릭터 (일간·오행·신살 기반으로 별명/라벨 부여)
-- 두 캐릭터가 함께할 때 시너지와 충돌이 동시에 생기는 상황
-- 처음 만났을 때 서로에게 어떻게 보이는지
+[2 두 사람의 기질]
+ - verdict: 두 사람의 성향 차이를 한 문장에
+ - ${person1.name}과 ${person2.name} 각각의 기질(일간·일주·신살 근거), 처음 만났을 때 서로에게 어떻게 보이는지
 
-[S3 🔥 오행·충합 구조 → 케미 or 갈등]
-제목 공식: [오행 관계 이미지] + [그 결과 한 마디]
-예) 금생수(金生水)의 환상 케미, 하지만 흙이 너무 많아 물길이 막힐라
-    메마른 대지에 내리는 단비, 그리고 따스한 햇살
-    건조한 땅에 흐르는 맑은 시냇물
-내용 필수:
-- 오행 상생/상극/비화 구조를 자연물 이미지로 설명
-- 교차 합(${crossRel.haps||'없음'})이 있다면 어떤 시너지를 만드는지
-- 교차 충(${crossRel.chungs||'없음'})이 있다면 어떤 갈등을 만드는지
-- 이 오행 구조가 실제 관계에서 어떤 패턴으로 나타나는지
+[3 서로 채워주는 것]
+ - verdict: 누가 누구의 무엇을 채워주는지 분명히
+ - 두 사람의 용신(${r1.fe.yongshin} / ${r2.fe.yongshin})과 오행 비율로 본 보완 관계, 보완이 의존으로 바뀌는 지점
 
-[S4 🧩 상호 보완 구조]
-제목 공식: [서로 채워주는 것을 퍼즐·비타민 등으로 표현]
-예) 내가 부족한 냉철함을 네가, 네가 부족한 추진력을 내가 채운다
-    부족함을 완벽하게 메꾸는 퍼즐 조각, 너의 볕이 나를 빛나게 해
-    서로가 서로를 빛내주는 합(合), 하지만 무게감은 견뎌야 해
-내용 필수:
-- ${person1.name}이 ${person2.name}에게 채워주는 것 (오행 결핍 기반)
-- ${person2.name}이 ${person1.name}에게 채워주는 것
-- 상호 보완이 잘 작동하는 상황
-- 상호 보완이 오히려 의존이 되어 문제가 되는 상황
+[4 부딪히는 지점]
+ - verdict: 가장 자주 싸우게 될 주제 1가지를 분명히
+ - 교차 충(${crossRel.chungs||'없음'})·상극·신살이 실제로 드러나는 장면, 갈등이 커지는 조건
 
-[S5 ⚡ 충·형·신살 이름 직접 언급]
-제목 공식: [신살/충형 이름 직접 + 발동 상황]
-예) 술미형(戌未刑) 발동! 자존심 싸움 시작되면 아무도 못 말려
-    원진살이 춤을 추네, 예민 보스와 욱하는 두 사람
-    사유축 합일! 손발이 척척 맞는 환상의 팀워크
-    백호살들의 전쟁, 자존심 건드리면 핵폭발
-내용 필수:
-- 두 원국의 교차 충·형·해 또는 주요 신살 이름을 직접 언급
-- 그 신살/충형이 실제 관계에서 발동하는 구체적 상황
-- 이 구조가 관계를 강하게 만드는 조건 vs 폭발하는 조건
-- 발동을 막는 방법
+[5 대화와 갈등 해결법]
+ - verdict: 이 두 사람에게 맞는 대화 방식을 분명히
+ - 각자 서운함을 표현하는 방식의 차이, 싸운 뒤 회복하는 순서, 꼭 지킬 대화 규칙 2~3가지
 
-[S6 💕 관계 스타일 차이] ★ 관계 유형: ${relationLabel}
-제목 공식: [두 사람의 관계 방식 차이를 대비로 — 관계 유형에 맞게]
-- 연인/부부: 연애·스킨십·다툼 스타일 차이
-- 친구: 우정 방식·연락 스타일·의리 표현 방식 차이
-- 비즈니스: 일하는 방식·소통 스타일·의사결정 방식 차이
-- 부모자식: 애정 표현·기대·간섭 방식 차이
-- 형제자매: 경쟁·질투·의지·독립 방식 차이
-- 조부모-손자녀: 세대차이·애정 표현·기대 방식 차이
-- 멘토-멘티: 가르치는 방식·흡수하는 방식·속도 차이
-- 라이벌: 경쟁 방식·자극 주고받는 방식·인정 스타일 차이
-내용 필수:
-- ${person1.name}의 관계 스타일 (일간·오행 기반, ${relationLabel} 맥락으로)
-- ${person2.name}의 관계 스타일
-- 초반 vs 시간이 지났을 때 달라지는 점
-- 두 사람이 가장 잘 맞는 순간과 가장 지치는 순간
+[6 함께하는 생활·일] (관계 유형에 맞게: 연인·부부=생활과 돈, 친구=시간 보내는 법, 비즈니스=역할 분담, 가족=거리와 역할)
+ - verdict: 역할을 어떻게 나누면 좋은지 분명히
+ - 오행·십성 근거로 각자 잘하는 역할, 돈·시간·공간 문제에서 생기는 마찰과 해결법
 
-[S7 🏠 함께하는 공간·환경 갈등] ★ 관계 유형: ${relationLabel}
-제목 공식: [같은 공간·환경에서 생기는 구체적 상황 — 관계 유형에 맞게]
-- 연인/부부: 동거·시댁처가·생활습관 갈등
-- 친구: 여행·모임·약속 방식 갈등
-- 비즈니스: 업무 공간·회의·일정 관리 갈등
-- 부모자식: 집안 규칙·간섭·독립 공간 갈등
-- 형제자매: 방·물건 공유·생활 방식 갈등
-- 조부모-손자녀: 생활방식 차이·기술격차·공간 공유 갈등
-- 멘토-멘티: 기대치 차이·피드백 방식·성장 속도 갈등
-- 라이벌: 같은 공간에서의 긴장감·비교 당하는 상황·경쟁 환경
-내용 필수:
-- 같은 공간에서 생기는 마찰 패턴 (원국 오행 기반)
-- 이 두 사람에게 맞는 공간·생활 방식
-- 갈등이 폭발하는 상황과 해결법
+[7 관계의 흐름과 시기]
+ - verdict: 지금 이 관계가 '키울 때'인지 '다질 때'인지 판정
+ - 두 사람의 현재 대운이 관계에 주는 영향, 관계가 깊어지기 좋은 흐름과 조심할 흐름
 
-[S8 📜 미래 전망] ★ 관계 유형: ${relationLabel}
-제목 공식: [이 관계의 미래를 구체적으로 예측 — 관계 유형에 맞게]
-- 연인/부부: 결혼 후 변화, 자녀운 (식상·자녀 궁 분석)
-- 친구: 우정이 깊어지는 조건, 멀어지는 상황
-- 비즈니스: 협업 성과 전망, 함께 성공하는 조건
-- 부모자식: 관계가 성숙해지는 시점, 독립 후 변화
-- 형제자매: 성인 후 관계 변화, 가족 내 역할 재정립
-- 조부모-손자녀: 세대를 잇는 유대, 이별 후 남는 것
-- 멘토-멘티: 독립 후 관계 변화, 동료가 되는 시점
-- 라이벌: 경쟁이 협력으로 바뀌는 시점, 서로에게 남는 것
-내용 필수:
-- 이 관계가 5년, 10년 후 어떻게 변해 있을지 (대운 흐름 기반)
-- 관계를 강화하는 결정적 사건이나 시기
-- 주의해야 할 위기 시점
-
-[S9 🧩 서로의 역할과 균형] ★ 관계 유형: ${relationLabel}
-제목 공식: [이 관계에서 두 사람의 자연스러운 역할 — 관계 유형에 맞게]
-- 연인/부부: 리더십·경제·감정 역할 분담
-- 친구: 의지하는 구조·끌어주는 구조
-- 비즈니스: 각자의 강점 역할·결정권
-- 부모자식: 보호자-피보호자 역할 재정의
-- 형제자매: 형/동생·언니/오빠 역할 패턴
-- 조부모-손자녀: 지혜 전수자·수용자 역할
-- 멘토-멘티: 이끄는 자·따르는 자의 역할 균형
-- 라이벌: 자극을 주는 자·받는 자의 역할, 서로를 성장시키는 구조
-내용 필수:
-- ${person1.name}이 자연스럽게 맡는 역할 (원국 십성 기반)
-- ${person2.name}이 자연스럽게 맡는 역할
-- 역할 불균형이 생길 때 나타나는 증상
-- 건강한 역할 균형을 만드는 방법
-
-[S10 🪞 서로가 보는 상대방 (이름 직접 호명)]
-제목 공식: "[person1] 님이 보는 [person2]: '캐릭터' / [person2] 님이 보는 [person1]: '캐릭터'"
-예) 지현 님이 보는 강호: '속을 알 수 없는 곰' / 강호 님이 보는 지현: '어디로 튈지 모르는 야생마'
-    남편: '내 아내는 깐깐한 선생님' / 아내: '내 남편은 철없는 큰아들'
-    기댈 수 있는 바위 vs 다루기 힘든 보석
-내용 필수:
-- ${person1.name}이 ${person2.name}을 어떻게 보는지 (일간·오행 차이에서 오는 인식)
-- ${person2.name}이 ${person1.name}을 어떻게 보는지
-- 서로의 시선에서 오해가 생기는 부분
-- 상대를 더 잘 이해하게 되는 계기
-
-[S11 🗣️ 각자 원하는 것의 차이]
-제목 공식: "[person1]은 ~을 원하고, [person2]은 ~을 원한다"
-예) 지현: '표현 좀 화끈하게 해봐!' vs 강호: '제발 계획적으로 좀 움직여!'
-    남편은 '존중'을 원하고, 아내는 '사랑'을 원한다
-    따뜻한 말 한마디 vs 묵직한 행동, 사랑의 언어가 다르다
-내용 필수:
-- ${person1.name}이 이 관계에서 원하는 것 (십성·일지 기반)
-- ${person2.name}이 이 관계에서 원하는 것
-- 원하는 것이 달라서 생기는 갈등 상황
-- 서로의 니즈를 채워주는 방법
-
-[S12 💬 속마음 직접 인용]
-제목 공식: "[person1]의 속마음: '...' / [person2]의 속마음: '...'"
-예) 강호의 속마음: '너 감당하기 벅차지만 놓치기 싫어' / 지현의 속마음: '이 남자, 내가 구제해 줘야 하나?'
-    속마음 꺼발리기: '너만 한 사람 없긴 한데, 가끔은 숨 막혀'
-    너 없인 못 살아 vs 너 때문에 미쳐
-내용 필수:
-- ${person1.name}의 속마음 — 표현 못 하고 있는 감정 (원국에서 근거)
-- ${person2.name}의 속마음 — 표현 못 하고 있는 감정
-- 두 사람이 서로에게 하지 못한 말
-- 이 속마음이 관계에서 쌓이면 어떻게 터지는지
-
-[S13 🧭 용신 환경 + 마무리 조언]
-제목 공식: [용신 방향/환경 + 이 관계에 전하는 마지막 메시지]
-예) 흐르지 않는 물은 썩고, 굳지 않은 흙은 무너진다. 소통으로 흐르고 신뢰로 굳혀라!
-    물가로 여행을 떠나고, 서로의 다름을 찬양하라
-    서로의 다름이 축복이 되는 마법의 주문
-내용 필수:
-- 두 용신 오행을 기반으로 이 커플에게 맞는 환경·방향 조언
-- 두 사람이 함께 해야 할 활동 or 여행지 (용신 방향 기반)
-- 이 관계를 더 오래, 더 깊게 유지하는 실천법
-- 마지막 문장: 이 관계를 더 잘 유지하는 실천법
-
-━━━ 출력 형식 (JSON만, 다른 텍스트 금지) ━━━
-{"sections":[{"icon":"이모지","color":"tailwind색상클래스","title":"제목","content":"800자 내용"}]}
-- sections 배열에 S1~S13 순서대로 13개 객체
-- color 예시: text-purple-400, text-pink-400, text-amber-400, text-emerald-400, text-blue-400`;
+[8 오래 가는 비결]
+ - verdict: 이 관계를 지키는 단 하나의 원칙
+ - 두 용신을 살리는 함께할 활동·장소, 앞으로 함께 실천할 3가지, 마지막 문장은 두 사람에게 전하는 분명한 한마디`;
 
       const minLoadC = new Promise(resolve => setTimeout(resolve, 2000));
       const compatPayload = {
@@ -7188,8 +7006,8 @@ ${p2PillarDesc}
         _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'} }, '관계 타이밍 전망'),
         (() => {
           const curYear = new Date().getFullYear();
-          const dw1 = (() => { try { return calcDaewoon(person1.year,person1.month,person1.day,person1.hour!=='unknown'?parseInt(person1.hour):12,person1.minute?parseInt(person1.minute):0,person1.gender,person1.calendar==='음력',false,r1.pillars); } catch(e){return null;} })();
-          const dw2 = (() => { try { return calcDaewoon(person2.year,person2.month,person2.day,person2.hour!=='unknown'?parseInt(person2.hour):12,person2.minute?parseInt(person2.minute):0,person2.gender,person2.calendar==='음력',false,r2.pillars); } catch(e){return null;} })();
+          const dw1 = (() => { try { return calcDaewoon(person1.year,person1.month,person1.day,person1.hour!=='unknown'?parseInt(person1.hour):12,person1.minute?parseInt(person1.minute):0,person1.gender,person1.calendar==='음력',person1.isLeapMonth||false,r1.pillars); } catch(e){return null;} })();
+          const dw2 = (() => { try { return calcDaewoon(person2.year,person2.month,person2.day,person2.hour!=='unknown'?parseInt(person2.hour):12,person2.minute?parseInt(person2.minute):0,person2.gender,person2.calendar==='음력',person2.isLeapMonth||false,r2.pillars); } catch(e){return null;} })();
           const age1 = curYear - parseInt(person1.year);
           const age2 = curYear - parseInt(person2.year);
           const cur1 = dw1 ? dw1.daewoons.find((dw,i)=>{ const nx=dw1.daewoons[i+1]; return dw.age<=age1&&(!nx||nx.age>age1); }) : null;
@@ -7325,13 +7143,13 @@ ${p2PillarDesc}
                     _h('h3', { style:{color:'white',fontWeight:'900',fontSize:'15px',letterSpacing:'-0.3px'} }, `${person1.name} × ${person2.name} 궁합 심층 풀이`)
                   )
                 ),
-                _h('span', { style:{fontSize:'10px',color:'#f9a8d4',background:'rgba(236,72,153,0.12)',border:'1px solid rgba(236,72,153,0.2)',padding:'4px 10px',borderRadius:'20px',fontWeight:'700'} }, `${aiCompatSections.length}개 분석`)
+                _h('span', { style:{fontSize:'10px',color:'#f9a8d4',background:'rgba(236,72,153,0.12)',border:'1px solid rgba(236,72,153,0.2)',padding:'4px 10px',borderRadius:'20px',whiteSpace:'nowrap',flexShrink:0,fontWeight:'700'} }, `${aiCompatSections.length}개 분석`)
               ),
               _h('div', { style:{padding:'8px 16px',background:'rgba(255,255,255,0.02)',borderBottom:'1px solid rgba(255,255,255,0.05)',textAlign:'center'} },
                 _h('p', { style:{color:'rgba(255,255,255,0.25)',fontSize:'11px'} }, '💡 제목을 눌러 풀이를 펼쳐보세요')
               ),
               aiCompatSections.map((section, i) =>
-                _h(S('AccordionItem', AccordionItem), { key: i, idx: i, icon: section.icon==='🔮'?'📜':section.icon, color: section.color, title: section.title, content: section.content })
+                _h(S('AccordionItem', AccordionItem), { key: i, idx: i, icon: section.icon==='🔮'?'📜':section.icon, verdict: section.verdict, basis: section.basis, color: section.color, title: section.title, content: section.content })
               )
             )
           : _h('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',marginTop:'16px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.07)'} },
@@ -8836,7 +8654,7 @@ ${isSangsaeng
               })()
             }
                     ]).map((section, idx) => 
-            _h(S('AccordionItem', AccordionItem), { key: idx, icon: section.icon==='🔮'?'📜':section.icon, color: section.color, title: section.title, content: section.content })
+            _h(S('AccordionItem', AccordionItem), { key: idx, icon: section.icon==='🔮'?'📜':section.icon, verdict: section.verdict, basis: section.basis, color: section.color, title: section.title, content: section.content })
           )
         )
       ),
