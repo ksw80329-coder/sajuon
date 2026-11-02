@@ -446,10 +446,93 @@ const FORTUNE_LABEL = `${FORTUNE_YEAR} ${FORTUNE_GANJI.kr}년`;
 const ZODIAC_EMOJI = ['🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑','🐵','🐔','🐶','🐷'];
 const yearAnimal = (y) => ZODIAC_EMOJI[((Number(y)-4)%12+12)%12];
 const YEAR_ANIMAL = yearAnimal(FORTUNE_YEAR);
-// 해마다 바뀌는 띠 아이콘 — 2027 정미년(丁未年)은 붉은 양(丁=붉은 불)을 직접 그린 그림으로
-const YEAR_ICON_SVG = { 2027: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"> <g fill="#C8402F"> <circle cx="32" cy="14" r="10"/><circle cx="19" cy="19" r="9"/><circle cx="45" cy="19" r="9"/> <circle cx="13" cy="31" r="8.5"/><circle cx="51" cy="31" r="8.5"/><circle cx="16" cy="43" r="8"/><circle cx="48" cy="43" r="8"/> <circle cx="24" cy="51" r="7.5"/><circle cx="40" cy="51" r="7.5"/><circle cx="32" cy="54" r="7"/> </g> <g fill="#E0614C"><circle cx="27" cy="11" r="3"/><circle cx="16" cy="17" r="2.6"/><circle cx="47" cy="16" r="2.6"/></g> <path d="M15 27c-6-2-9 4-6 7.5 2.5 2.8 6.5 1 6.2-2" fill="none" stroke="#9C7631" stroke-width="3.4" stroke-linecap="round"/> <path d="M49 27c6-2 9 4 6 7.5-2.5 2.8-6.5 1-6.2-2" fill="none" stroke="#9C7631" stroke-width="3.4" stroke-linecap="round"/> <ellipse cx="32" cy="37" rx="12.5" ry="14" fill="#F6E8D6"/> <g fill="#C8402F"><circle cx="26" cy="24.5" r="5"/><circle cx="32" cy="22.5" r="5.5"/><circle cx="38" cy="24.5" r="5"/></g> <ellipse cx="18" cy="35" rx="5" ry="2.6" transform="rotate(-25 18 35)" fill="#F6E8D6"/> <ellipse cx="46" cy="35" rx="5" ry="2.6" transform="rotate(25 46 35)" fill="#F6E8D6"/> <circle cx="27" cy="36" r="1.9" fill="#231F1C"/><circle cx="37" cy="36" r="1.9" fill="#231F1C"/> <ellipse cx="32" cy="43.5" rx="3.4" ry="2.2" fill="#E9A08F"/> <path d="M29.5 46.5q2.5 2 5 0" fill="none" stroke="#B5382A" stroke-width="1.4" stroke-linecap="round"/> </svg>' };
-const YearIcon = ({ size = 22 }) => YEAR_ICON_SVG[FORTUNE_YEAR]
-  ? React.createElement('span', { 'aria-hidden': true, style: { display:'inline-block', width:size+'px', height:size+'px', lineHeight:0, verticalAlign:'middle', flexShrink:0 }, dangerouslySetInnerHTML: { __html: YEAR_ICON_SVG[FORTUNE_YEAR] } })
+// 해마다 바뀌는 띠 아이콘 — 지지(동물) × 천간 오행 색(목=푸른, 화=붉은, 토=황금, 금=흰, 수=검은)
+const ZODIAC_PALETTE = {
+  목: { main:'#2F7A72', light:'#4E9C93', dark:'#1E524C', name:'푸른' },
+  화: { main:'#C8402F', light:'#E0614C', dark:'#8E2A1F', name:'붉은' },
+  토: { main:'#D09A2E', light:'#E8B954', dark:'#9A6C14', name:'황금' },
+  금: { main:'#F5F1E8', light:'#FFFFFF', dark:'#B8AC98', name:'흰', stroke:'#B8AC98' },
+  수: { main:'#2E2A2B', light:'#4A4446', dark:'#141112', name:'검은' },
+};
+function zodiacSvg(bi, el) {
+  const P = ZODIAC_PALETTE[el] || ZODIAC_PALETTE.화;
+  const M = P.main, L = P.light, D = P.dark;
+  const sk = P.stroke ? ` stroke="${P.stroke}" stroke-width="1.6"` : '';
+  const cream = '#F6E8D6', pink = '#E9A08F', ink = '#231F1C', gold = '#9C7631', red = '#C8402F';
+  const eyes = (y = 34, dx = 6, r = 2) => el === '수'
+    ? `<circle cx="${32-dx}" cy="${y}" r="${r*1.35}" fill="${cream}"/><circle cx="${32+dx}" cy="${y}" r="${r*1.35}" fill="${cream}"/><circle cx="${32-dx}" cy="${y}" r="${r*0.8}" fill="${ink}"/><circle cx="${32+dx}" cy="${y}" r="${r*0.8}" fill="${ink}"/>`
+    : `<circle cx="${32-dx}" cy="${y}" r="${r}" fill="${ink}"/><circle cx="${32+dx}" cy="${y}" r="${r}" fill="${ink}"/><circle cx="${32-dx+0.7}" cy="${y-0.7}" r="${r*0.35}" fill="#fff"/><circle cx="${32+dx+0.7}" cy="${y-0.7}" r="${r*0.35}" fill="#fff"/>`;
+  const smile = (y) => `<path d="M29 ${y}q3 2.4 6 0" fill="none" stroke="${ink}" stroke-width="1.5" stroke-linecap="round"/>`;
+  let b = '';
+  switch (bi) {
+    case 0: // 쥐
+      b = `<circle cx="15" cy="17" r="10"${sk} fill="${M}"/><circle cx="49" cy="17" r="10"${sk} fill="${M}"/><circle cx="15" cy="17" r="5.5" fill="${pink}"/><circle cx="49" cy="17" r="5.5" fill="${pink}"/>
+        <ellipse cx="32" cy="36" rx="18" ry="17"${sk} fill="${M}"/><ellipse cx="32" cy="45" rx="9" ry="6.5" fill="${cream}"/>${eyes(33,7,2.2)}
+        <circle cx="32" cy="42" r="2.4" fill="${pink}"/><path d="M14 43l9-1M14 47l9-2M50 43l-9-1M50 47l-9-2" stroke="${D}" stroke-width="1.2" stroke-linecap="round"/>`; break;
+    case 1: // 소
+      b = `<path d="M14 20c-8-1-10-8-7-12 1 5 5 7 11 6M50 20c8-1 10-8 7-12-1 5-5 7-11 6" fill="${cream}" stroke="${gold}" stroke-width="1.4"/>
+        <ellipse cx="11" cy="28" rx="7" ry="3.5" transform="rotate(-20 11 28)"${sk} fill="${M}"/><ellipse cx="53" cy="28" rx="7" ry="3.5" transform="rotate(20 53 28)"${sk} fill="${M}"/>
+        <ellipse cx="32" cy="32" rx="17" ry="18"${sk} fill="${M}"/><circle cx="32" cy="20" r="4" fill="${L}"/>${eyes(30,7,2.1)}
+        <ellipse cx="32" cy="45" rx="13" ry="8.5" fill="${pink}"/><ellipse cx="27" cy="45" rx="2" ry="1.4" fill="${ink}"/><ellipse cx="37" cy="45" rx="2" ry="1.4" fill="${ink}"/>`; break;
+    case 2: // 호랑이
+      b = `<circle cx="16" cy="17" r="7"${sk} fill="${M}"/><circle cx="48" cy="17" r="7"${sk} fill="${M}"/><circle cx="16" cy="17" r="3.5" fill="${cream}"/><circle cx="48" cy="17" r="3.5" fill="${cream}"/>
+        <ellipse cx="32" cy="34" rx="20" ry="18"${sk} fill="${M}"/>
+        <path d="M27 18l2 6M32 17v6M37 18l-2 6M13 31l6 1M12 37l6 0M51 31l-6 1M52 37l-6 0" stroke="${D}" stroke-width="2.2" stroke-linecap="round"/>
+        <ellipse cx="32" cy="43" rx="11" ry="8" fill="${cream}"/>${eyes(32,7,2.2)}<path d="M29.5 39.5h5l-2.5 3z" fill="${ink}"/>${smile(44)}`; break;
+    case 3: // 토끼
+      b = `<ellipse cx="23" cy="13" rx="5.5" ry="13"${sk} fill="${M}"/><ellipse cx="41" cy="13" rx="5.5" ry="13"${sk} fill="${M}"/><ellipse cx="23" cy="14" rx="2.6" ry="9" fill="${pink}"/><ellipse cx="41" cy="14" rx="2.6" ry="9" fill="${pink}"/>
+        <ellipse cx="32" cy="38" rx="17" ry="16"${sk} fill="${M}"/><circle cx="23" cy="43" r="4" fill="${pink}" opacity=".55"/><circle cx="41" cy="43" r="4" fill="${pink}" opacity=".55"/>${eyes(36,7,2.2)}
+        <path d="M30.5 41.5h3l-1.5 2z" fill="${ink}"/><path d="M32 43.5v2.5M32 46q-2 2-4 0M32 46q2 2 4 0" fill="none" stroke="${ink}" stroke-width="1.3" stroke-linecap="round"/>`; break;
+    case 4: // 용
+      b = `<path d="M22 16c-2-6 1-10 4-11-1 4 0 6 2 7M42 16c2-6-1-10-4-11 1 4 0 6-2 7" fill="${gold}"/>
+        <path d="M18 18l-4-6 7 3M46 18l4-6-7 3" fill="${L}"/>
+        <ellipse cx="32" cy="33" rx="17" ry="17"${sk} fill="${M}"/><path d="M24 16l4 5 4-6 4 6 4-5" fill="${L}"/>
+        <ellipse cx="32" cy="44" rx="11" ry="8" fill="${cream}"/>${eyes(31,7.5,2.4)}
+        <circle cx="28.5" cy="43" r="1.4" fill="${ink}"/><circle cx="35.5" cy="43" r="1.4" fill="${ink}"/>
+        <path d="M21 45c-6 0-9 3-8 7M43 45c6 0 9 3 8 7" fill="none" stroke="${gold}" stroke-width="2" stroke-linecap="round"/>`; break;
+    case 5: // 뱀
+      b = `<ellipse cx="32" cy="50" rx="22" ry="8"${sk} fill="${D}"/><ellipse cx="32" cy="47" rx="17" ry="6"${sk} fill="${M}"/>
+        <ellipse cx="32" cy="29" rx="15" ry="16"${sk} fill="${M}"/><circle cx="25" cy="20" r="2" fill="${L}"/><circle cx="39" cy="20" r="2" fill="${L}"/><circle cx="32" cy="17" r="2" fill="${L}"/>
+        <ellipse cx="32" cy="36" rx="9" ry="6" fill="${cream}"/>${eyes(28,6,2.3)}
+        <path d="M32 41v5M32 46l-2 2.5M32 46l2 2.5" stroke="${red}" stroke-width="1.6" stroke-linecap="round" fill="none"/>`; break;
+    case 6: // 말
+      b = `<path d="M20 15l2-9 6 7M44 15l-2-9-6 7" fill="${M}"${sk}/>
+        <ellipse cx="32" cy="33" rx="14" ry="20"${sk} fill="${M}"/><path d="M24 12c4-4 12-4 16 0-3 0-5 2-8 6-3-4-5-6-8-6z" fill="${D}"/>
+        <ellipse cx="32" cy="47" rx="10" ry="7.5" fill="${cream}"/><ellipse cx="28" cy="47" rx="1.8" ry="1.3" fill="${ink}"/><ellipse cx="36" cy="47" rx="1.8" ry="1.3" fill="${ink}"/>${eyes(30,6.5,2.2)}`; break;
+    case 7: // 양
+      b = `<g fill="${M}"${sk}><circle cx="32" cy="14" r="10"/><circle cx="19" cy="19" r="9"/><circle cx="45" cy="19" r="9"/><circle cx="13" cy="31" r="8.5"/><circle cx="51" cy="31" r="8.5"/><circle cx="16" cy="43" r="8"/><circle cx="48" cy="43" r="8"/><circle cx="24" cy="51" r="7.5"/><circle cx="40" cy="51" r="7.5"/><circle cx="32" cy="54" r="7"/></g>
+        <g fill="${L}"><circle cx="27" cy="11" r="3"/><circle cx="16" cy="17" r="2.6"/><circle cx="47" cy="16" r="2.6"/></g>
+        <path d="M15 27c-6-2-9 4-6 7.5 2.5 2.8 6.5 1 6.2-2M49 27c6-2 9 4 6 7.5-2.5 2.8-6.5 1-6.2-2" fill="none" stroke="${gold}" stroke-width="3.4" stroke-linecap="round"/>
+        <ellipse cx="32" cy="37" rx="12.5" ry="14" fill="${cream}"/><g fill="${M}"${sk}><circle cx="26" cy="24.5" r="5"/><circle cx="32" cy="22.5" r="5.5"/><circle cx="38" cy="24.5" r="5"/></g>
+        <ellipse cx="18" cy="35" rx="5" ry="2.6" transform="rotate(-25 18 35)" fill="${cream}"/><ellipse cx="46" cy="35" rx="5" ry="2.6" transform="rotate(25 46 35)" fill="${cream}"/>
+        ${eyes(36,5,1.9)}<ellipse cx="32" cy="43.5" rx="3.4" ry="2.2" fill="${pink}"/>${smile(46.5)}`; break;
+    case 8: // 원숭이
+      b = `<circle cx="11" cy="33" r="8"${sk} fill="${M}"/><circle cx="53" cy="33" r="8"${sk} fill="${M}"/><circle cx="11" cy="33" r="4.2" fill="${cream}"/><circle cx="53" cy="33" r="4.2" fill="${cream}"/>
+        <circle cx="32" cy="32" r="19"${sk} fill="${M}"/>
+        <path d="M32 22c-4-5-13-3-12 5 0 3 1 5 1 7-2 2-3 5-2 8 2 6 8 8 13 8s11-2 13-8c1-3 0-6-2-8 0-2 1-4 1-7 1-8-8-10-12-5z" fill="${cream}"/>
+        ${eyes(32,5.5,2.2)}<circle cx="30" cy="39" r="1" fill="${ink}"/><circle cx="34" cy="39" r="1" fill="${ink}"/><path d="M27 43q5 4 10 0" fill="none" stroke="${ink}" stroke-width="1.5" stroke-linecap="round"/>`; break;
+    case 9: // 닭
+      b = `<path d="M24 14c0-5 4-7 6-4 1-4 6-4 6 0 2-3 6-1 5 4z" fill="${red}"/>
+        <circle cx="32" cy="34" r="18"${sk} fill="${M}"/><circle cx="32" cy="22" r="5" fill="${L}"/>${eyes(31,7,2.3)}
+        <path d="M26 37h12l-6 7z" fill="${gold}"/><path d="M29 44c0 5 6 5 6 0" fill="${red}"/>`; break;
+    case 10: // 개
+      b = `<ellipse cx="13" cy="30" rx="7" ry="13" transform="rotate(15 13 30)" fill="${D}"/><ellipse cx="51" cy="30" rx="7" ry="13" transform="rotate(-15 51 30)" fill="${D}"/>
+        <ellipse cx="32" cy="32" rx="17" ry="18"${sk} fill="${M}"/><ellipse cx="24" cy="29" rx="5" ry="6" fill="${L}"/>
+        <ellipse cx="32" cy="43" rx="11" ry="8.5" fill="${cream}"/>${eyes(30,7,2.3)}<ellipse cx="32" cy="40" rx="3.6" ry="2.6" fill="${ink}"/>
+        <path d="M32 43v2.5M32 45.5q-3 2.5-5 0M32 45.5q3 2.5 5 0" fill="none" stroke="${ink}" stroke-width="1.3" stroke-linecap="round"/><path d="M30 47.5q2 4 4 0z" fill="${pink}"/>`; break;
+    case 11: // 돼지
+      b = `<path d="M14 22l-2-11 10 6zM50 22l2-11-10 6z" fill="${M}"${sk}/><path d="M15 19l-1-5 4 3zM49 19l1-5-4 3z" fill="${pink}"/>
+        <circle cx="32" cy="34" r="19"${sk} fill="${M}"/><circle cx="21" cy="41" r="4" fill="${pink}" opacity=".55"/><circle cx="43" cy="41" r="4" fill="${pink}" opacity=".55"/>${eyes(30,8,2.2)}
+        <ellipse cx="32" cy="41" rx="8" ry="6" fill="${pink}"/><ellipse cx="29" cy="41" rx="1.6" ry="2.2" fill="${D === '#141112' ? ink : '#8E4A3E'}"/><ellipse cx="35" cy="41" rx="1.6" ry="2.2" fill="${D === '#141112' ? ink : '#8E4A3E'}"/>`; break;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">${b.replace(/\s*\n\s*/g, ' ')}</svg>`;
+}
+
+// 그해(신년운세 대상 연도)의 띠 동물 × 천간 색 — 2027 정미년 = 붉은 양, 2028 무신년 = 황금 원숭이 …
+const YEAR_ICON_HTML = (() => { try { const y = FORTUNE_YEAR; return zodiacSvg(((y-4)%12+12)%12, STEMS.elements[((y-4)%10+10)%10]); } catch (e) { return ''; } })();
+const YEAR_COLOR_NAME = (ZODIAC_PALETTE[STEMS.elements[((FORTUNE_YEAR-4)%10+10)%10]] || {}).name || '';
+const YearIcon = ({ size = 22 }) => YEAR_ICON_HTML
+  ? React.createElement('span', { 'aria-hidden': true, style: { display:'inline-block', width:size+'px', height:size+'px', lineHeight:0, verticalAlign:'middle', flexShrink:0 }, dangerouslySetInnerHTML: { __html: YEAR_ICON_HTML } })
   : React.createElement('span', { style: { fontSize: size*0.9+'px', lineHeight:1 } }, YEAR_ANIMAL);
 // 연도 필드가 없는 기존 기록은 2026년 구매분
 const yearlyYearOf = (y) => (y && y.year) ? Number(y.year) : 2026;
@@ -9476,7 +9559,7 @@ ${dwBlocks}
           _h('div', { style:{marginBottom:'16px',textAlign:'center',wordBreak:'keep-all'} },
             _h('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'13px',lineHeight:'1.6'} }, `${FORTUNE_GANJI.kr}년이 내 사주에 들어오는 방식부터`),
             _h('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'13px',lineHeight:'1.6'} }, '분야별 해석과 월별 운세까지, 근거와 함께'),
-            _h('p', { style:{color:'rgba(251,191,36,0.55)',fontSize:'11px',lineHeight:'1.6',marginTop:'6px'} }, `${FORTUNE_YEAR}년 입춘 ~ ${FORTUNE_YEAR+1}년 입춘 기준`)
+            _h('p', { style:{color:'rgba(251,191,36,0.55)',fontSize:'11px',lineHeight:'1.6',marginTop:'6px'} }, `${YEAR_COLOR_NAME ? YEAR_COLOR_NAME + ' ' + ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'][((FORTUNE_YEAR-4)%12+12)%12] + '의 해 · ' : ''}월별 운세 ${FORTUNE_YEAR}년 1월 ~ ${FORTUNE_YEAR+1}년 1월 (입춘 기준)`)
           ),
           _h('div', { style:{display:'flex',justifyContent:'center',gap:'6px',flexWrap:'wrap'} },
             ['세운 분석','대운 흐름','분야별 해석','월별 운세'].map((t,i)=>
