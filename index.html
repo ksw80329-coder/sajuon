@@ -119,6 +119,15 @@
 
 
 
+  <!-- Microsoft Clarity (방문자 이용 분석) — clarity.microsoft.com 에서 받은 프로젝트 ID를 아래 '' 안에 넣으면 켜짐. 실제 사이트에서만 동작 -->
+  <script>
+    window.CLARITY_ID = '';
+    if (window.CLARITY_ID && /(^|\.)sajuon\.kr$/.test(location.hostname)) {
+      (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", window.CLARITY_ID);
+    }
+  </script>
   <!-- Firebase SDK (Compat 버전 - 전역 객체 방식) -->
   <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -525,6 +534,8 @@ const JEOL_DEFS = [ // [이름, 황경, 양력 월, 대략 일, 사주월(1=寅)
   ['소서',105,7,7,6],['입추',135,8,8,7],['백로',165,9,8,8],['한로',195,10,8,9],['입동',225,11,7,10],['대설',255,12,7,11],
 ];
 // 절입 시각표: 연도(1900~2100)×12절, 각 3자리 36진수 = 기준일 0시(UTC)로부터의 분 + 20000
+// 방문자 분석(Clarity) 이벤트 — Clarity가 켜져 있을 때만 기록
+const track = (name) => { try { if (window.clarity) window.clarity('event', name); } catch (e) {} };
 const _JEOL_TBL = 'f5ofpcfg6fpdffffnbg4ufgzfl1g9xge0g14ffdfz0fpvfz4fpafx8gerfqufuugjqgnugb1fpcg8yfzrg8xfyzg6sgo6g06g47gt5gxegkpfz4girg9jgimg8mggfgxwga0ge2h32h79gujg8xgskffbfoefeefm9g3sffwfjyg8wgd1g0afenfycfp5fyafoafw1gdgfphftigiggmmg9vfoag80fywg83fy5g5xgnbfzbg3cgsbgwjgjtfy7ghvg8nghrg7qgfhgwvg8wgcyh1zh68gtjg7xgrjfe9fncfdafl3g2kfenfipg7ngbufz4fdifx5fnxfx2fn4fuygcgfojfsjghfgllg8vfnag6zfxsg6ufwrg4ggltfxtg1ugqtgv2gidfwtggig7bggdg69gdygvdg7ggblh0nh4vgs4g6ggq2fctflwfbvfjng15fd9fheg6fganfxvfc6fvrfmhfvkflift9ganfmofqqgfrgk2g7dflrg5dfw4g56fv4g2wgkbfwdg0hgpjgtvgh9fvogfag5xgeug4ngcdgtsg5wga2gz5h3igqwg5cgoyfblfkifa9fhxfzdfbjffpg4sg92fwefaufuifl9fuafk6frvg9aflefpkgemgixg69fkpg4dfv5g45ftyg1jgisfurfyvgo0gsfgfufubgdzg4pgdpg3igb5gshg4ig8ogxth28gpmg41gnmfabfjbf97fgzfyffaifeng3pg81fvff9uftgfk5ft5fj0fqpg83fk4fo6gd7ghig4wfjdg32fttg2ufspg0eghtftxfy2gn5grhgeuftagcwg3lgcig2ag9zgrfg3lg7tgx0h1dgopg32gmmf99fi5f7yfflfx1f98fdig2og71fudf8pfs9fiwfrufhqfpgg6xfj3fncgcjggyg4cfirg2afswg1qfrgfz2ggefsgfwoglxgqggdzfshgc2g2mgbeg11g8kgpyg23g6dgvnh05gnmg23glof89fh2f6rfedfvsf7zfcag1ig5yftdf7ufrhfi4fqzfgofo6g5gfhhflogavgfbg2tfhbg0zfrog0lfqbfxugf4fr5fvdgkmgp4gcmfr3gapg1aga4fzug7egoqg0tg51gubgyugmcg0tgkdf6xffqf5ffd0fucf6gfanfzug4afrrf67fptfggfpbff2fmpg44fg9fkhg9nge2g1jfg1fznfqafz3forfw9gdkfpoftwgj5gnngb4fpmg99fzug8mfy8g5qgn1fz8g3kgsvgxdgktfz7gipf59fe2f3sfbefsuf53f9hfytg3bfqqf54fomff4fnxfdmfl7g2ifemfiwg87gcrg0aferfybfoufxkfn7furgc3fo9fskghygmlga6foog87fymg79fwtg4bglqfxzg2egrtgwfgk1fyjgi3f4jfd6f2ofa4frgf3of81fxeg1zfpif40fnmfe6fmxfcifjzg1bfdifhwg7agbwfzgfdzfxlfo5fwvfmfftsgb0fn2freggugljg97fnrg7cfxug6jfw1g3fgknfwqg13gqigv7gitfxbggvf3cfc2f1nf97fqkf2rf73fwhg13foof37fmsfdafm0fblfj2g0bfcdfgmg5xgaify4fcofwcfmwfvmfl6fslg9vflzfqbgfpgkbg7wfmeg5zfwgg54fung24gjgfvpg05gpmgu9ghsfw8gfqf26fatf0cf7sfp3f1af5pfv4fzrfnaf1pfl7fbnfkcf9xfhffysfazffeg4vg9kfx6fbnfv5fljfu4fjlfqzg89fkffougecgj4g6tfleg4xfvbg3tft5g0gghqftyfyegnxgsnggbfuugedf0rf9beyqf64fnhezrf4afttfyifm4f0mfk6fanfj9f8ofg0fx7f9bfdpg37g7xfvlfa6ftrfk8fsvfiafplg6rfivfnagcughng5cfjwg3eftrg2bfrqfz4ggefsmfx4gmogrigf7ftrgd9ezlf84exif4wfm6eydf2rfs8fwyfkmez7firf96fhrf76felfvwf84fckg22g6sfugf91fslfj1frkfgxfo8g5hfhpfm7gbrggkg4afivg2efstg1bfqmfxwgf4frcfvwgligqagdyfsfgbvey8f6rew6f3kfkxex8f1tfrhfwafjyeyffhvf87fgqf65fdifurf6xfbdg0zg5uftmf87frpfi1fqiffufn4g4bfgifl0gangfjg3cfhyg1gfrpg03fpcfwmgdyfq9fuwgkkgpggd9frugbdexof62evbf2kfjsew0f0kfq6fuzfipexafguf79ffrf52fcafthf5ofa7fzvg4qfshf72fqmfgzfpgferflyg33ff9fjsg9hgegg2afgwg0ffqqfz5foefvkgcpfovftegj1gnygbqfqag9rew1f4getrf13fieeunez7fovftqfhhew1ffjf5vfebf3mfawfs4f4af8rfycg37fqzf5mfp6ffifnxfd6fkcg1jfdqfiag7ygcug0lff6fymfovfx8fmgftpgazfncfs2ghugmsgajfp2g8geuof30es9ezifgret1exnfnefsbfg3eumfe0f49fcmf1uf93fqbf2lf77fwzg1zfpvf4gfnwfe3fmdfbifinfzvfc5fgtg6ngbqfzofedfxvfo2fwaflbfseg9jfltfqhggaglbg96fntg7betkf1ueqyey3ffbermewcfm6fr6ff1etnfd6f3gfbuf10f84fp8f1ef60fvsg0uforf3ffmzfdaflnfatfhvfyxfb1ffng5fgaifygfd3fwkfmsfv2fk7frdg8lfkvfpkgfegkhg8efn1g6hespf0zeq4excfekeqsevdfl3fq2fdxeslfc3f2dfapezvf71fo8f0hf53futfzsfnof2bfltfc2fkdf9gfgkfxrfa2fesg4mg9ofxkfc7fvoflvfu4fj7fq9g7ffjqfoggebgjdg76flpg53er8ezieonevsfd1epeeu6fk3fp6fd0erjfawf11f9aeyff5kfmrez0f3pftlfyqfmpf1cfksfawfj2f83ff4fw9f8ifd7g33g89fw9faxfucfkefsgfhdfofg5nfi1fmwgcwgi2g60fkog43eq7eycenaeubfbhenteskfihfnlfbjeq6f9nezuf82ex2f41fl3excf22frzfx6fl5eztfjaf9ffhlf6kfdifukf6tfblg1mg6wfuyf9oft5fj9frdfgbfnag4dfglflbgb9gggg4gfj5g2keooewteltesufa0emcer2fgzfm5fa4eotf89eyff6levmf2nfjsew2f0sfqofvufjueykfi3f8afggf5ffcdftgf5pfagg0eg5kftjf86frlfhofpsfeqflqg2xffcfk8gabgfkg3ifi4g1genievmekmerpf8wel9eq3fg3flbf9aenxf7aexcf5geuff1hfileuwezpfppfuzfj1exqfh5f75ff5f3zfaxfs2f4gf9cfzgg4tfsyf7pfr5fh6fp5fdxfktg1xfeafj6g99geig2kfh9g0oemqeusejmeqif7mejzeovfeyfk8f89emyf6dewhf4lethf0efhfetoeyifolftxfi1ewrfg8f6bfeef3afa5fr4f3bf83fy6g3ifrnf6cfpqffqfnpfcifjgg0kfcwfhsg7xgd9g1dfg3fzgelgetfeiaepaf6feisenlfdlfivf6xelnf53ev5f36es1eyyfg1esbex4fn5fsefghev7fenf4ofcnf1ef89fpbf1pf6nfwug27fqbf50foefeefmdfb4fhzfz2fbffgeg6kgbwfzyfelfxwejveruegnenkf4neh0elyfc5fhjf5mekaf3metkf1ieqbex7feaeqleviflofr4ffceu5fdkf3ifbef04f6yfnyf09f55fvbg0rfozf3rfn5fd2fkwf9jfgbfxef9ufeug53gajfypfdgfwueiteqqefgemaf3cefqekpfawfgaf4fej6f2lesnf0mepeew7fd6epgeucfkjfpyfe5eswfcbf2afa6eyvf5nfmneyzf3xfu8fzrfo0f2sfm6fc4fjzf8offifwkf8yfdwg43g9jfxqfchfvuehrepneeeel8f2ceepejnf9tff8f3dei4f1ierhezdeo3euxfbzeocetafjifoyfd5erxfbdf1cf99exxf4pflqey3f32ftbfyrfmxf1nfkyfaufinf7afe2fv4f7lfcpg31g8kfwrfbefuoegheobed0ejvf0yedeeigf8rfeaf2ieh8f0jeqeey7emvetofapen2es1fibfnvfc5eqyfabf04f7sewaf2yfjyewdf1gfrvfxifluf0pfk2f9wfhlf63fcqftqf67fbbg1og78fvhfa9ftnefienaebueiiezgebuegwf78fcsf11eftez6ep3ewxelhes5f91elbeqcfgpfmcfapepjf8yeyvf6oev9f1xfitev3f02fqefw1fkdez6fiif8bfg1f4lfb9fs9f4mf9og01g5nftyf8rfs3edxelnea8eh0ey2eahefif5sfbbezleeeextenpeviek4equf7uek7ep7ffifl1f9aeo3f7gexbf50etif04fh3etjeypfp5futfj4exvfh7f6zfeof37f9wfqxf3ff8mfz3g4qfszf7ofqxecoekde8yefoewpe95eeaf4qfaeeypedhewqemheu4eimep9f69eioensfeafk1f8gencf6pewgf42eshez3fg2eshexmfo4ftufi9ex4fggf66fdqf23f8nfplf22f7bfxug3kfryf6rfq4ebvejie7xeejevhe7xed3f3lf9aexoecievwelqetgehyeojf5fehremtfdafj0f7gembf5nevff31erfexxfeser5ewafmufsnfh4ew1ffdf53fcof12f7nfomf12f68fwpg2ffqtf5nfp0eareide6tedgeufe6uebyf2df81eweeb8eulekees0egfemyf3veg9elefbvfhlf60ekvf49eu1f1oeq3ewmfdjepzev6flpfrgffteulfdvf3kfb4ezhf62fn0ezhf4qfvcg14fpif49fnge93egne51eboesne54eacf0xf6pev5e9zet8eixeqheevelhf2geevek1falfgef4wejsf33esqf05eoceusfboeo6etgfk3fpyfehetefcqf2df9tey0f4gfleexyf3aftyfzrfo7f31fmde82efle3weaeerbe3re90eznf5getwe8res1ehrepaedlek0f0ted6eidf91fezf3jeigf1serheyzenaetrfamen0es9fiwfotfddesafbkf16f8lewuf3cfk9ewqf1zfsmfyifn0f1wfl7e6tee9e2je91eq0e2he7qeycf46esne7keqxegneo6echeizezxeceehmf88fe2f2kehgf0reqfexvem1esff99elrer4fhufnsfcber6fagf01f7gevnf23fj1evlf0zfrrfxpfm7f10fk7e5sed8e1ie80eoze1ge6rexhf3ferze6ueq3efnen0eb6ehkeyeeaueg4f6ufcvf1jegiezuepgewsekwer9f83eklepyfgpfmpfbbeq9f9kez5f6geujf0vfhqeu8ezmfqefwdfkxezufj4e4qec3e09e6lenfdzve56evxf1xeqhe5feoqeedeluea2eghexae9oeeyf5ofbof0aef8eyjeo3evfejjepuf6mej1eodff5fl7f9ueotf83exmf4xet0ezdfg9essey5foxfuwfjheydfhne37eakdyre56em4dyme3yeuof0lep5e42encecxek9e8deeoevge7xedaf42fa2eyoedmewxemiettehxeo8f52ehlen1fdxfjzf8kenff6mew3f3dergextfeper9ewqfnnftrfidex7fgde1te91dx4e3hekcdwve2aet5ez9enye2wem5ebmeiwe6yedbeu7e6qec4f2zf94exuecvew5elmesregoemvf3oeg7elofcmfisf7jemkf5vevcf2ieqfewmfdfepzevifmgfslfh9ew7ffhe11e8cdwee2oejhdvze1fesbeygen4e23eldeaxei7e68ecfet3e5geatf1qf7wewpebqev1ekkerteftem2f2tef9ekofblfhrf6ielif4reu7f1fepfevqfclep4eukflffrkfg9ev7fegdzxe74dv4e1eei8duqe05eqyex1elpe0pejze9iegse4ueb4erze4ie9zf0vf6yevmealettejaeqgeedekkf1dedwejgfagfgnf5dek9f3festezxenueu1favenhet2fk3fqbff0etwfd0dyde5jdtidzuegpdtbdyuepuew2ektdzseiye8befde38e9deq3e2le83ez3f5deu8e9aeskehyeozecreiuezlec5ehrf8tff4f3xeiyf26erkeymemfesjf9belxerifilfovfdoesnfbudx9e4cds7dybeezdrgdwyenzeuaej3dy4ehee6uee0e1xe82eose19e6rexsf44esze81eraegoenpebjehmeyceauegcf7ffdsf2oehqf0zeqcexcel4er8f80ekkeq4fh5fnffc9er9faidvxe31dqxdx4edydqkdw4en4etcei4dx5egfe5uecye0re6uenje00e5kewmf2xerre6teq2efhemkeacegfex4e9pefcf6ifcvf1oegmezrep2ew4ejyeq5f6yejlep9fgffmsfbmeqlf9pduye1ydpsdvxecodp8duselwes9eh5dw7effe4qebqdzie5memfdyze4levqf24er1e64epdeenelke97ef7evye8kee8f5gfbvf0sefvez3eoeevaeixeowf5lei6envff2flgfabepcf8jdtve0wdooduqebgdo1dtpekveraeg5dv7eeee3qeaqdyge4fel1dxge31eu7f0oepne4seo0edbek9e7wedveuie70ecmf3ufaaez9eebexhemretnehdenff47eguemifdofk3f8zeo1f78ewif3fer5ex6fdveqeevzfn3ftgfic';
 const _jeolCache = {};
 // 한 해(양력)의 12절 목록: { name, sajuMonth, ms(UTC), year, month, day, hour, minute(KST) }
@@ -4266,7 +4277,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   };
 
   const openPayment = (product) => {
-    if (!isLoggedIn && !DEV_MODE) { setShowLogin(true); return; }
+    track('pay_open_' + (product.type || 'saju'));
+    if (!isLoggedIn && !DEV_MODE) { track('pay_need_login'); setShowLogin(true); return; }
     if (DEV_MODE) { _doPurchase(product); return; }
     // 결제 전 최종 확인 모달 표시 (전자상거래법 제17조)
     setPurchaseConfirm({ product, onConfirm: () => { setPurchaseConfirm(null); _doPurchase(product); } });
@@ -4407,6 +4419,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   const handlePaymentComplete = (productArg) => {
     const prod = productArg || paymentProduct;
     if (!prod) return;
+    track('pay_done_' + (prod.type || 'saju'));
     const L = _latest.current || {};
     const yearlyPerson = prod.personId ?? L.yearlyPerson, roadmapPerson = prod.personId ?? L.roadmapPerson;
     const { compatPerson1, compatPerson2, compatRelation, currentInput, currentResult, savedSaju, savedPaidSaju, savedYearly, savedRoadmap, savedKeycard, savedCompatibility, purchases } = L;
@@ -4509,6 +4522,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   };
 
   const startAnalysis = () => {
+    track('free_start');
     if (!form.name || !form.year || !form.month || !form.day) {
       alert('이름과 생년월일을 입력해주세요.');
       return;
@@ -11183,6 +11197,34 @@ ${dwBlocks}
     );
 
   // ===== 오류 문의 =====
+  // ===== 문의·환불 접수: Firestore에 실제로 저장 (예전엔 화면만 '접수 완료'로 바뀌고 아무 데도 전달되지 않았음) =====
+  const _inqSending = React.useRef(false);
+  const sendInquiry = async (kind, fields) => {
+    if (_inqSending.current) return false;
+    let email = userEmail || '';
+    if (!email) {
+      email = (window.prompt('답변을 받을 이메일 주소를 입력해주세요.') || '').trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('올바른 이메일 주소를 입력해주세요.'); return false; }
+    }
+    _inqSending.current = true;
+    try {
+      const fs = await _waitFirestore();
+      if (!fs) throw new Error('no firestore');
+      const clean = {}; Object.entries(fields).forEach(([k, v]) => { clean[k] = String(v ?? '').slice(0, 2000); });
+      await fs.collection(DEV_FLAG ? 'dev_inquiries' : 'inquiries').add({
+        kind, fields: clean, email: email.slice(0, 200), userKey: String(userKey || '').slice(0, 200),
+        recentPurchases: kind === 'refund' ? JSON.stringify((purchases || []).slice(-5)).slice(0, 1500) : '',
+        page: location.href.slice(0, 300), ua: navigator.userAgent.slice(0, 300),
+        status: 'new', createdAt: Date.now(),
+      });
+      return true;
+    } catch (e) {
+      console.error('문의 저장 실패:', e);
+      alert('문의를 보내지 못했어요. 잠시 후 다시 시도하시거나 godwk15@naver.com 으로 직접 보내주세요.');
+      return false;
+    } finally { _inqSending.current = false; }
+  };
+
   const ErrorInquiryScreen = () => {
     const [category, setCategory] = React.useState('');
     const [text, setText] = React.useState('');
@@ -11214,7 +11256,7 @@ ${dwBlocks}
         onClick: () => {
           if (!category) { alert('오류 유형을 선택해주세요.'); return; }
           if (text.trim().length < 10) { alert('오류 내용을 10자 이상 입력해주세요.'); return; }
-          setSubmitted(true);
+          sendInquiry('error', { 오류유형: category, 내용: text }).then(ok => { if (ok) setSubmitted(true); });
         },
         style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',fontWeight:'800',fontSize:'15px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 0 30px rgba(168,85,247,0.3)'}
       }, '문의 접수하기')
@@ -11256,7 +11298,7 @@ ${dwBlocks}
         onClick: () => {
           if (!type) { alert('의견 유형을 선택해주세요.'); return; }
           if (!text.trim()) { alert('의견 내용을 입력해주세요.'); return; }
-          setSubmitted(true);
+          sendInquiry('feedback', { 의견유형: type, 내용: text }).then(ok => { if (ok) setSubmitted(true); });
         },
         style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',fontWeight:'800',fontSize:'15px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 4px 30px rgba(139,92,246,0.3)'}
       }, '피드백 보내기')
@@ -11383,7 +11425,7 @@ ${dwBlocks}
         onClick: () => {
           if (!orderId.trim()) { alert('결제 정보를 입력해주세요.'); return; }
           if (!reason) { alert('환불 사유를 선택해주세요.'); return; }
-          setSubmitted(true);
+          sendInquiry('refund', { 결제정보: orderId, 환불사유: reason, 내용: text }).then(ok => { if (ok) setSubmitted(true); });
         },
         style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',fontWeight:'800',fontSize:'15px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 4px 30px rgba(139,92,246,0.3)'}
       }, '환불 문의 접수하기')
@@ -11424,7 +11466,7 @@ ${dwBlocks}
         onClick: () => {
           if (!subject.trim()) { alert('문의 제목을 입력해주세요.'); return; }
           if (text.trim().length < 10) { alert('문의 내용을 10자 이상 입력해주세요.'); return; }
-          setSubmitted(true);
+          sendInquiry('other', { 제목: subject, 내용: text }).then(ok => { if (ok) setSubmitted(true); });
         },
         style:{width:'100%',padding:'16px',background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:'16px',fontWeight:'800',fontSize:'15px',color:'white',border:'none',cursor:'pointer',boxShadow:'0 0 30px rgba(168,85,247,0.3)'}
       }, '문의 접수하기')
@@ -11498,13 +11540,13 @@ ${dwBlocks}
     const [openIdx, setOpenIdx] = React.useState(null);
     const articles = [
       { title: '제1조 개인정보 수집 및 이용 목적', content: '사주ON(이하 "회사")은 개인정보보호법 제15조에 따라 다음 목적으로만 개인정보를 수집·이용합니다.\n\n① 회원 가입 및 관리: 본인 식별·인증, 부정가입 방지, 회원 자격 유지, 서비스 관련 고지\n② 서비스 제공: 사주·궁합·운세 콘텐츠 생성·제공, 결제 및 환불 처리, 고객지원\n③ 마케팅·광고: 신규 서비스 안내, 맞춤형 광고 (이용자가 별도로 동의한 경우에 한함)\n④ 서비스 개선: 이용 통계 분석, 오류 추적, 서비스 품질 향상\n\n수집 목적과 다른 목적으로는 이용하지 않으며, 목적이 변경될 경우 별도 동의를 받겠습니다.' },
-      { title: '제2조 수집하는 개인정보 항목 및 수집 방법', content: '[필수 수집 항목]\n· 소셜 로그인 정보\n  - 카카오: 닉네임, 이메일, 프로필 사진\n  - 네이버: 이메일\n  - 구글: 이메일, 이름\n· 서비스 이용 기록, 접속 로그, 접속 IP, 쿠키\n\n[선택 수집 항목]\n· 생년월일시 (사주 분석 이용 시 이용자가 직접 입력)\n· 성별\n· 마케팅 수신 동의 여부\n\n[결제 관련]\n· 결제 수단 정보는 PG사(카카오페이·토스페이먼츠)가 직접 처리하며, 회사는 카드번호 등 민감한 결제 정보를 저장하지 않습니다.\n\n[수집 방법]\n· 이용자가 서비스 가입·이용 시 직접 입력\n· 서비스 이용 과정에서 자동 생성·수집 (쿠키, 로그 등)' },
+      { title: '제2조 수집하는 개인정보 항목 및 수집 방법', content: '[필수 수집 항목]\n· 소셜 로그인 정보\n  - 카카오: 닉네임, 이메일, 프로필 사진\n  - 네이버: 이메일\n  - 구글: 이메일, 이름\n· 서비스 이용 기록, 접속 로그, 접속 IP, 쿠키\n\n[선택 수집 항목]\n· 이름(또는 별칭), 생년월일시 (사주 분석 이용 시 이용자가 직접 입력)\n· 문의·환불 요청 시: 답변 받을 이메일, 문의 내용, 최근 구매 내역\n· 성별\n· 마케팅 수신 동의 여부\n\n[결제 관련]\n· 결제 수단 정보는 PG사(카카오페이·토스페이먼츠)가 직접 처리하며, 회사는 카드번호 등 민감한 결제 정보를 저장하지 않습니다.\n\n[수집 방법]\n· 이용자가 서비스 가입·이용 시 직접 입력\n· 서비스 이용 과정에서 자동 생성·수집 (쿠키, 로그 등)' },
       { title: '제3조 개인정보 보유 및 이용 기간', content: '회사는 개인정보 수집·이용 목적이 달성된 후 지체 없이 파기합니다.\n단, 관련 법령에 따라 아래 기간 동안 보존합니다.\n\n[회사 내부 방침]\n· 회원 정보: 회원 탈퇴 시까지\n· 부정이용 방지 기록: 탈퇴 후 1년\n\n[법령에 의한 의무 보존]\n· 계약 또는 청약철회에 관한 기록: 5년\n  (전자상거래 등에서의 소비자보호에 관한 법률)\n· 대금결제 및 재화 공급에 관한 기록: 5년\n  (전자상거래 등에서의 소비자보호에 관한 법률)\n· 소비자 불만 또는 분쟁 처리에 관한 기록: 3년\n  (전자상거래 등에서의 소비자보호에 관한 법률)\n· 전기통신 사실 확인자료 (로그): 3개월\n  (통신비밀보호법)\n· 세법이 규정하는 모든 거래에 관한 장부 및 증빙서류: 5년\n  (국세기본법)' },
       { title: '제4조 개인정보의 제3자 제공', content: '회사는 이용자의 개인정보를 원칙적으로 제3자에게 제공하지 않습니다.\n\n단, 다음의 경우에는 예외적으로 제공될 수 있습니다.\n\n① 이용자가 사전에 동의한 경우\n② 법령의 규정에 의거하거나, 적법한 절차에 따른 수사기관의 요청이 있는 경우\n③ 결제 처리를 위해 PG사에 최소한의 정보를 전달하는 경우\n\n제3자 제공 시에는 제공 목적·항목·보유기간·제공 받는 자를 이용자에게 고지하고 동의를 받습니다.' },
-      { title: '제5조 개인정보 처리 위탁 및 국외 이전', content: '회사는 원활한 서비스 제공을 위해 아래 업체에 개인정보 처리 업무를 위탁합니다.\n\n[Google LLC (Firebase / Google Cloud Platform)]\n· 위탁 국가: 미국\n· 위탁 업무: 회원 인증 정보 저장, 데이터베이스 운영, 서비스 인프라\n· 보유 기간: 회원 탈퇴 또는 서비스 종료 시까지\n· 개인정보처리방침: https://policies.google.com/privacy\n\n[카카오 (주) / 네이버 (주)]\n· 위탁 업무: 소셜 로그인 인증 처리\n· 보유 기간: 인증 완료 즉시 파기\n\n위탁 업체는 위탁받은 업무 목적 외 개인정보를 이용하지 않으며, 개인정보보호 관련 법령을 준수합니다.' },
+      { title: '제5조 개인정보 처리 위탁 및 국외 이전', content: '회사는 원활한 서비스 제공을 위해 아래와 같이 개인정보 처리 업무를 위탁하며, 일부는 국외로 이전됩니다. 이전은 서비스 이용 시 암호화된 네트워크(HTTPS)로 그때그때 전송되는 방식입니다.\n\n[국외 이전]\n① Google LLC (Firebase / Google Cloud)\n· 이전 국가: 미국 등 / 연락처: https://policies.google.com/privacy\n· 이전 항목: 로그인 이메일·닉네임, 저장한 사주 정보(이름·성별·생년월일시), 구매·이용 기록, 문의 내용\n· 목적: 회원 인증, 데이터 저장, 기기 간 동기화\n· 보유 기간: 회원 탈퇴 또는 위탁 계약 종료 시까지\n\n② Anthropic, PBC (AI 풀이 생성)\n· 이전 국가: 미국 / 연락처: privacy@anthropic.com\n· 이전 항목: 풀이 대상의 이름·성별·생년월일시와 이를 바탕으로 계산한 사주 데이터\n· 목적: 사주·궁합·운세 AI 풀이 문장 생성\n· 보유 기간: Anthropic의 API 데이터 처리 정책에 따라 처리 후 삭제 (회사는 생성된 풀이만 보관)\n\n③ Cloudflare, Inc.\n· 이전 국가: 미국 등 (전 세계 서버) / 연락처: https://www.cloudflare.com/privacypolicy/\n· 이전 항목: 접속 IP, AI 풀이 요청 내용, 결제 확인 정보(주문번호·금액)\n· 목적: AI 요청 중계, 결제 검증 서버 운영\n· 보유 기간: 요청 처리 즉시 (결제 처리 기록은 중복 결제 방지를 위해 보관)\n\n④ Microsoft Corporation (Microsoft Clarity, 이용 행태 분석)\n· 이전 국가: 미국 / 연락처: https://privacy.microsoft.com/\n· 이전 항목: 접속 기기·브라우저 정보, 화면 이용 기록(클릭·스크롤), 쿠키\n· 목적: 서비스 이용 통계 및 화면 개선\n· 보유 기간: 수집일로부터 최대 13개월\n\n[국내 위탁]\n· (주)코리아포트원: 결제 대행 및 결제 정보 중계\n· (주)카카오페이 / 비바리퍼블리카(토스): 결제 처리\n· (주)카카오 / 네이버(주) / Google: 소셜 로그인 인증\n\n[국외 이전을 원하지 않는 경우]\n이용자는 국외 이전을 거부할 수 있으며, 이 경우 회원 가입 및 AI 풀이 등 서비스 이용이 제한될 수 있습니다. 거부 및 문의는 제10조의 개인정보 보호책임자에게 요청해 주세요.\n\n위탁 업체는 위탁받은 업무 목적 외로 개인정보를 이용하지 않으며, 회사는 관련 법령에 따라 위탁 업체를 관리·감독합니다.' },
       { title: '제6조 개인정보의 파기', content: '개인정보 보유 기간이 경과하거나 처리 목적이 달성된 경우 지체 없이 파기합니다.\n\n[파기 절차]\n파기 대상 개인정보를 선정하고, 개인정보 보호책임자의 승인을 받아 파기합니다.\n\n[파기 방법]\n· 전자적 파일: 복구 불가능한 기술적 방법으로 영구 삭제\n  (예: 덮어쓰기, 데이터 와이핑 등)\n· 종이 문서: 분쇄기로 분쇄하거나 소각 처리' },
       { title: '제7조 이용자의 권리 및 행사 방법', content: '이용자(정보주체)는 언제든지 다음 권리를 행사할 수 있습니다.\n\n· 개인정보 열람 요청 (개인정보보호법 제35조)\n· 오류 정정 요청 (제36조)\n· 처리 정지 요청 (제37조)\n· 삭제 요청·동의 철회 (회원 탈퇴)\n\n[행사 방법]\n· 앱 내 [설정 → 계정 관리] 메뉴에서 직접 처리\n· 아래 개인정보 보호책임자에게 이메일로 요청\n\n회사는 요청 접수 후 10일 이내 처리하며, 거부 사유가 있을 경우 사유를 알려드립니다.\n\n만 14세 미만 아동의 법정대리인은 아동의 개인정보에 대해 위 권리를 대신 행사할 수 있습니다.' },
-      { title: '제8조 쿠키(Cookie) 운영', content: '회사는 맞춤형 서비스 제공 및 이용 통계 분석을 위해 쿠키를 사용합니다.\n\n[쿠키 사용 목적]\n· 로그인 상태 유지\n· 서비스 이용 패턴 분석 및 통계\n· 이용자 맞춤형 서비스 제공\n\n[쿠키 거부 방법]\n이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있습니다.\n예) Chrome: 설정 → 개인정보 및 보안 → 쿠키 및 사이트 데이터\n\n※ 쿠키 거부 시 로그인 유지 등 일부 서비스 기능이 제한될 수 있습니다.' },
+      { title: '제8조 쿠키(Cookie) 운영', content: '회사는 맞춤형 서비스 제공 및 이용 통계 분석을 위해 쿠키를 사용합니다.\n\n[쿠키 사용 목적]\n· 로그인 상태 유지\n· 서비스 이용 패턴 분석 및 통계 (Microsoft Clarity 이용, 제5조 참고)\n· 이용자 맞춤형 서비스 제공\n\n[쿠키 거부 방법]\n이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있습니다.\n예) Chrome: 설정 → 개인정보 및 보안 → 쿠키 및 사이트 데이터\n\n※ 쿠키 거부 시 로그인 유지 등 일부 서비스 기능이 제한될 수 있습니다.' },
       { title: '제9조 개인정보의 안전성 확보 조치', content: '회사는 개인정보보호법 제29조에 따라 다음과 같은 기술적·관리적·물리적 조치를 시행합니다.\n\n[기술적 조치]\n· 전송 구간 암호화 (SSL/TLS 적용)\n· 개인정보 접근 권한 최소화 및 관리\n· 해킹·악성코드 방지를 위한 보안 프로그램 운영\n· 개인정보처리시스템 접속 기록 보관 및 위변조 방지\n\n[관리적 조치]\n· 개인정보 취급 직원 최소화 및 정기 교육\n· 개인정보보호 내부 관리계획 수립 및 이행 점검\n\n[물리적 조치]\n· 개인정보 보관 서버실 출입 통제 및 접근 권한 관리' },
       { title: '제10조 개인정보 보호책임자 및 문의처', content: '개인정보보호법 제31조에 따라 개인정보 처리에 관한 업무를 총괄하는 개인정보 보호책임자를 지정합니다.\n\n[개인정보 보호책임자]\n· 성명: 고승우\n· 직책: 대표\n· 이메일: godwk15@naver.com\n· 전화: 050-6522-1519\n\n개인정보 침해 관련 신고·상담은 아래 기관에 문의하실 수 있습니다.\n\n· 개인정보보호위원회: www.pipc.go.kr / ☎ 국번없이 182\n· 개인정보 침해신고센터: privacy.kisa.or.kr / ☎ 국번없이 118\n· 대검찰청 사이버범죄수사단: www.spo.go.kr / ☎ 02-3480-3571\n· 경찰청 사이버안전국: cyberbureau.police.go.kr / ☎ 국번없이 182' },
       { title: '제11조 개인정보 처리방침의 변경', content: '① 본 방침은 법령·정책 또는 보안기술의 변경에 따라 수정될 수 있습니다.\n② 개정 시 시행일자 및 주요 변경 사항을 서비스 내 공지사항을 통해 안내합니다.\n③ 이용자에게 불리한 내용이 변경될 경우 시행 30일 이전부터 공지하며, 별도 이메일 통지를 병행합니다.\n④ 변경된 방침은 공지일로부터 7일 이후부터 효력이 발생합니다 (불리한 변경의 경우 30일 이후 시행).' },
@@ -11523,7 +11565,7 @@ ${dwBlocks}
           _h('h1', { style:{fontSize:'17px',fontWeight:'800',background:'linear-gradient(135deg,#c4b5fd,#f9a8d4)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:'4px'} }, '사주ON 개인정보 처리방침'),
           _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '개인정보보호법 제30조 기준 · 회원님의 정보를 소중히 보호합니다'),
           _h('div',{style:{display:'flex',gap:'8px',marginTop:'8px',justifyContent:'center',flexWrap:'wrap'}},
-            _h('span',{style:{background:'rgba(139,92,246,0.15)',border:'1px solid rgba(139,92,246,0.25)',borderRadius:'20px',padding:'3px 10px',color:'#c4b5fd',fontSize:'10px',fontWeight:'600'}},'최종 개정일: 2026.03.07'),
+            _h('span',{style:{background:'rgba(139,92,246,0.15)',border:'1px solid rgba(139,92,246,0.25)',borderRadius:'20px',padding:'3px 10px',color:'#c4b5fd',fontSize:'10px',fontWeight:'600'}},'최종 개정일: 2026.11.03'),
             _h('span',{style:{background:'rgba(255,255,255,0.05)',borderRadius:'20px',padding:'3px 10px',color:'rgba(255,255,255,0.3)',fontSize:'10px'}},'변경 시 서비스 내 공지')
           ),
         ),
@@ -11551,7 +11593,7 @@ ${dwBlocks}
           )
         ),
         _h('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'16px',border:'1px solid rgba(255,255,255,0.07)',padding:'16px',marginTop:'16px',display:'flex',flexDirection:'column',gap:'6px'} },
-          _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '📅 시행일: 서비스 출시일 기준 적용'),
+          _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '📅 시행일: 2026년 11월 3일 (위탁·국외 이전 항목 보완)'),
           _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '📧 개인정보 문의: godwk15@naver.com'),
           _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '🏛 침해 신고: 개인정보보호위원회 ☎ 182 / 개인정보침해신고센터 ☎ 118')
         )
