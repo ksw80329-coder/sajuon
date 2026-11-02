@@ -4842,6 +4842,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         backgroundImage:'radial-gradient(rgba(120,95,60,0.05) 1px, transparent 1px), radial-gradient(rgba(120,95,60,0.035) 1px, transparent 1px)', backgroundSize:'7px 7px, 13px 13px', backgroundPosition:'0 0, 3px 5px'} },
       _h('div', { style:{padding:'14px 16px 0'} },
         returning ? _h(S('HomeDashboard', HomeDashboard)) : _h(S('HomeQuickInput', HomeQuickInput)),
+        _h(S('HomeReads', HomeReads)),
         _h('div', { className:'hj-rise', style:{animationDelay:'.45s'} }, _h(S('HomeShelf', HomeShelf))),
         _h('div', { className:'hj-rise', style:{animationDelay:'.6s'} }, _h(S('HomeReviewsLight', HomeReviewsLight))),
         !returning && _h('div', { className:'hj-rise', style:{animationDelay:'.7s'} }, _h(S('HomeHowTo', HomeHowTo))),
@@ -4977,7 +4978,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const items = [
       { icon:'🔖', t:`${FORTUNE_YEAR} 키워드 카드`, d:'키워드 3개 · 행운의 달 · 공유 카드', p:1, go:()=>setScreen('keycard') },
       { icon:YEAR_ANIMAL, t:`${FORTUNE_YEAR} 신년운세`, d:'정미년이 내 사주에 들어오는 방식 · 월별 운세', p:3, go:()=>setScreen('yearly') },
-      { icon:'📜', t:'상세 사주 분석', d:'성격 · 직업 · 재물 · 연애 · 건강 심층 해설', p:3, go:()=>setScreen(savedSaju.length ? 'saju-list' : 'input') },
+      { icon:'📜', t:'상세 사주 분석', d:'성격 · 직업 · 재물 · 연애 · 지금 대운 전략', p:3, go:()=>setScreen(savedSaju.length ? 'saju-list' : 'input') },
       { icon:'💞', t:'궁합', d:'연인 · 친구 · 가족 · 동료 맞춤', p:2, go:()=>setScreen('compatibility') },
       { icon:'🗺️', t:'대운 인생 지도', d:'10년 단위 인생 흐름과 전성기', p:3, go:()=>setScreen('roadmap') },
     ];
@@ -4992,6 +4993,38 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           _h('span', { style:{color:HJ.gold,fontWeight:800,fontSize:'14px',flexShrink:0} }, `⭐${it.p}`),
           _h('span', { style:{color:HJ.faint} }, '›'))))
     );
+  };
+
+  // 무료 읽을거리 (검색 유입 페이지로 연결 — 로그인 사용자는 내 띠·내 일주로 바로)
+  const SEO_ANIMAL = ['rat','ox','tiger','rabbit','dragon','snake','horse','goat','monkey','rooster','dog','pig'];
+  const SEO_ANIMAL_KR = ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+  const SEO_STEM = ['gap','eul','byeong','jeong','mu','gi','gyeong','sin','im','gye'];
+  const SEO_BR = ['ja','chuk','in','myo','jin','sa','o','mi','sin','yu','sul','hae'];
+  const HomeReads = () => {
+    let person = null;
+    try { const v = localStorage.getItem('sajuon::home_person'); person = savedSaju.find(x => String(x.id) === v) || savedSaju[0] || null; } catch (e) { person = savedSaju[0] || null; }
+    const r = person && person.result;
+    const yb = r?.pillars?.year?.bi, dp = r?.pillars?.day;
+    const tiles = [
+      yb != null
+        ? { icon:'🐑', t:`${SEO_ANIMAL_KR[yb]}띠 ${FORTUNE_YEAR}년 운세`, d:`${person.name}님 띠의 정미년 흐름`, href:`/2027-ddi/${SEO_ANIMAL[yb]}.html` }
+        : { icon:'🐑', t:`${FORTUNE_YEAR} 띠별 운세`, d:'12띠 정미년 총운 · 좋은 달', href:'/2027-ddi/' },
+      dp
+        ? { icon:'🌗', t:`${STEMS.korean[dp.si]}${BRANCHES.korean[dp.bi]}일주 성격`, d:`${person.name}님 일주 자세히 보기`, href:`/ilju/${SEO_STEM[dp.si]}${SEO_BR[dp.bi]}.html` }
+        : { icon:'🌗', t:'60일주 성격', d:'갑자일주부터 계해일주까지', href:'/ilju/' },
+      yb != null
+        ? { icon:'💞', t:`${SEO_ANIMAL_KR[yb]}띠 궁합`, d:'잘 맞는 띠 · 조심할 띠', href:`/gunghap/${SEO_ANIMAL[yb]}.html` }
+        : { icon:'💞', t:'띠 궁합', d:'12띠 잘 맞는 띠 한눈에', href:'/gunghap/' },
+    ];
+    return _h('div', { className:'hj-rise', style:{margin:'22px 0 8px',animationDelay:'.35s'} },
+      _h('div', { style:{display:'flex',alignItems:'baseline',justifyContent:'space-between',margin:'0 0 10px'} },
+        _h('p', { style:{fontFamily:SERIF,fontWeight:900,fontSize:'18px',color:HJ.ink,margin:0} }, '무료로 읽어보기'),
+        _h('span', { style:{fontSize:'11px',fontWeight:700,color:HJ.teal,background:'rgba(45,90,92,0.08)',border:'1px solid rgba(45,90,92,0.2)',borderRadius:'8px',padding:'2px 8px'} }, '별 없이 무료')),
+      _h('div', { style:{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'} },
+        tiles.map((it,i) => _h('a', { key:i, href:it.href, style:{display:'block',textDecoration:'none',background:HJ.card,border:`1px solid ${HJ.line}`,borderRadius:'16px',padding:'14px 10px',minHeight:'112px'} },
+          _h('span', { style:{fontSize:'22px',display:'block',marginBottom:'6px'} }, it.icon),
+          _h('p', { style:{fontFamily:SERIF,color:HJ.ink,fontWeight:800,fontSize:'13.5px',lineHeight:1.35,margin:'0 0 4px',wordBreak:'keep-all'} }, it.t),
+          _h('p', { style:{color:HJ.faint,fontSize:'11px',lineHeight:1.4,margin:0,wordBreak:'keep-all'} }, it.d)))));
   };
 
   const HomeReviewsLight = () => {
@@ -10927,6 +10960,19 @@ ${dwBlocks}
             _h('span',{style:{fontSize:'16px'}},item.icon),
             _h('span',{style:{color:item.color,fontWeight:'500',fontSize:'13px'}},item.label)
           )
+        ),
+        _h('div',{style:{padding:'10px 20px 4px'}},
+          _h('p',{style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',letterSpacing:'2px',fontWeight:'700'}},'무료 읽을거리')
+        ),
+        [
+          { icon: '🐑', label: `${FORTUNE_YEAR} 띠별 운세`, href: '/2027-ddi/' },
+          { icon: '🌗', label: '60일주 성격', href: '/ilju/' },
+          { icon: '💕', label: '띠 궁합', href: '/gunghap/' },
+        ].map((item, i) =>
+          _h('a', { key: 'r'+i, href: item.href, onClick: e => e.stopPropagation(),
+            style:{width:'100%',display:'flex',alignItems:'center',gap:'14px',padding:'11px 20px',textDecoration:'none',boxSizing:'border-box'} },
+            _h('span',{style:{fontSize:'16px'}},item.icon),
+            _h('span',{style:{color:'rgba(255,255,255,0.75)',fontWeight:'500',fontSize:'13px'}},item.label))
         ),
         _h('div',{style:{margin:'6px 20px',height:'1px',background:'rgba(255,255,255,0.06)'}}),
         // 메인 메뉴
