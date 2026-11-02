@@ -446,6 +446,11 @@ const FORTUNE_LABEL = `${FORTUNE_YEAR} ${FORTUNE_GANJI.kr}년`;
 const ZODIAC_EMOJI = ['🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑','🐵','🐔','🐶','🐷'];
 const yearAnimal = (y) => ZODIAC_EMOJI[((Number(y)-4)%12+12)%12];
 const YEAR_ANIMAL = yearAnimal(FORTUNE_YEAR);
+// 해마다 바뀌는 띠 아이콘 — 2027 정미년(丁未年)은 붉은 양(丁=붉은 불)을 직접 그린 그림으로
+const YEAR_ICON_SVG = { 2027: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"> <g fill="#C8402F"> <circle cx="32" cy="14" r="10"/><circle cx="19" cy="19" r="9"/><circle cx="45" cy="19" r="9"/> <circle cx="13" cy="31" r="8.5"/><circle cx="51" cy="31" r="8.5"/><circle cx="16" cy="43" r="8"/><circle cx="48" cy="43" r="8"/> <circle cx="24" cy="51" r="7.5"/><circle cx="40" cy="51" r="7.5"/><circle cx="32" cy="54" r="7"/> </g> <g fill="#E0614C"><circle cx="27" cy="11" r="3"/><circle cx="16" cy="17" r="2.6"/><circle cx="47" cy="16" r="2.6"/></g> <path d="M15 27c-6-2-9 4-6 7.5 2.5 2.8 6.5 1 6.2-2" fill="none" stroke="#9C7631" stroke-width="3.4" stroke-linecap="round"/> <path d="M49 27c6-2 9 4 6 7.5-2.5 2.8-6.5 1-6.2-2" fill="none" stroke="#9C7631" stroke-width="3.4" stroke-linecap="round"/> <ellipse cx="32" cy="37" rx="12.5" ry="14" fill="#F6E8D6"/> <g fill="#C8402F"><circle cx="26" cy="24.5" r="5"/><circle cx="32" cy="22.5" r="5.5"/><circle cx="38" cy="24.5" r="5"/></g> <ellipse cx="18" cy="35" rx="5" ry="2.6" transform="rotate(-25 18 35)" fill="#F6E8D6"/> <ellipse cx="46" cy="35" rx="5" ry="2.6" transform="rotate(25 46 35)" fill="#F6E8D6"/> <circle cx="27" cy="36" r="1.9" fill="#231F1C"/><circle cx="37" cy="36" r="1.9" fill="#231F1C"/> <ellipse cx="32" cy="43.5" rx="3.4" ry="2.2" fill="#E9A08F"/> <path d="M29.5 46.5q2.5 2 5 0" fill="none" stroke="#B5382A" stroke-width="1.4" stroke-linecap="round"/> </svg>' };
+const YearIcon = ({ size = 22 }) => YEAR_ICON_SVG[FORTUNE_YEAR]
+  ? React.createElement('span', { 'aria-hidden': true, style: { display:'inline-block', width:size+'px', height:size+'px', lineHeight:0, verticalAlign:'middle', flexShrink:0 }, dangerouslySetInnerHTML: { __html: YEAR_ICON_SVG[FORTUNE_YEAR] } })
+  : React.createElement('span', { style: { fontSize: size*0.9+'px', lineHeight:1 } }, YEAR_ANIMAL);
 // 연도 필드가 없는 기존 기록은 2026년 구매분
 const yearlyYearOf = (y) => (y && y.year) ? Number(y.year) : 2026;
 // 현재 명리학상 연도 (입춘 기준, 2월 4일 전은 전년도)
@@ -4848,7 +4853,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
             style:{background:'linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.06))',borderRadius:'16px',border:'1px solid rgba(251,191,36,0.2)',padding:'14px 16px',marginBottom:'14px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}
           },
             _h('div', { style:{display:'flex',alignItems:'center',gap:'10px'} },
-              _h('span', { style:{fontSize:'20px'} }, YEAR_ANIMAL),
+              _h(YearIcon, { size:24 }),
               _h('div', null,
                 _h('p', { style:{color:'#fbbf24',fontWeight:'800',fontSize:'13px',marginBottom:'2px'} }, `${FORTUNE_YEAR} 신년운세`),
                 _h('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'11px'} }, '올해 전체 흐름 · 월별 운세까지 확인하기')
@@ -5045,7 +5050,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   const HomeShelf = () => {
     const items = [
       { icon:'🔖', t:`${FORTUNE_YEAR} 키워드 카드`, d:'키워드 3개 · 행운의 달 · 공유 카드', p:1, go:()=>setScreen('keycard') },
-      { icon:YEAR_ANIMAL, t:`${FORTUNE_YEAR} 신년운세`, d: yearlyPromoOn() ? `${PROMO_BADGE} · 13개월 월별 운세` : '정미년이 내 사주에 들어오는 방식 · 월별 운세', p:yearlyPrice().stars, was: yearlyPromoOn() ? 3 : null, go:()=>setScreen('yearly') },
+      { icon:_h(YearIcon, { size:26 }), t:`${FORTUNE_YEAR} 신년운세`, d: yearlyPromoOn() ? `${PROMO_BADGE} · 13개월 월별 운세` : '정미년이 내 사주에 들어오는 방식 · 월별 운세', p:yearlyPrice().stars, was: yearlyPromoOn() ? 3 : null, go:()=>setScreen('yearly') },
       { icon:'📜', t:'상세 사주 분석', d:'성격 · 직업 · 재물 · 연애 · 지금 대운 전략', p:3, go:()=>setScreen(savedSaju.length ? 'saju-list' : 'input') },
       { icon:'💞', t:'궁합', d:'연인 · 친구 · 가족 · 동료 맞춤', p:2, go:()=>setScreen('compatibility') },
       { icon:'🗺️', t:'대운 인생 지도', d:'10년 단위 인생 흐름과 전성기', p:3, go:()=>setScreen('roadmap') },
@@ -5076,8 +5081,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const yb = r?.pillars?.year?.bi, dp = r?.pillars?.day;
     const tiles = [
       yb != null
-        ? { icon:'🐑', t:`${SEO_ANIMAL_KR[yb]}띠 ${FORTUNE_YEAR}년 운세`, d:`${person.name}님 띠의 정미년 흐름`, href:`/2027-ddi/${SEO_ANIMAL[yb]}.html` }
-        : { icon:'🐑', t:`${FORTUNE_YEAR} 띠별 운세`, d:'12띠 정미년 총운 · 좋은 달', href:'/2027-ddi/' },
+        ? { icon:ZODIAC_EMOJI[yb], t:`${SEO_ANIMAL_KR[yb]}띠 ${FORTUNE_YEAR}년 운세`, d:`${person.name}님 띠의 정미년 흐름`, href:`/2027-ddi/${SEO_ANIMAL[yb]}.html` }
+        : { icon:_h(YearIcon, { size:26 }), t:`${FORTUNE_YEAR} 띠별 운세`, d:'12띠 정미년 총운 · 좋은 달', href:'/2027-ddi/' },
       dp
         ? { icon:'🌗', t:`${STEMS.korean[dp.si]}${BRANCHES.korean[dp.bi]}일주 성격`, d:`${person.name}님 일주 자세히 보기`, href:`/ilju/${SEO_STEM[dp.si]}${SEO_BR[dp.bi]}.html` }
         : { icon:'🌗', t:'60일주 성격', d:'갑자일주부터 계해일주까지', href:'/ilju/' },
@@ -5269,7 +5274,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                     const hasK = savedKeycard.some(k => String(k.personId) === String(saju.id) && Number(k.year) === FORTUNE_YEAR);
                     const btns = [
                       { t:'상세 사주', icon:'📜', has:isPaid, go:goView },
-                      { t:'신년운세', icon:YEAR_ANIMAL, has:hasY, go:() => { setYearlyPerson(saju.id); setYearlyViewYear(FORTUNE_YEAR); setScreen(hasY ? 'yearly-result' : 'yearly'); } },
+                      { t:'신년운세', icon:_h(YearIcon, { size:20 }), has:hasY, go:() => { setYearlyPerson(saju.id); setYearlyViewYear(FORTUNE_YEAR); setScreen(hasY ? 'yearly-result' : 'yearly'); } },
                       { t:'대운지도', icon:'🗺️', has:hasR, go:() => { setRoadmapPerson(saju.id); setScreen(hasR ? 'roadmap-result' : 'roadmap'); } },
                       { t:'키워드', icon:'🔖', has:hasK, go:() => { setYearlyPerson(saju.id); setScreen(hasK ? 'keycard-result' : 'keycard'); } },
                     ];
@@ -9464,7 +9469,7 @@ ${dwBlocks}
         // 히어로
         _h('div', { style:{textAlign:'center',padding:'16px 0 24px',position:'relative'} },
           _h('div', { style:{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'180px',height:'180px',background:'radial-gradient(circle,rgba(251,191,36,0.12),transparent 70%)',borderRadius:'50%'} }),
-          _h('div', { style:{fontSize:'50px',marginBottom:'14px',lineHeight:1} }, YEAR_ANIMAL),
+          _h('div', { style:{marginBottom:'12px',lineHeight:0} }, _h(YearIcon, { size:72 })),
           _h('h1', { style:{fontSize:'22px',fontWeight:'900',letterSpacing:'-1px',color:'white',marginBottom:'10px'} },
             _h('span', { style:{background:'linear-gradient(135deg,#fbbf24,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'} }, `${FORTUNE_LABEL} 운세`)
           ),
@@ -9609,9 +9614,9 @@ ${dwBlocks}
             style:{width:'100%',padding:'18px',background: savedYearly.some(y=>String(y.personId)===String(selPerson) && yearlyYearOf(y)===FORTUNE_YEAR) ? 'linear-gradient(135deg,#4ade80,#22c55e)' : 'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'20px',fontWeight:'900',fontSize:'17px',letterSpacing:'-0.3px',border:'none',cursor:'pointer',color:'#1a0a00',boxShadow:'0 4px 30px rgba(251,191,36,0.4)',position:'relative'}
           },
             savedYearly.some(y=>String(y.personId)===String(selPerson) && yearlyYearOf(y)===FORTUNE_YEAR)
-              ? `${YEAR_ANIMAL} ${FORTUNE_YEAR} 신년운세 결과 보기`
+              ? `${FORTUNE_YEAR} 신년운세 결과 보기`
               : _h(React.Fragment, null,
-                  `${YEAR_ANIMAL} ${FORTUNE_LABEL} 신년운세 분석받기`,
+                  `${FORTUNE_LABEL} 신년운세 분석받기`,
                   _h('span', { style:{display:'block',fontSize:'11px',fontWeight:'600',marginTop:'2px',opacity:0.7} }, `⭐ ${yearlyPrice().stars}별${yearlyPromoOn() ? ' (출시 할인)' : ''} · 결제 후 바로 생성 · 근거 포함 리포트`)
                 )
           ),
@@ -9744,7 +9749,7 @@ ${dwBlocks}
         card && _h('button', { onClick:()=>shareCardImage(shareOpts, `sajuon-${year}-keyword.png`), style:{width:'100%',padding:'16px',borderRadius:'16px',border:'none',cursor:'pointer',fontWeight:'800',fontSize:'15px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',color:'#1c1300',marginBottom:'10px'} }, '📸 카드 이미지로 저장 · 공유'),
         card && _h('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'11px',textAlign:'center',margin:'0 0 18px'} }, '행운의 달은 올해 월운이 원국과 가장 잘 맞는 달, 행운 색·숫자는 용신 오행 기준이에요'),
         card && _h('div', { onClick:()=>{ setScreen('yearly'); window.scrollTo(0,0); }, style:{cursor:'pointer',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'18px',padding:'16px',display:'flex',alignItems:'center',gap:'12px'} },
-          _h('span', { style:{fontSize:'26px'} }, YEAR_ANIMAL),
+          _h(YearIcon, { size:30 }),
           _h('div', { style:{flex:1} },
             _h('p', { style:{color:'white',fontWeight:'800',fontSize:'14px',margin:'0 0 2px'} }, '왜 이 키워드인지, 달마다 자세히'),
             _h('p', { style:{color:'rgba(255,255,255,0.45)',fontSize:'12px',margin:0} }, `${FORTUNE_YEAR} 신년운세 · ⭐${yearlyPrice().stars}별${yearlyPromoOn() ? ' (할인)' : ''}`)),
@@ -10725,7 +10730,7 @@ ${dwBlocks}
             savedYearly.length > 0 && _h('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',border:'1px solid rgba(255,255,255,0.07)',overflow:'hidden'} },
               _h('div', { style:{padding:'16px',background:'rgba(245,158,11,0.15)',borderBottom:'1px solid rgba(255,255,255,0.08)'} },
                 _h('h3', { style:{color:'white',fontWeight:'700',fontSize:'14px',display:'flex',alignItems:'center',gap:'8px'} },
-                  _h('span', null, YEAR_ANIMAL),
+                  _h(YearIcon, { size:18 }),
                   '신년운세'
                 )
               ),
@@ -11038,7 +11043,7 @@ ${dwBlocks}
           { icon: '📜', label: '사주 분석', screen: 'input', color: '#c4b5fd' },
           { icon: '🗺️', label: '대운 인생 지도', screen: 'roadmap', color: '#c4b5fd' },
           { icon: '💞', label: '궁합 분석', screen: 'compatibility', color: '#f9a8d4' },
-          { icon: YEAR_ANIMAL, label: `${FORTUNE_YEAR} 운세`, screen: 'yearly', color: '#fcd34d' },
+          { icon: _h(YearIcon, { size:20 }), label: `${FORTUNE_YEAR} 운세`, screen: 'yearly', color: '#fcd34d' },
         ].map((item, i) =>
           _h('button', {
             key: 's'+i,
@@ -11053,7 +11058,7 @@ ${dwBlocks}
           _h('p',{style:{color:'rgba(255,255,255,0.2)',fontSize:'10px',letterSpacing:'2px',fontWeight:'700'}},'무료 읽을거리')
         ),
         [
-          { icon: '🐑', label: `${FORTUNE_YEAR} 띠별 운세`, href: '/2027-ddi/' },
+          { icon: _h(YearIcon, { size:20 }), label: `${FORTUNE_YEAR} 띠별 운세`, href: '/2027-ddi/' },
           { icon: '🌗', label: '60일주 성격', href: '/ilju/' },
           { icon: '💕', label: '띠 궁합', href: '/gunghap/' },
         ].map((item, i) =>
@@ -11715,7 +11720,7 @@ ${dwBlocks}
     { id: 'home',          icon: '🏠', label: '홈' },
     { id: 'input',         icon: '📜', label: '내 사주' },
     { id: 'compatibility', icon: '💞', label: '궁합' },
-    { id: 'yearly',        icon: YEAR_ANIMAL, label: '신년운세' },
+    { id: 'yearly',        icon: _h(YearIcon, { size:26 }), label: '신년운세' },
     { id: 'premium',       icon: '🗺️', label: '대운지도' },
   ];
 
