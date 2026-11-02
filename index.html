@@ -1893,6 +1893,8 @@ function App() {
   // 신년운세 관련 state
   const [yearlyPerson, setYearlyPerson] = useState('');
   const _latest = React.useRef({});
+  // 홈에서 고른 사람 (대시보드와 '무료로 읽어보기'가 함께 씀)
+  const [homePid, setHomePid] = useState(() => { try { return localStorage.getItem('sajuon::home_person') || ''; } catch (e) { return ''; } });
   const [yearlyViewYear, setYearlyViewYear] = useState(FORTUNE_YEAR);
   const [savedYearly, setSavedYearlyRaw] = useState(() => session ? loadUserData(session.key, 'savedYearly', []) : []);
   const [savedKeycard, setSavedKeycardRaw] = useState(() => session ? loadUserData(session.key, 'savedKeycard', []) : []);
@@ -4909,9 +4911,9 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 
   // 돌아온 사람: 나의 오늘 · 올해 · 지금 대운 · 일주
   const HomeDashboard = () => {
-    const [pid, setPid] = React.useState(() => { try { const v = localStorage.getItem('sajuon::home_person'); if (v && savedSaju.some(s => String(s.id) === v)) return v; } catch (e) {} return String(savedSaju[0].id); });
+    const pid = (homePid && savedSaju.some(s => String(s.id) === String(homePid))) ? homePid : String(savedSaju[0].id);
     const person = savedSaju.find(s => String(s.id) === String(pid)) || savedSaju[0];
-    const pick = (id) => { setPid(String(id)); try { localStorage.setItem('sajuon::home_person', String(id)); } catch (e) {} };
+    const pick = (id) => { setHomePid(String(id)); try { localStorage.setItem('sajuon::home_person', String(id)); } catch (e) {} };
     const r = React.useMemo(() => person.result || analyzeSaju(person.year, person.month, person.day, person.hour, person.minute, (person.calendar === '음력' || person.isLunar === true), person.isLeapMonth || false), [person.id]);
     const now = new Date();
     const today = React.useMemo(() => { try { return analyzeSaju(now.getFullYear(), now.getMonth()+1, now.getDate(), 12, 0, false, false).pillars.day; } catch (e) { return null; } }, [now.toDateString()]);
@@ -5016,7 +5018,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   const SEO_BR = ['ja','chuk','in','myo','jin','sa','o','mi','sin','yu','sul','hae'];
   const HomeReads = () => {
     let person = null;
-    try { const v = localStorage.getItem('sajuon::home_person'); person = savedSaju.find(x => String(x.id) === v) || savedSaju[0] || null; } catch (e) { person = savedSaju[0] || null; }
+    person = savedSaju.find(x => String(x.id) === String(homePid)) || savedSaju[0] || null;
     const r = person && person.result;
     const yb = r?.pillars?.year?.bi, dp = r?.pillars?.day;
     const tiles = [
@@ -5143,7 +5145,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
 
               savedSaju.map((saju, i) => {
                 const zodiac = ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
-                const z = zodiac[(saju.year - 4) % 12];
+                const z = zodiac[saju.result?.pillars?.year?.bi ?? (((saju.year - 4) % 12) + 12) % 12];
                 const ageNum = new Date().getFullYear() - saju.year + 1;
                 const isPaid = savedPaidSaju.some(p => p.name === saju.name && String(p.year) === String(saju.year) && String(p.month) === String(saju.month) && String(p.day) === String(saju.day));
                 const goView = () => {
@@ -5207,34 +5209,30 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
                     }, '보기 →')
                   ),
 
-                  // 하단 액션 바
-                  _h('div', {
-                    style:{ display:'flex', borderTop:'1px solid rgba(255,255,255,0.04)' }
-                  },
-                    // 사주 분석
-                    _h('button', {
-                      onClick: goView,
-                      style:{ flex:1, padding:'11px 8px', background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.35)', fontSize:'11px', fontWeight:'600', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px' }
-                    }, '📜 사주 보기'),
-
-                    _h('div', { style:{ width:'1px', background:'rgba(255,255,255,0.04)', margin:'8px 0' } }),
-
-                    // 신년운세
-                    _h('button', {
-                      onClick: () => { setYearlyPerson(saju.id); setScreen('yearly'); },
-                      style:{ flex:1, padding:'11px 8px', background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.35)', fontSize:'11px', fontWeight:'600', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px' }
-                    }, YEAR_ANIMAL+' 신년운세'),
-
-                    _h('div', { style:{ width:'1px', background:'rgba(255,255,255,0.04)', margin:'8px 0' } }),
-
-                    // 삭제
-                    _h('button', {
-                      onClick: () => {
-                        askDelete(saju.name + '님의 사주 정보', () => setSavedSaju(prev => prev.filter(x => String(x.id) !== String(saju.id))), ['저장된 사주 정보가 목록에서 사라져요. 다시 보려면 새로 입력해야 해요.', '이미 결제한 리포트는 이용내역에 그대로 남아요.']);
-                      },
-                      style:{ flex:1, padding:'11px 8px', background:'none', border:'none', cursor:'pointer', color:'rgba(255,100,100,0.4)', fontSize:'11px', fontWeight:'600', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px' }
-                    }, '🗑 삭제')
-                  )
+                  // 사람별 결과 바로가기 (✓ = 이미 열람 가능, 누르면 바로 결과로)
+                  (() => {
+                    const hasY = savedYearly.some(y => String(y.personId) === String(saju.id) && yearlyYearOf(y) === FORTUNE_YEAR);
+                    const hasR = savedRoadmap.some(r => String(r.personId) === String(saju.id));
+                    const hasK = savedKeycard.some(k => String(k.personId) === String(saju.id) && Number(k.year) === FORTUNE_YEAR);
+                    const btns = [
+                      { t:'상세 사주', icon:'📜', has:isPaid, go:goView },
+                      { t:'신년운세', icon:YEAR_ANIMAL, has:hasY, go:() => { setYearlyPerson(saju.id); setYearlyViewYear(FORTUNE_YEAR); setScreen(hasY ? 'yearly-result' : 'yearly'); } },
+                      { t:'대운지도', icon:'🗺️', has:hasR, go:() => { setRoadmapPerson(saju.id); setScreen(hasR ? 'roadmap-result' : 'roadmap'); } },
+                      { t:'키워드', icon:'🔖', has:hasK, go:() => { setYearlyPerson(saju.id); setScreen(hasK ? 'keycard-result' : 'keycard'); } },
+                    ];
+                    return _h('div', { style:{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', borderTop:'1px solid rgba(255,255,255,0.06)' } },
+                      btns.map((x, j) => _h('button', { key:j, onClick:() => { window.scrollTo(0,0); x.go(); },
+                        style:{ padding:'10px 2px 9px', background: x.has ? 'rgba(45,90,92,0.08)' : 'none', border:'none', borderLeft: j ? '1px solid rgba(255,255,255,0.06)' : 'none', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' } },
+                        _h('span', { style:{ fontSize:'16px' } }, x.icon),
+                        _h('span', { style:{ fontSize:'11px', fontWeight:'700', color: x.has ? '#2D5A5C' : 'rgba(255,255,255,0.45)' } }, x.t),
+                        _h('span', { style:{ fontSize:'10px', fontWeight:'700', color: x.has ? '#2D5A5C' : 'rgba(255,255,255,0.3)' } }, x.has ? '✓ 보기' : '열어보기'))));
+                  })(),
+                  _h('button', {
+                    onClick: () => {
+                      askDelete(saju.name + '님의 사주 정보', () => setSavedSaju(prev => prev.filter(x => String(x.id) !== String(saju.id))), ['저장된 사주 정보가 목록에서 사라져요. 다시 보려면 새로 입력해야 해요.', '이미 결제한 리포트는 이용내역에 그대로 남아요.']);
+                    },
+                    style:{ width:'100%', padding:'8px', background:'none', border:'none', borderTop:'1px solid rgba(255,255,255,0.04)', cursor:'pointer', color:'rgba(255,100,100,0.45)', fontSize:'11px' }
+                  }, '이 사주 삭제')
                 );
               })
             )
@@ -5427,6 +5425,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       }
     };
     return _h('div', { style:{display:'flex',gap:'6px',overflowX:'auto',padding:'2px 0 12px',margin:'0 0 4px',WebkitOverflowScrolling:'touch',position:'relative',zIndex:1} },
+      _h('button', { onClick: () => { setScreen('saju-list'); window.scrollTo(0,0); },
+        style:{flex:'0 0 auto',padding:'7px 12px',borderRadius:'20px',cursor:'pointer',fontSize:'12px',fontWeight:'800',border:'none',background:'#231F1C',color:'#FBF6EC'} }, '📂 사주 목록'),
       savedSaju.map(s => {
         const active = String(s.id) === String(currentId), has = owned(s);
         return _h('button', { key: s.id, onClick: () => go(s),
@@ -5457,7 +5457,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     return _h('div', { style:{minHeight:'100vh',padding:'0 16px',paddingBottom:'112px',background:'#070514',position:'relative',overflow:'hidden'} },
       _h(S('StarBg', StarBg)),
       _h('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 12px'} },
-        _h('button', { onClick: () => setScreen('home'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
+        _h('button', { onClick: () => { setScreen('saju-list'); window.scrollTo(0,0); }, style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
         _h('div', { style:{flex:1} },
           _h('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'2px'} }, '사주 분석'),
           _h('h1', { style:{color:'white',fontWeight:'800',fontSize:'17px',letterSpacing:'-0.3px'} }, inp.name+'님의 사주')
@@ -5982,7 +5982,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       /* ── 헤더 ── */
       _h('div', { style:{padding:'0 16px'} },
         _h('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'20px 0 14px'} },
-          _h('button', { onClick:()=>setScreen('input'), style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
+          _h('button', { onClick:()=>{ setScreen('saju-list'); window.scrollTo(0,0); }, style:{width:'38px',height:'38px',borderRadius:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.5)',fontSize:'16px',cursor:'pointer',flexShrink:0} }, '←'),
           _h('div', { style:{flex:1,minWidth:0} },
             _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'2px'} }, '사주 심층 분석 · ✦ PREMIUM'),
             _h('h1', { style:{color:'white',fontWeight:'900',fontSize:'18px',letterSpacing:'-0.5px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'} }, inp.name+'님의 사주')
@@ -11639,7 +11639,7 @@ ${dwBlocks}
 
   const baseNavItems = [
     { id: 'home',          icon: '🏠', label: '홈' },
-    { id: 'input',         icon: '📜', label: '사주' },
+    { id: 'input',         icon: '📜', label: '내 사주' },
     { id: 'compatibility', icon: '💞', label: '궁합' },
     { id: 'yearly',        icon: YEAR_ANIMAL, label: '신년운세' },
     { id: 'premium',       icon: '🗺️', label: '대운지도' },
