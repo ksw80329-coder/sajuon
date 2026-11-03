@@ -36,7 +36,7 @@
         "name": "사주ON은 무료인가요?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "기본 만세력 사주 분석은 무료입니다. 심층 AI 사주 풀이, 궁합, 신년운세 등 프리미엄 기능은 별(⭐) 코인으로 이용 가능합니다."
+          "text": "기본 만세력 사주 분석은 무료입니다. 심층 사주 풀이, 궁합, 신년운세 등 프리미엄 기능은 별(⭐) 코인으로 이용 가능합니다."
         }
       },
       {
@@ -249,7 +249,7 @@
     "name": "사주ON",
     "alternateName": ["SajuON", "사주온"],
     "url": "https://sajuon.kr",
-    "description": "AI 기반 전통 명리학 사주 심층분석. 무료 만세력·신살·오행·충합 분석, 궁합·대운·2027 정미년 신년운세.",
+    "description": "전통 명리학 사주 심층분석. 무료 만세력·신살·오행·충합 분석, 궁합·대운·2027 정미년 신년운세.",
     "applicationCategory": "LifestyleApplication",
     "operatingSystem": "Web",
     "inLanguage": "ko-KR",
@@ -1394,6 +1394,7 @@ async function makeShareCard(opts) {
   x.fillStyle = accent; x.fillRect(P, H - P - 74, 80, 6);
   x.fillStyle = 'rgba(255,255,255,0.92)'; x.font = font(800, 42); x.fillText('사주ON', P, H - P - 10);
   x.fillStyle = 'rgba(255,255,255,0.5)'; x.font = font(500, 32); x.fillText(opts.footer || 'sajuon.kr', P + 180, H - P - 12);
+  x.textAlign = 'right'; x.fillStyle = 'rgba(255,255,255,0.4)'; x.font = font(500, 26); x.fillText('AI 생성 콘텐츠', W - P, H - P - 12); x.textAlign = 'left';   // AI기본법 생성물 표시 (외부 공유 이미지)
   return await new Promise(res => c.toBlob(res, 'image/png'));
 }
 // 이미지 공유(지원 시) 또는 저장
@@ -2731,7 +2732,7 @@ function App() {
 
 
   // ===== 면책 Sticky 바 =====
-  const DisclaimerBar = () => _h('div', {
+  const DisclaimerBar = ({ ai } = {}) => _h('div', {
     style:{
       position:'sticky', top:0, zIndex:20,
       background:'rgba(20,13,5,0.97)',
@@ -2744,7 +2745,7 @@ function App() {
     _h('span', { style:{fontSize:'13px',flexShrink:0} }, '⚠️'),
     _h('p', {
       style:{color:'rgba(251,191,36,0.85)',fontSize:'10px',lineHeight:'1.5',letterSpacing:'0.1px'}
-    }, '자평진전·연해자평 등 고전 기반 계산 | 이 풀이는 참고용입니다. 취업·결혼·투자 등 중요한 결정은 반드시 전문가와 상담하세요.')
+    }, ai ? '자평진전·연해자평 등 고전 기반 계산 | 풀이 글은 계산 결과를 바탕으로 생성형 AI가 작성한 참고용 콘텐츠입니다. 취업·결혼·투자 등 중요한 결정은 반드시 전문가와 상담하세요.' : '자평진전·연해자평 등 고전 기반 계산 | 이 풀이는 참고용입니다. 취업·결혼·투자 등 중요한 결정은 반드시 전문가와 상담하세요.')
   );
 
   // ===== AI 분석 로딩 컴포넌트 =====
@@ -6160,7 +6161,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         )
       ),
 
-      _h(S('DisclaimerBar', DisclaimerBar)),
+      _h(S('DisclaimerBar', DisclaimerBar), { ai:true }),
 
       _h('div', { style:{padding:'0 16px'} },
         _h(S('PersonSwitcher', PersonSwitcher), { kind:'paidSaju', currentId: (savedSaju.find(x => x.name === inp.name && String(x.year) === String(inp.year) && String(x.month) === String(inp.month) && String(x.day) === String(inp.day)) || {}).id }),
@@ -6308,7 +6309,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           /* 헤더 */
           _h('div', { style:{padding:'16px 20px',background:'linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'space-between'} },
             _h('div', null,
-              _h('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'10px',letterSpacing:'2px',marginBottom:'2px'} }, '✦ AI 심층 분석'),
+              _h('p', { style:{color:'rgba(255,255,255,0.6)',fontSize:'10px',letterSpacing:'2px',marginBottom:'2px'} }, '✦ 심층 분석'),
               _h('p', { style:{color:'white',fontWeight:'900',fontSize:'15px',letterSpacing:'-0.3px'} }, inp.name+'님 전용 사주 풀이')
             ),
             aiLoading
@@ -6327,7 +6328,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
               ? _h(React.Fragment, null,
                   _h('div', { style:{padding:'10px 14px',background:'rgba(168,85,247,0.05)',borderBottom:'1px solid rgba(168,85,247,0.1)',display:'flex',alignItems:'center',gap:'8px'} },
                     _h('span', { style:{fontSize:'12px'} }, 'ℹ️'),
-                    _h('p', { style:{color:'rgba(196,181,253,0.5)',fontSize:'10px',lineHeight:'1.6'} }, '전통 명리학 + AI 기반 참고용 콘텐츠 · 결과 확인 즉시 청약철회 불가')
+                    _h('p', { style:{color:'rgba(196,181,253,0.5)',fontSize:'10px',lineHeight:'1.6'} }, '전통 명리학 기반 참고용 콘텐츠 · 결과 확인 즉시 청약철회 불가')
                   ),
                   _h('p', { style:{padding:'12px 16px 8px',textAlign:'center',color:'rgba(255,255,255,0.25)',fontSize:'11px'} }, '제목을 눌러 풀이를 펼쳐보세요'),
                   displaySections.map((section, i) =>
@@ -6888,7 +6889,7 @@ ${person2.name}: ${r2.fe.strength}(일간을 돕는 힘 ${r2.fe.strengthRatio}%)
         ),
         _h('span', { style:{fontSize:'10px',fontWeight:'800',letterSpacing:'1px',color:'#f9a8d4',background:'rgba(236,72,153,0.15)',padding:'4px 10px',borderRadius:'20px',border:'1px solid rgba(236,72,153,0.25)'} }, 'PREMIUM')
       ),
-      _h(S('DisclaimerBar', DisclaimerBar)),
+      _h(S('DisclaimerBar', DisclaimerBar), { ai:true }),
       // 두 사람 카드 - 프리미엄 디자인
       _h('div', { style:{margin:'0 16px 16px',background:'rgba(255,255,255,0.04)',borderRadius:'24px',border:'1px solid rgba(255,255,255,0.07)',padding:'24px 20px',position:'relative',overflow:'hidden'} },
         _h('div', { style:{position:'absolute',top:0,left:0,right:0,bottom:0,background:'linear-gradient(135deg,rgba(236,72,153,0.04),rgba(168,85,247,0.04))',pointerEvents:'none'} }),
@@ -7368,9 +7369,9 @@ ${person2.name}: ${r2.fe.strength}(일간을 돕는 힘 ${r2.fe.strengthRatio}%)
             )
           : _h('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',marginTop:'16px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.07)'} },
         aiCompatError && _h('div', { style:{margin:'16px 16px 0',padding:'14px',borderRadius:'14px',border:'1px solid rgba(239,68,68,0.25)',background:'rgba(239,68,68,0.06)',textAlign:'center'} },
-          _h('p', { style:{color:'#f87171',fontSize:'13px',fontWeight:'700',margin:'0 0 4px'} }, 'AI 심층 풀이를 불러오지 못했어요'),
+          _h('p', { style:{color:'#f87171',fontSize:'13px',fontWeight:'700',margin:'0 0 4px'} }, '심층 풀이를 불러오지 못했어요'),
           _h('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'12px',lineHeight:'1.6',margin:'0 0 10px'} }, '아래는 기본 풀이예요. 별은 다시 차감되지 않으니 다시 시도해 주세요.'),
-          _h('button', { onClick:()=>setCompatRetry(n=>n+1), style:{padding:'9px 20px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:'700',color:'#1c1917',fontSize:'13px'} }, 'AI 풀이 다시 받기')),
+          _h('button', { onClick:()=>setCompatRetry(n=>n+1), style:{padding:'9px 20px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:'700',color:'#1c1917',fontSize:'13px'} }, '심층 풀이 다시 받기')),
         _h('h3', { style:{color:'white',fontWeight:'700',padding:'20px 20px 12px',fontSize:'15px'} }, 
           compatRelation === 'couple' ? `💑 ${person1.name} & ${person2.name} 연인 궁합 심층 분석` :
           compatRelation === 'parent' ? `👨‍👧 ${person1.name} & ${person2.name} 부모-자녀 관계 분석` :
@@ -9289,7 +9290,7 @@ ${dwBlocks}
 
     // 대운 타임라인 렌더
     const elColor = {목:'#4ade80',화:'#f87171',토:'#fbbf24',금:'#e2e8f0',수:'#60a5fa'};
-    const shareData = { title:`${inp.name}님의 대운 인생 지도 — 사주ON`, desc:peakInfo?.headline||'나의 인생 전체 지도', tag:'roadmap' };
+    const shareData = { title:`${inp.name}님의 대운 인생 지도 — 사주ON`, desc:'10개 대운으로 보는 나의 인생 전체 지도', tag:'roadmap' };
 
     if (!person || !r) return _h('div',{style:{padding:'40px',textAlign:'center',color:'rgba(255,255,255,0.4)',background:'#070514',minHeight:'100vh'}},'데이터 없음');
     return _h('div',{style:{minHeight:'100vh',background:'#070514',paddingBottom:'100px',position:'relative',overflow:'hidden'}},
@@ -9371,7 +9372,7 @@ ${dwBlocks}
           _h('button',{onClick:()=>setScreen('review'),style:{padding:'8px 14px',background:'linear-gradient(135deg,rgba(251,191,36,0.2),rgba(245,158,11,0.15))',border:'1px solid rgba(251,191,36,0.3)',borderRadius:'10px',color:'#fbbf24',fontWeight:'700',fontSize:'11px',cursor:'pointer'}},'리뷰 쓰기 →')
         )
       ),
-        _h(S('DisclaimerBar', DisclaimerBar)),
+        _h(S('DisclaimerBar', DisclaimerBar), { ai:true }),
       _h(S('ShareToast', ShareToast))
     );
   };
@@ -9842,6 +9843,7 @@ ${dwBlocks}
       _h(S('StarBg', StarBg)),
       _h('div', { style:{padding:'0 16px',position:'relative',zIndex:1} },
         _h(S('PageHeader', PageHeader), { label:'KEYWORD CARD', title:`${person.name}님의 ${year} 키워드`, backTarget:'keycard' }),
+        _h('p', { style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',margin:'-4px 0 10px'} }, '키워드 문구는 계산 결과를 바탕으로 생성형 AI가 작성한 참고용 콘텐츠예요.'),
         _h(S('PersonSwitcher', PersonSwitcher), { kind:'keycard', currentId: person.id }),
         loading && _h(S('AiLoadingCard', AiLoadingCard), { message:'키워드 카드를 만들고 있어요' }),
         err && _h('div', { style:{textAlign:'center',padding:'24px',background:'rgba(239,68,68,0.08)',borderRadius:'16px',border:'1px solid rgba(239,68,68,0.2)',marginBottom:'14px'} },
@@ -10014,7 +10016,7 @@ ${dwBlocks}
           _h('p',{style:{color:'rgba(255,255,255,0.3)',fontSize:'10px',letterSpacing:'2px',marginBottom:'2px'}},`${year} ${yg.kr}년 신년운세`),
           _h('h1',{style:{color:'white',fontWeight:'900',fontSize:'18px',letterSpacing:'-0.5px',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},`${person.name}님의 ${year}년`)
         ),
-        _h(S('ShareButton', ShareButton),{small:true,title:`${person.name}님의 ${year} ${yg.kr}년 신년운세 — 사주ON`,desc:ov?.keywords?.length?ov.keywords.join(' · '):`${dayGanKr}(${dayEl}) 일간의 ${year}년`,tag:'yearly'})
+        _h(S('ShareButton', ShareButton),{small:true,title:`${person.name}님의 ${year} ${yg.kr}년 신년운세 — 사주ON`,desc:`${dayGanKr}(${dayEl}) 일간의 ${year}년 흐름`,tag:'yearly'})
       ),
       _h(S('PersonSwitcher', PersonSwitcher), { kind:'yearly', currentId: person.id })
     );
@@ -10022,7 +10024,7 @@ ${dwBlocks}
     // 개편 전(2026) 리포트: 저장된 섹션 그대로 표시
     if (primed && !ov && legacy?.sections?.length) {
       return _h('div',{style:{background:'#070514',minHeight:'100vh',paddingBottom:'112px',position:'relative',overflow:'hidden'}},
-        _h(S('StarBg', StarBg)), header, _h(S('DisclaimerBar', DisclaimerBar)),
+        _h(S('StarBg', StarBg)), header, _h(S('DisclaimerBar', DisclaimerBar), { ai:true }),
         _h('div',{style:{padding:'0 16px'}},
           legacy.sections.map((sec,i) => _h('div',{key:i,style:card()},
             label(`${(sec.icon==='🔮'?'📜':sec.icon)||'✦'} ${(sec.title||'').replace(/^S\d+[.\s:]+/,'')}`), body(sec.content)))
@@ -10035,7 +10037,7 @@ ${dwBlocks}
     return _h('div',{style:{background:'#070514',minHeight:'100vh',paddingBottom:'112px',position:'relative',overflow:'hidden'}},
       _h(S('StarBg', StarBg)),
       header,
-      _h(S('DisclaimerBar', DisclaimerBar)),
+      _h(S('DisclaimerBar', DisclaimerBar), { ai:true }),
       _h('div',{style:{padding:'0 16px'}},
 
         // ① 요약
@@ -11241,7 +11243,7 @@ ${dwBlocks}
         ),
         DEV_MODE && _h('button', {
           onClick: () => {
-            if (!window.confirm('분석 캐시를 초기화할까요?\n저장된 사주/궁합/운세 기록은 유지되고,\nAI 분석 결과만 삭제됩니다.')) return;
+            if (!window.confirm('분석 캐시를 초기화할까요?\n저장된 사주/궁합/운세 기록은 유지되고,\n분석 결과만 삭제됩니다.')) return;
             const keys = Object.keys(localStorage).filter(k => k.startsWith('ai_') || k.startsWith('daily_'));
             keys.forEach(k => localStorage.removeItem(k));
             alert('✅ 캐시 ' + keys.length + '개 초기화 완료!\n페이지를 새로고침합니다.');
