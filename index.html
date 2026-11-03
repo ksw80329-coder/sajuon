@@ -1226,6 +1226,31 @@ function parseAIJson(text) {
   }
 }
 
+// 응답이 중간에 잘려도 완성된 {...} 항목은 살려냄 (예: "months":[{..},{..},{..잘림)
+function salvageJsonArray(text, field) {
+  const t = String(text || '');
+  const at = t.indexOf('"' + field + '"'); if (at < 0) return [];
+  const st = t.indexOf('[', at); if (st < 0) return [];
+  const out = []; let depth = 0, ins = false, esc = false, objStart = -1;
+  for (let i = st + 1; i < t.length; i++) {
+    const ch = t[i];
+    if (ins) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') ins = false; continue; }
+    if (ch === '"') { ins = true; continue; }
+    if (ch === '{') { if (depth === 0) objStart = i; depth++; }
+    else if (ch === '}') { depth--; if (depth === 0 && objStart >= 0) { try { out.push(parseAIJson(t.slice(objStart, i + 1))); } catch (e) {} objStart = -1; } }
+    else if (ch === ']' && depth === 0) break;
+  }
+  return out;
+}
+// "2027-01", "2027년 1월", 1 등 어떤 형태로 와도 "2027-1" 로 통일
+function normMonthKey(v, fallbackYear) {
+  if (typeof v === 'number') return fallbackYear ? `${fallbackYear}-${v}` : String(v);
+  const m = String(v || '').match(/(\d{4})\D+(\d{1,2})/);
+  if (m) return `${parseInt(m[1])}-${parseInt(m[2])}`;
+  const n = String(v || '').match(/^\s*(\d{1,2})\s*$/);
+  return n && fallbackYear ? `${fallbackYear}-${parseInt(n[1])}` : String(v || '');
+}
+
 // ========== 무료 결과용 데이터: 신살 한 줄 뜻 / 일주 60개 성격 요약 ==========
 const SINSAL_INFO = {
   '천을귀인':'귀인운·도움','태극귀인':'운명적 기회','문창귀인':'학문·글재주','학당귀인':'학습운·성장',
@@ -1524,7 +1549,7 @@ function App() {
 
   const _aiQueue = React.useRef(Promise.resolve());
   const callAI = React.useCallback((payload, signal) => {
-    const task = _aiQueue.current.then(async () => {
+    const run = async () => {
       const enc = (o) => {
         const s = JSON.stringify(o);
         const b = new TextEncoder().encode(s);
@@ -1578,8 +1603,6 @@ function App() {
           }
           if ((res.headers.get('content-type')||'').includes('text/event-stream')) { console.log('[callAI] SSE 스트림 시작'); return await parseSSEStream(res); }
           return await res.json();
-          if ((res.headers.get('content-type')||'').includes('text/event-stream')) { console.log('[callAI] SSE 스트림 시작'); return await parseSSEStream(res); }
-          return await res.json();
         } catch(e) {
           if (e.name==='AbortError') throw e;
           console.error('[callAI] attempt', attempt, '에러:', e.message);
@@ -1588,7 +1611,9 @@ function App() {
         }
       }
       throw new Error('AI 서버 응답 없음');
-    });
+    };
+    if (payload && payload.parallel) return run();   // 월별 운세 분할 생성: 동시에 보내 대기 시간 단축
+    const task = _aiQueue.current.then(run);
     _aiQueue.current = task.catch(()=>{});
     return task;
   }, []);
@@ -6021,7 +6046,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       const sajuPayload = {
         t: '4',
         prompt,
-        max_tokens: 16000
+        max_tokens: 24000
       };
       const sajuCtrl = new AbortController();
       (async () => {
@@ -6029,7 +6054,10 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           const data = await callAI(sajuPayload, sajuCtrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
           console.log('AI 사주 응답 길이:', text.length);
-          const sections = robustParseAI(text);
+          let sections = null;
+          try { const pj = parseAIJson(text); if (Array.isArray(pj?.sections)) sections = pj.sections; } catch (pe) {}
+          if (!sections?.length) sections = robustParseAI(text);
+          if (!sections?.length) { sections = salvageJsonArray(text, 'sections'); console.warn('[상세사주] 응답 일부만 수신, 살린 섹션:', sections.length); }
           if (sections && sections.length > 0) {
             try { localStorage.setItem(cacheKey, JSON.stringify(sections)); aiCloudPut(cacheKey); } catch(e) {}
             setAiSections(sections);
@@ -6514,6 +6542,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       try { const c = localStorage.getItem(_compatCacheKey); const p = c ? JSON.parse(c) : null; return !(p && Array.isArray(p.sections) && p.sections.length > 0); } catch(e) { return true; }
     });
     const [aiCompatError, setAiCompatError] = React.useState(false);
+    const [compatRetry, setCompatRetry] = React.useState(0);
 
 
     const r1 = person1 ? (person1.result || analyzeSaju(person1.year, person1.month, person1.day, person1.hour, person1.minute||0)) : null;
@@ -6647,7 +6676,7 @@ ${person2.name}: ${r2.fe.strength}(일간을 돕는 힘 ${r2.fe.strengthRatio}%)
       const compatPayload = {
         t: '4',
         prompt,
-        max_tokens: 16000
+        max_tokens: 24000
       };
       const compatCtrl = new AbortController();
       const aiFetchCParsed = callAI(compatPayload, compatCtrl.signal)
@@ -6656,17 +6685,14 @@ ${person2.name}: ${r2.fe.strength}(일간을 돕는 힘 ${r2.fe.strengthRatio}%)
         console.log('AI 궁합 응답 길이:', text.length);
         let result = null;
         try {
-          const clean = text.replace(/```json|```/g, '').trim().replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ');
-          const m = clean.match(/\{[\s\S]*\}/);
-          if (m) {
-            const parsed = JSON.parse(m[0]);
-            if (Array.isArray(parsed.sections) && parsed.sections.length > 0) {
-              result = { sections: parsed.sections, advice: parsed.advice || null, warnings: parsed.warnings || null };
-            }
+          const parsed = parseAIJson(text);
+          if (Array.isArray(parsed.sections) && parsed.sections.length > 0) {
+            result = { sections: parsed.sections, advice: parsed.advice || null, warnings: parsed.warnings || null };
           }
         } catch(e) {
-          const sections = robustParseAI(text);
-          if (sections && sections.length > 0) result = { sections };
+          const sections = salvageJsonArray(text, 'sections');
+          console.warn('[궁합] 응답 일부만 수신, 살린 섹션:', sections.length);
+          if (sections.length > 0) result = { sections };
         }
         if (result && result.sections && result.sections.length > 0) {
           try { localStorage.setItem(cacheKey, JSON.stringify(result)); aiCloudPut(cacheKey); } catch(e) {}
@@ -6687,7 +6713,7 @@ ${person2.name}: ${r2.fe.strength}(일간을 돕는 힘 ${r2.fe.strengthRatio}%)
       return () => { compatCtrl.abort(); };
       })(); });
       return () => { _dead = true; if (typeof _cleanup === 'function') _cleanup(); };
-    }, [_compatCacheKey]);
+    }, [_compatCacheKey, compatRetry]);
 
     if (!person1 || !person2) return _h('div', { style:{padding:'16px',textAlign:'center',color:'rgba(255,255,255,0.4)'} }, '데이터 없음');
     
@@ -7341,6 +7367,10 @@ ${person2.name}: ${r2.fe.strength}(일간을 돕는 힘 ${r2.fe.strengthRatio}%)
               )
             )
           : _h('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'20px',marginTop:'16px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.07)'} },
+        aiCompatError && _h('div', { style:{margin:'16px 16px 0',padding:'14px',borderRadius:'14px',border:'1px solid rgba(239,68,68,0.25)',background:'rgba(239,68,68,0.06)',textAlign:'center'} },
+          _h('p', { style:{color:'#f87171',fontSize:'13px',fontWeight:'700',margin:'0 0 4px'} }, 'AI 심층 풀이를 불러오지 못했어요'),
+          _h('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'12px',lineHeight:'1.6',margin:'0 0 10px'} }, '아래는 기본 풀이예요. 별은 다시 차감되지 않으니 다시 시도해 주세요.'),
+          _h('button', { onClick:()=>setCompatRetry(n=>n+1), style:{padding:'9px 20px',background:'linear-gradient(135deg,#fbbf24,#f59e0b)',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:'700',color:'#1c1917',fontSize:'13px'} }, 'AI 풀이 다시 받기')),
         _h('h3', { style:{color:'white',fontWeight:'700',padding:'20px 20px 12px',fontSize:'15px'} }, 
           compatRelation === 'couple' ? `💑 ${person1.name} & ${person2.name} 연인 궁합 심층 분석` :
           compatRelation === 'parent' ? `👨‍👧 ${person1.name} & ${person2.name} 부모-자녀 관계 분석` :
@@ -9238,10 +9268,11 @@ ${dwBlocks}
       const ctrl = new AbortController();
       (async()=>{
         try{
-          const payload = { t: '4', prompt, max_tokens: 16000 };
+          const payload = { t: '4', prompt, max_tokens: 24000 };
           const data = await callAI(payload, ctrl.signal);
           const text = (data.content||[]).map(x=>x.text||'').join('');
-          const parsed = parseAIJson(text);
+          let parsed;
+          try { parsed = parseAIJson(text); } catch (pe) { parsed = { sections: salvageJsonArray(text, 'sections') }; console.warn('[대운지도] 응답 일부만 수신, 살린 대운:', parsed.sections.length); }
           if(parsed.sections && parsed.sections.length>0){
             localStorage.setItem(_cacheKey, JSON.stringify(parsed.sections)); aiCloudPut(_cacheKey);
             setAiSections(parsed.sections); setIsLegacy(false);
@@ -9875,6 +9906,7 @@ ${dwBlocks}
     const ovKey = `ai_yearly_v70ov_${person.id}_${year}`;
     const moKey = `ai_yearly_v71mo_${person.id}_${year}`;   // v71: 1월(입춘 전)~다음 해 1월 13개월
     const legacyKey = `ai_yearly_v64_${person.id}_${year}`;
+    const moOldKey = `ai_yearly_v70mo_${person.id}_${year}`;   // v70: 2월~다음 해 1월 12개월 (숫자 m, 1 = 다음 해 1월)
     const readLS = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
     const [ov, setOv] = React.useState(() => readLS(ovKey));
     const [mo, setMo] = React.useState(() => readLS(moKey));
@@ -9898,41 +9930,65 @@ ${dwBlocks}
     const commonData = `▌원국\n${pillarsDesc}\n일간 ${dayGanKr}(${STEMS.names[r.dsi]}) ${dayEl}행 / 오행 ${feStr} / 용신 ${r.fe.yongshin} / 기신 ${r.fe.gishin}\n신살: ${allSinsal.join(', ')||'없음'}${person.hour===null||person.hour===''?'\n(태어난 시간 미상: 시주 없이 해석)':''}\n\n▌${year}년 세운 ${sw?.ganji}(${sw?.kr})\n천간 ${STEMS.korean[sw?.si]} = ${sw?.stemGod} / 지지 ${BRANCHES.korean[sw?.bi]} 본기 = ${sw?.branchGod} / 일간 기준 12운성 ${sw?.twelve}\n원국과의 관계: ${relText(sw?.rel)}\n용신·기신: ${relText(sw?.el)}\n\n▌대운\n${dwLine}\n\n▌기간\n${year}년 입춘 ~ ${year+1}년 입춘 전날`;
     const rules = `▌작성 원칙\n- 위 계산 데이터만 근거로 쓰고, 데이터에 없는 합충·신살을 지어내지 마세요.\n- ${person.name}님을 자연스럽게 호명하고, 근거(십성·합충·용신)를 문장 안에서 밝혀주세요.\n- 글자 수 제한은 없습니다. 생활 장면 예시와 구체적인 행동 제안을 넣어 풍부하게 써주세요.\n- 공포를 주는 단정적 예언은 피하고, 건강·투자·법률은 전문가 상담을 권하는 정도로만.\n- 한자는 한글 뒤 괄호로 병기: 상관(傷官).\n- JSON 문자열 안에 큰따옴표를 쓰지 말고, 줄바꿈은 \\n 으로 표기하세요.`;
     const ovPrompt = `당신은 정통 명리학자입니다. 아래 계산된 만세력 데이터로 ${person.name}님의 ${year}년 ${yg.kr}년 신년운세 본문을 작성하세요.\n\n${commonData}\n\n${rules}\n\n▌출력 (JSON만)\n{"summary":"올해를 요약하는 한 문장","keywords":["키워드","키워드","키워드"],"intake":"${sw?.kr}년 기운이 원국에 들어오는 방식 해설. 세운 십성과 합충이 삶에서 어떻게 드러나는지 (최소 900자)","daewoon":"현재 대운과 올해 세운이 겹치며 만드는 흐름 (최소 600자)","areas":[{"key":"work","title":"일·커리어","content":"최소 900자","basis":["근거 한 줄","근거 한 줄"]},{"key":"money","title":"재물","content":"최소 900자","basis":["..."]},{"key":"relation","title":"관계·연애","content":"최소 900자","basis":["..."]},{"key":"health","title":"건강·컨디션","content":"최소 700자","basis":["..."]}],"actions":[{"title":"실천 제목","detail":"왜, 어떻게"},{"title":"","detail":""},{"title":"","detail":""}],"message":"${person.name}님께 전하는 마무리 (300자 내외)"}`;
-    const monthLines = (basis?.months || []).map(m => `[m=${m.key}] ${m.calYear}년 ${m.calMonth}월(${m.range})${m.isPre ? ` — 입춘 전, 아직 ${m.prevYearKr}년의 마지막 달(${yg.kr}년으로 넘어가기 전 준비하는 달로 해석)` : ''} ${m.ganji}(${m.kr})월: 천간 ${m.stemGod}, 지지 본기 ${m.branchGod}, 12운성 ${m.twelve} | 관계: ${relText(m.rel)} | 용신·기신: ${relText(m.el)}${m.flag==='focus'?' | ★주목할 달':m.flag==='caution'?' | ▲조심할 달':''}`).join('\n');
-    const moPrompt = `당신은 정통 명리학자입니다. 아래 계산된 데이터로 ${person.name}님의 ${year}년 월별 운세를 작성하세요. 사주의 달은 절기(절입일) 기준입니다.\n\n${commonData}\n\n▌월별 데이터 (절기 순서)\n${monthLines}\n\n${rules}\n- 모든 달은 최소 500자로, 그 달의 십성과 합충이 일·돈·관계·컨디션에 어떻게 나타나는지 구체적으로.\n- ★주목할 달과 ▲조심할 달은 최소 1,200자로 훨씬 자세히: 왜 그런지 근거를 단계적으로 설명하고, 그 달에 할 일과 피할 일을 구체적으로 제시하세요.\n- 13개 달(${year}년 1월 ~ ${year+1}년 1월)을 데이터 순서 그대로 모두 작성하세요.\n\n▌출력 (JSON만)\n{"months":[{"m":"${year}-1","theme":"그 달을 표현하는 한 줄","content":"본문","basis":["근거 한 줄","근거 한 줄"]}]}\n- m 값은 위 데이터의 [m=...] 값을 그대로 쓰세요 (${year}-1 ~ ${year+1}-1, 모두 13개)`;
+    const monthLineOf = (m) => `[m=${m.key}] ${m.calYear}년 ${m.calMonth}월(${m.range})${m.isPre ? ` — 입춘 전, 아직 ${m.prevYearKr}년의 마지막 달(${yg.kr}년으로 넘어가기 전 준비하는 달로 해석)` : ''} ${m.ganji}(${m.kr})월: 천간 ${m.stemGod}, 지지 본기 ${m.branchGod}, 12운성 ${m.twelve} | 관계: ${relText(m.rel)} | 용신·기신: ${relText(m.el)}${m.flag==='focus'?' | ★주목할 달':m.flag==='caution'?' | ▲조심할 달':''}`;
+    const moPromptFor = (monthLines, keys, n) => `당신은 정통 명리학자입니다. 아래 계산된 데이터로 ${person.name}님의 ${year}년 월별 운세를 작성하세요. 사주의 달은 절기(절입일) 기준입니다.\n\n${commonData}\n\n▌월별 데이터 (절기 순서)\n${monthLines}\n\n${rules}\n- 모든 달은 최소 500자로, 그 달의 십성과 합충이 일·돈·관계·컨디션에 어떻게 나타나는지 구체적으로.\n- ★주목할 달과 ▲조심할 달은 최소 1,200자로 훨씬 자세히: 왜 그런지 근거를 단계적으로 설명하고, 그 달에 할 일과 피할 일을 구체적으로 제시하세요.\n- 위에 나온 ${n}개 달만, 데이터 순서 그대로 빠짐없이 작성하세요. 한 달 본문은 너무 길지 않게(보통 500~800자, 주목·조심 달은 1,200자 안팎) 써서 ${n}개 달을 끝까지 완성하는 것이 가장 중요합니다.\n\n▌출력 (JSON만)\n{"months":[{"m":"${year}-1","theme":"그 달을 표현하는 한 줄","content":"본문","basis":["근거 한 줄","근거 한 줄"]}]}\n- m 값은 위 데이터의 [m=...] 값을 그대로 쓰세요 (${keys}, 모두 ${n}개)`;
 
     // 생성: 클라우드 → 로컬 → 없을 때만 AI 호출 (본문 먼저, 월별은 이어서)
     React.useEffect(() => {
       let dead = false; const ctrl = new AbortController();
-      aiCloudPrime([ovKey, moKey, legacyKey]).then(async () => {
+      aiCloudPrime([ovKey, moKey, legacyKey, moOldKey]).then(async () => {
         if (dead) return;
         const cOv = readLS(ovKey), cMo = readLS(moKey), cLg = readLS(legacyKey);
         setOv(cOv); setMo(cMo); setLegacy(cLg); setPrimed(true);
         if (!cOv && cLg?.sections?.length) return; // 개편 전 구매분은 기존 리포트 그대로 표시
         if (!basis) { setOvError(true); return; }
+        const ovJob = (async () => {
         if (!cOv) {
           setOvLoading(true); setOvError(false);
           try {
-            const data = await callAI({ t:'4', prompt: ovPrompt, max_tokens: 12000 }, ctrl.signal);
+            const data = await callAI({ t:'4', prompt: ovPrompt, max_tokens: 12000, parallel: true }, ctrl.signal);
             const parsed = parseAIJson((data.content||[]).map(x=>x.text||'').join(''));
             if (!parsed?.areas?.length) throw new Error('empty');
             localStorage.setItem(ovKey, JSON.stringify(parsed)); aiCloudPut(ovKey);
             if (!dead) setOv(parsed);
-          } catch (e) { if (e.name !== 'AbortError' && !dead) setOvError(true); }
+          } catch (e) { console.error('[신년운세 본문] 실패:', e.message); if (e.name !== 'AbortError' && !dead) setOvError(true); }
           finally { if (!dead) setOvLoading(false); }
         }
-        if (dead) return;
-        if (!cMo) {
+        })();
+        const moJob = (async () => {
+          const allMonths = basis.months || [];
+          const have = {};
+          (cMo?.months || []).forEach(x => { const k = normMonthKey(x.m, year); if (x && x.content) have[k] = { ...x, m: k }; });
+          if (!cMo) (readLS(moOldKey)?.months || []).forEach(x => { if (!x || !x.content) return; const n = parseInt(x.m); if (!(n >= 1 && n <= 12)) return; const k = n === 1 ? `${year+1}-1` : `${year}-${n}`; have[k] = { ...x, m: k }; });   // 이전 버전 구매분은 있는 달 그대로 쓰고 빠진 달(입춘 전 1월)만 새로 작성
+          const missing = allMonths.filter(m => !have[m.key]);
+          if (!missing.length) return;
           setMoLoading(true); setMoError(false);
-          try {
-            const data = await callAI({ t:'4', prompt: moPrompt, max_tokens: 24000 }, ctrl.signal);
-            const parsed = parseAIJson((data.content||[]).map(x=>x.text||'').join(''));
-            if (!parsed?.months?.length) throw new Error('empty');
-            localStorage.setItem(moKey, JSON.stringify(parsed)); aiCloudPut(moKey);
-            if (!dead) setMo(parsed);
-          } catch (e) { if (e.name !== 'AbortError' && !dead) setMoError(true); }
-          finally { if (!dead) setMoLoading(false); }
-        }
+          const save = () => {
+            const merged = { months: allMonths.map(m => have[m.key]).filter(Boolean) };
+            localStorage.setItem(moKey, JSON.stringify(merged)); aiCloudPut(moKey);
+            if (!dead) setMo(merged);
+          };
+          const groups = []; const size = missing.length > 8 ? Math.ceil(missing.length / 3) : missing.length > 4 ? Math.ceil(missing.length / 2) : missing.length;
+          for (let i = 0; i < missing.length; i += size) groups.push(missing.slice(i, i + size));
+          await Promise.allSettled(groups.map(async (g) => {
+            const lines = g.map(m => monthLineOf(m)).join('\n');
+            const keys = g.map(m => m.key).join(', ');
+            const prompt = moPromptFor(lines, keys, g.length);
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                const data = await callAI({ t:'4', prompt, max_tokens: 16000, parallel: true }, ctrl.signal);
+                const text = (data.content||[]).map(x=>x.text||'').join('');
+                let list = [];
+                try { list = parseAIJson(text)?.months || []; } catch (e) { list = salvageJsonArray(text, 'months'); console.warn('[신년운세 월별] 응답 일부만 수신, 살린 달:', list.length); }
+                list.forEach(x => { const k = normMonthKey(x.m, year); if (x && x.content && g.some(m => m.key === k)) have[k] = { ...x, m: k }; });
+                save();
+                if (g.every(m => have[m.key])) return;
+              } catch (e) { if (e.name === 'AbortError') throw e; console.error('[신년운세 월별] 실패:', e.message); }
+            }
+          }));
+          if (!dead) { setMoLoading(false); if (allMonths.some(m => !have[m.key])) setMoError(true); }
+        })();
+        await Promise.allSettled([ovJob, moJob]);
       });
       return () => { dead = true; ctrl.abort(); };
     }, [ovKey, retry]);
@@ -9974,7 +10030,7 @@ ${dwBlocks}
     }
 
     const months = basis?.months || [];
-    const moText = (m) => (mo?.months || []).find(x => String(x.m) === m.key) || (m.isPre ? null : (mo?.months || []).find(x => typeof x.m === 'number' && x.m === m.calMonth)) || null;
+    const moText = (m) => (mo?.months || []).find(x => normMonthKey(x.m, year) === m.key) || null;
 
     return _h('div',{style:{background:'#070514',minHeight:'100vh',paddingBottom:'112px',position:'relative',overflow:'hidden'}},
       _h(S('StarBg', StarBg)),
@@ -10048,14 +10104,14 @@ ${dwBlocks}
           _h('p',{style:{color:'rgba(255,255,255,0.4)',fontSize:'12px',lineHeight:'1.6'}},`사주의 한 해는 양력 1월 1일이 아니라 입춘(2월 4일 무렵)에 시작해요. 그래서 ${year}년 ${yg.kr}년의 기운은 ${year}년 2월 4일부터 ${year+1}년 2월 3일까지 이어지고, 월별 운세도 ${year+1}년 1월까지 표시돼요. ${year}년 1월은 아직 지난해의 마지막 달이라 ${yg.kr}년으로 넘어가기 전 '준비하는 달'로 함께 풀었어요. 각 달은 절기(절입일)로 바뀌며, ★ 주목할 달과 ▲ 조심할 달은 더 자세히 풀었어요.`)),
         moLoading && _h(S('AiLoadingCard', AiLoadingCard),{message:'월별 운세를 쓰고 있어요'}),
         moError && _h('div',{style:card({textAlign:'center',border:'1px solid rgba(239,68,68,0.25)'})},
-          _h('p',{style:{color:'#f87171',fontSize:'13px',marginBottom:'12px'}},'월별 운세 작성 중 오류가 발생했어요'), retryBtn('다시 시도')),
+          _h('p',{style:{color:'#f87171',fontSize:'13px',marginBottom:'12px'}},(mo?.months?.length ? `${months.length - months.filter(m=>moText(m)).length}개 달의 풀이가 아직 비어 있어요` : '월별 운세 작성 중 오류가 발생했어요')), retryBtn(mo?.months?.length ? '빈 달만 다시 쓰기' : '다시 시도')),
         months.map((m,i) => {
           const t = moText(m), isOpen = !!openMonth[i];
           const fc = m.flag==='focus' ? '#fbbf24' : m.flag==='caution' ? '#f87171' : null;
           return _h('div',{key:'mo'+i,style:card({padding:0,overflow:'hidden',border:fc?`1px solid ${fc}55`:'1px solid rgba(255,255,255,0.08)',background:fc?`${fc}0d`:'rgba(255,255,255,0.04)'})},
             _h('div',{onClick:()=>setOpenMonth(p=>({...p,[i]:!p[i]})),style:{display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',cursor:'pointer'}},
               _h('div',{style:{width:'52px',flexShrink:0,textAlign:'center'}},
-                (m.calMonth === 1) && _h('p',{style:{color:m.isPre?'#9C7631':'rgba(255,255,255,0.45)',fontSize:'9px',fontWeight:'800',margin:0,letterSpacing:'0.5px'}}, m.isPre ? `${m.calYear} · 입춘 전` : `${m.calYear}`),
+                (m.calMonth === 1) && _h('p',{style:{color:m.isPre?'#9C7631':'rgba(255,255,255,0.45)',fontSize:'9px',fontWeight:'800',margin:0,letterSpacing:'0.3px',lineHeight:'1.3',whiteSpace:'pre-line'}}, m.isPre ? `${m.calYear}\n입춘 전` : `${m.calYear}`),
                 _h('p',{style:{color:fc||'white',fontWeight:'900',fontSize:'17px',margin:0}},`${m.calMonth}월`),
                 _h('p',{style:{color:'rgba(255,255,255,0.35)',fontSize:'10px',margin:0}},m.range)),
               _h('div',{style:{flex:1,minWidth:0}},
