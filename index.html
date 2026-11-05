@@ -5024,8 +5024,8 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         backgroundImage:'radial-gradient(rgba(120,95,60,0.05) 1px, transparent 1px), radial-gradient(rgba(120,95,60,0.035) 1px, transparent 1px)', backgroundSize:'7px 7px, 13px 13px', backgroundPosition:'0 0, 3px 5px'} },
       _h('div', { style:{padding:'14px 16px 0'} },
         returning ? _h(S('HomeDashboard', HomeDashboard)) : _h(S('HomeQuickInput', HomeQuickInput)),
+        _h('div', { className:'hj-rise', style:{animationDelay:'.3s'} }, _h(S('HomeGoals', HomeGoals))),
         _h(S('HomeReads', HomeReads)),
-        _h('div', { className:'hj-rise', style:{animationDelay:'.45s'} }, _h(S('HomeShelf', HomeShelf))),
         _h('div', { className:'hj-rise', style:{animationDelay:'.6s'} }, _h(S('HomeReviewsLight', HomeReviewsLight))),
         !returning && _h('div', { className:'hj-rise', style:{animationDelay:'.7s'} }, _h(S('HomeHowTo', HomeHowTo))),
         _h(S('HomeFooterLight', HomeFooterLight))
@@ -5152,6 +5152,68 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         _h('p', { style:{fontFamily:SERIF,color:HJ.ink,fontSize:'18px',fontWeight:800,margin:'0 0 6px'} }, `${STEMS.korean[dp.si]}${BRANCHES.korean[dp.bi]}일주 — ${ilju[0]}`),
         _h('p', { style:{color:HJ.sub,fontSize:'14px',lineHeight:1.75,margin:0,wordBreak:'keep-all'} }, ilju[1]),
         link('내 사주 전체 보기', openFree))
+    );
+  };
+
+  // 고민으로 찾기: 상품을 '무엇으로 보나'가 아니라 '무엇이 궁금한가'로 진열
+  const HomeGoals = () => {
+    const [tab, setTab] = React.useState(() => { try { return localStorage.getItem('sajuon::home_goal_tab') || 'pick'; } catch (e) { return 'pick'; } });
+    const pickTab = (k) => { setTab(k); try { localStorage.setItem('sajuon::home_goal_tab', k); } catch (e) {} track('home_goal_tab_' + k); };
+    const go = (scr) => () => { setScreen(scr); window.scrollTo(0,0); };
+    const compat = (rel) => () => { setCompatRelation(rel); setScreen('compatibility'); window.scrollTo(0,0); };
+    const saju = go(savedSaju.length ? 'saju-list' : 'input');
+    const yp = yearlyPrice().stars, yWas = yearlyPromoOn() ? 3 : null;
+    const I = {
+      cLove:   { q:'그 사람과 나, 오래 갈 수 있을까?', p:'궁합 · 연인/배우자', st:2, on:compat('couple') },
+      yLove:   { q:'올해 연애운, 몇 월에 열릴까?', p:`${FORTUNE_YEAR} 신년운세 · 13개월 월별 흐름`, st:yp, was:yWas, on:go('yearly') },
+      sLove:   { q:'나는 어떤 사람과 잘 맞을까?', p:'상세 사주 · 연애·배우자 성향', st:3, on:saju },
+      fLove:   { q:'우리 띠, 서로 잘 맞을까?', p:'띠 궁합', free:true, href:'/gunghap/' },
+      yWork:   { q:'올해 이직·창업, 움직여도 될까?', p:`${FORTUNE_YEAR} 신년운세 · 일·재물 월별 흐름`, st:yp, was:yWas, on:go('yearly') },
+      sWork:   { q:'나에게 맞는 일은 따로 있을까?', p:'상세 사주 · 적성·직업 전략', st:3, on:saju },
+      rMoney:  { q:'돈이 붙는 시기는 언제일까?', p:'대운 인생 지도 · 10년 단위 흐름', st:3, on:go('roadmap') },
+      cBiz:    { q:'이 사람과 같이 일해도 될까?', p:'궁합 · 직장/비즈니스', st:2, on:compat('business') },
+      yYear:   { q:`${FORTUNE_YEAR} ${FORTUNE_GANJI.kr}년, 나에게 어떤 해일까?`, p:`${FORTUNE_YEAR} 신년운세 · ${FORTUNE_YEAR}년 1월~${FORTUNE_YEAR+1}년 1월`, st:yp, was:yWas, on:go('yearly') },
+      kYear:   { q:'올해를 키워드 세 개로 요약하면?', p:`${FORTUNE_YEAR} 키워드 카드 · 행운의 달`, st:1, on:go('keycard') },
+      dToday:  { q:'오늘 나에게 들어온 기운은?', p:'오늘의 운세', free:true, on:go('daily-fortune') },
+      fDdi:    { q:`내 띠의 ${FORTUNE_YEAR}년 흐름은?`, p:`${FORTUNE_YEAR} 띠별 운세`, free:true, href:'/2027-ddi/' },
+      sMe:     { q:'나는 어떤 사람으로 태어났을까?', p:'상세 사주 · 성격·재물·연애·대운 8가지', st:3, on:saju },
+      rPeak:   { q:'내 인생의 전성기는 언제 올까?', p:'대운 인생 지도 · 전성기와 조심할 시기', st:3, on:go('roadmap') },
+      fIlju:   { q:'내 일주는 어떤 성격일까?', p:'60일주 성격', free:true, href:'/ilju/' },
+      fSaju:   { q:'내 사주팔자, 먼저 무료로 보기', p:'무료 사주 · 만세력·오행·신살', free:true, on:go(savedSaju.length ? 'saju-list' : 'input') },
+      cParent: { q:'부모님·아이와 나, 잘 맞을까?', p:'궁합 · 부모-자녀', st:2, on:compat('parent_child') },
+      cSib:    { q:'형제·자매와 자꾸 부딪히는 이유는?', p:'궁합 · 형제/자매', st:2, on:compat('sibling') },
+      cFriend: { q:'이 친구, 오래 갈 인연일까?', p:'궁합 · 친구', st:2, on:compat('friend') },
+    };
+    const TABS = [
+      ['pick','추천', [I.yYear, I.cLove, I.yWork, I.sMe, I.rPeak]],
+      ['love','연애·궁합', [I.cLove, I.yLove, I.sLove, I.fLove]],
+      ['work','돈·일', [I.yWork, I.sWork, I.rMoney, I.cBiz]],
+      ['year','올해 운세', [I.yYear, I.kYear, I.dToday, I.fDdi]],
+      ['me','나라는 사람', [I.sMe, I.rPeak, I.fIlju, I.fSaju]],
+      ['family','가족·친구', [I.cParent, I.cSib, I.cFriend]],
+      ['free','무료', [I.fSaju, I.dToday, I.fDdi, I.fIlju, I.fLove]],
+    ];
+    const cur = TABS.find(t => t[0] === tab) || TABS[0];
+    const row = (it, i) => {
+      const inner = [
+        _h('div', { key:'t', style:{flex:1,minWidth:0} },
+          _h('p', { style:{fontFamily:SERIF,color:HJ.ink,fontWeight:800,fontSize:'15px',lineHeight:1.4,margin:'0 0 3px',wordBreak:'keep-all'} }, it.q),
+          _h('p', { style:{color:HJ.faint,fontSize:'11.5px',margin:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'} }, it.p)),
+        it.was && _h('span', { key:'w', style:{color:HJ.faint,fontSize:'12px',textDecoration:'line-through',flexShrink:0} }, `⭐${it.was}`),
+        it.free ? _h('span', { key:'f', style:{fontSize:'11px',fontWeight:700,color:HJ.teal,background:'rgba(45,90,92,0.08)',border:'1px solid rgba(45,90,92,0.2)',borderRadius:'8px',padding:'2px 8px',flexShrink:0} }, '무료')
+                : _h('span', { key:'p', style:{color: it.was ? HJ.red : HJ.gold,fontWeight:800,fontSize:'14px',flexShrink:0} }, `⭐${it.st}`),
+        _h('span', { key:'a', style:{color:HJ.faint} }, '›')];
+      const st = { display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',cursor:'pointer',textDecoration:'none',borderTop: i ? `1px solid ${HJ.line}` : 'none' };
+      return it.href ? _h('a', { key:i, href:it.href, style:st }, ...inner)
+                     : _h('div', { key:i, role:'button', onClick:()=>{ track('home_goal_click_' + cur[0]); it.on(); }, style:st }, ...inner);
+    };
+    return _h('div', { style:{margin:'22px 0 8px'} },
+      _h('p', { style:{fontFamily:SERIF,fontWeight:900,fontSize:'18px',color:HJ.ink,margin:'0 0 10px'} }, '무엇이 궁금하세요?'),
+      _h('div', { style:{display:'flex',gap:'6px',overflowX:'auto',margin:'0 -16px 10px',padding:'0 16px 2px',scrollbarWidth:'none'} },
+        TABS.map(([k,l]) => _h('button', { key:k, onClick:()=>pickTab(k), style:{flex:'0 0 auto',padding:'7px 13px',borderRadius:'20px',cursor:'pointer',fontSize:'13px',fontWeight:700,
+          border:`1px solid ${k===cur[0] ? HJ.ink : HJ.line}`, background: k===cur[0] ? HJ.ink : HJ.card, color: k===cur[0] ? '#FBF6EC' : HJ.sub} }, l))),
+      _h('div', { key:cur[0], className:'hj-fade', style:{background:HJ.card,borderRadius:'18px',border:`1px solid ${HJ.line}`,overflow:'hidden'} },
+        cur[2].map(row))
     );
   };
 
