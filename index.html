@@ -264,7 +264,7 @@
 <div id="app"><div style="max-width:512px;margin:0 auto;padding:80px 18px 40px;font-family:'Noto Sans KR',sans-serif;color:#231F1C;line-height:1.7">
   <h1 style="font-family:'Noto Serif KR',serif;font-size:26px;margin:0 0 8px">사주ON(사주온) — 2027 정미년 신년운세·무료 사주·궁합</h1>
   <p style="color:#6B6056;margin:0 0 14px">생년월일만 입력하면 만세력, 일주 성격, 오행과 용신, 대운 흐름까지 무료로 확인할 수 있어요. 신살·합충을 근거로 풀이하는 정통 명리 사주 서비스예요.</p>
-  <p style="margin:0"><a href="/2027-ddi/">2027년 띠별 운세</a> · <a href="/ilju/">60일주 성격</a> · <a href="/gunghap/">띠 궁합</a></p>
+  <p style="margin:0"><a href="/2027-ddi/">2027년 띠별 운세</a> · <a href="/ilju/">60일주 성격</a> · <a href="/gunghap/">띠 궁합</a> · <a href="/sinsal/">신살 풀이</a></p>
 </div></div>
 
 <script type="module">
@@ -548,7 +548,7 @@ const JIJANGGAN = { '子':'임계','丑':'기계신','寅':'무병갑','卯':'�
 // ========== 신살 데이터 ==========
 const HYOSIN_A={'丁':'午酉','己':'丑','辛':'亥','壬':'酉','癸':'酉'};
 const TAEGUK_A={'甲':'子午','乙':'子午','丙':'卯酉','丁':'卯酉','戊':'辰戌丑未','己':'辰戌丑未','庚':'寅亥','辛':'寅亥','壬':'巳申','癸':'巳申'};
-const HONGYAN_B={'甲':'午','乙':'申','丙':'寅','丁':'未','戊':'辰','己':'辰','庚':'戌','辛':'酉','壬':'申','癸':'申'};
+const HONGYAN_B={'甲':'午','乙':'申','丙':'寅','丁':'未','戊':'辰','己':'辰','庚':'戌','辛':'酉','壬':'子','癸':'申'};
 const YEOYEON_B={'甲':'寅','乙':'卯','丙':'辰','丁':'巳丑','戊':'辰','己':'巳未','庚':'午寅','辛':'未','壬':'申','癸':'酉'};
 const HYUNCHIM_B={'甲':'戌','乙':'巳','丙':'申子','丁':'丑','戊':'申午','己':'丑','庚':'','辛':'巳酉丑','壬':'申戌','癸':''};
 const NACHEDO_B={'甲':'子','乙':'丑','丙':'寅','丁':'卯','戊':'辰','己':'巳','庚':'午','辛':'未','壬':'申戌','癸':'酉'};
@@ -867,7 +867,7 @@ function calcPillarSinsal(stem, br, dayGan, dayBr, pillarType, yearBr) {
   if (HAKDANG[dayGan] === br) add('학당귀인');
   if (MUNCHANG[dayGan] === br) add('문창귀인');
   if (YANGEIN[dayGan] === br) add('양인살');
-  if (chk(HONGYAN_B, stem, br)) add('홍염살');
+  if (chk(HONGYAN_B, dayGan, br)) add('홍염살');   // 홍염: 일간 기준
   if (chk(YEOYEON_B, stem, br)) add('여연살');
   if (chk(HYUNCHIM_B, stem, br)) add('현침살');
   if (chk(NACHEDO_B, stem, br)) add('나체도화');
@@ -894,6 +894,7 @@ function calcPillarSinsal(stem, br, dayGan, dayBr, pillarType, yearBr) {
   if (dayBr && DOHWA_MAP[dayBr] === br && pillarType !== 'day') add('도화살');
   
   if (BAEKHO_C[stem] === br) add('백호살');
+  if (pillarType === 'day' && ['庚辰','庚戌','壬辰','壬戌','戊戌'].includes(stem + br)) add('괴강살');   // 괴강: 일주 기준
   if (pillarType === 'day') {
     if (ILDEOK_B[stem] === br) add('일덕');
     if (chk(JAEGO_C, dayGan, br)) add('재고귀인');
@@ -923,12 +924,11 @@ function calcExtraSinsal(allBr, allStems) {
   if (allStems.includes('乙') && allStems.includes('丙') && allStems.includes('丁')) extra.push('지상삼기');
   if (allStems.includes('辛') && allStems.includes('壬') && allStems.includes('癸')) extra.push('인중삼기');
   
-  const GWIMUN = {'子':'未','丑':'午','寅':'巳','卯':'辰','辰':'卯','巳':'寅','午':'丑','未':'子','申':'亥','酉':'戌','戌':'酉','亥':'申'};
-  for (let i = 0; i < allBr.length; i++) {
-    for (let j = i + 1; j < allBr.length; j++) {
-      if (GWIMUN[allBr[i]] === allBr[j]) { extra.push('귀문관살'); break; }
-    }
-  }
+  // 귀문관살: 子酉·丑午·寅未·卯申·辰亥·巳戌 (이전 표는 육해(六害)와 같아 잘못돼 있었음)
+  const GWIMUN = {'子':'酉','酉':'子','丑':'午','午':'丑','寅':'未','未':'寅','卯':'申','申':'卯','辰':'亥','亥':'辰','巳':'戌','戌':'巳'};
+  let gwimun = false;
+  for (let i = 0; i < allBr.length && !gwimun; i++) for (let j = i + 1; j < allBr.length; j++) if (GWIMUN[allBr[i]] === allBr[j]) { gwimun = true; break; }
+  if (gwimun) extra.push('귀문관살');
   
   const HAP = {'甲己':'토','乙庚':'금','丙辛':'수','丁壬':'목','戊癸':'화'};
   for (let i = 0; i < allStems.length; i++) {
@@ -1545,7 +1545,10 @@ function App() {
     history.replaceState({ screen: initialScreen }, '', window.location.hash || window.location.pathname);
     
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    // '#rank' 같은 링크를 눌렀을 때도 화면 전환 (사이드 메뉴·외부 링크)
+    const handleHash = () => { const h = window.location.hash.replace('#', ''); setCurrentScreen(h || 'home'); setShowSideMenu(false); window.scrollTo(0,0); };
+    window.addEventListener('hashchange', handleHash);
+    return () => { window.removeEventListener('popstate', handlePopState); window.removeEventListener('hashchange', handleHash); };
   }, []);
 
   const _aiQueue = React.useRef(Promise.resolve());
@@ -1825,6 +1828,7 @@ function App() {
   const ONBOARDING_KEY = 'sajuon::onboarded_v1';
   const [showOnboarding, setShowOnboarding] = React.useState(() => {
     if (DEV_MODE) return false; // 테스트 모드에서는 스킵
+    if (/^#(rank|sinsal)$/.test(window.location.hash)) return false; // 친구가 보낸 무료 링크로 들어오면 소개 화면 없이 바로
     try { return !localStorage.getItem(ONBOARDING_KEY); } catch(e) { return false; }
   });
   const [obSlide, setObSlide] = React.useState(0);
@@ -2040,6 +2044,9 @@ function App() {
   const [yearlyViewYear, setYearlyViewYear] = useState(FORTUNE_YEAR);
   const [savedYearly, setSavedYearlyRaw] = useState(() => session ? loadUserData(session.key, 'savedYearly', []) : []);
   const [savedKeycard, setSavedKeycardRaw] = useState(() => session ? loadUserData(session.key, 'savedKeycard', []) : []);
+  const [savedWorry, setSavedWorryRaw] = useState(() => session ? loadUserData(session.key, 'savedWorry', []) : []);
+  const [worryId, setWorryId] = useState(() => { try { return localStorage.getItem('sajuon::worry_id') || ''; } catch (e) { return ''; } });
+  const [worryCat, setWorryCat] = useState('');
   const [savedRoadmap, setSavedRoadmapRaw] = useState(() => session ? loadUserData(session.key, 'savedRoadmap', []) : []);
   const [roadmapPerson, setRoadmapPerson] = useState(null); // career|love|money|health|move
   
@@ -2399,6 +2406,14 @@ function App() {
                 setSavedYearly(prev => prev.some(y => String(y.personId) === String(bp.id) && yearlyYearOf(y) === FORTUNE_YEAR) ? prev : [...prev, { id: Date.now() + 1, personId: bp.id, personName: bp.name, year: FORTUNE_YEAR, date: new Date().toLocaleDateString() }]);
                 setCurrentInput(inp); setCurrentResult(res); setYearlyPerson(bp.id); setYearlyViewYear(FORTUNE_YEAR);
                 setScreen('yearly-result');
+              } else if (pending.product.type === 'worry-more') {
+                const pr = pending.product, fid = pr.worryId || Date.now();
+                setSavedWorry(prev => prev.some(x => String(x.id) === String(fid)) ? prev : [...prev, { id: fid, parentId: pr.parentId, personId: pr.personId, personName: pr.personName || '', question: pr.question || '', cat: pr.cat || 'etc', date: new Date().toLocaleDateString('ko-KR') }]);
+                setWorryId(pr.parentId); setScreen('worry-result');
+              } else if (pending.product.type === 'worry') {
+                const pr = pending.product, wid = pr.worryId || Date.now();
+                setSavedWorry(prev => prev.some(x => String(x.id) === String(wid)) ? prev : [...prev, { id: wid, personId: pr.personId, personName: pr.personName || '', question: pr.question || '', cat: pr.cat || 'etc', date: new Date().toLocaleDateString('ko-KR') }]);
+                setWorryId(wid); setScreen('worry-result');
               } else if (pending.product.type === 'keycard') {
                 if (pending.yearlyResult) { setYearlyPerson(pending.yearlyResult.personId); setSavedKeycard(prev => prev.some(k => String(k.personId) === String(pending.yearlyResult.personId) && k.year === FORTUNE_YEAR) ? prev : [...prev, { ...pending.yearlyResult }]); }
                 setScreen('keycard-result');
@@ -2476,6 +2491,17 @@ function App() {
       return next;
     });
   };
+  const setSavedWorry = (updater) => {
+    setSavedWorryRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (userKey) {
+        saveUserData(userKey, 'savedWorry', next);
+        next.filter(n => !prev.some(p => p.id === n.id)).forEach(a => saveAnalysisToCloud(userKey, a, 'worry').catch(()=>{}));
+      }
+      return next;
+    });
+  };
+  React.useEffect(() => { try { if (worryId) localStorage.setItem('sajuon::worry_id', String(worryId)); } catch (e) {} }, [worryId]);
   const setSavedKeycard = (updater) => {
     setSavedKeycardRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
@@ -4279,6 +4305,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         ['compat',   'savedCompatibility', setSavedCompatibilityRaw],
         ['yearly',   'savedYearly',        setSavedYearlyRaw],
         ['keycard',  'savedKeycard',       setSavedKeycardRaw],
+        ['worry',    'savedWorry',         setSavedWorryRaw],
         ['roadmap',  'savedRoadmap',       setSavedRoadmapRaw],
         ['paidSaju', 'savedPaidSaju',      setSavedPaidSajuRaw],
       ];
@@ -4365,6 +4392,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     setSavedCompatibilityRaw(acctCompatibility);
     setSavedYearlyRaw(acctYearly);
     setSavedKeycardRaw(loadUserData(resolvedKey, 'savedKeycard', []));
+    setSavedWorryRaw(loadUserData(resolvedKey, 'savedWorry', []));
     setSavedRoadmapRaw(acctRoadmap);
     setPurchases(acctPurchases);
     // 로컬 값 먼저 적용
@@ -4406,6 +4434,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     setSavedCompatibilityRaw([]);
     setSavedYearlyRaw([]);
     setSavedKeycardRaw([]);
+    setSavedWorryRaw([]);
     setSavedRoadmapRaw([]);
     setStars(0); setMoons(0);
     setPurchases([]);
@@ -4599,6 +4628,19 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       }
       setYearlyViewYear(FORTUNE_YEAR);
       setScreen('yearly-result');
+      return;
+    }
+    if (prod.type === 'worry-more') {   // 고민 이어서 묻기 (⭐1): 원래 질문 아래에 이어 붙임
+      const fid = prod.worryId || Date.now();
+      setSavedWorry(prev => prev.some(x => String(x.id) === String(fid)) ? prev : [...prev, { id: fid, parentId: prod.parentId, personId: prod.personId, personName: prod.personName || '', question: prod.question || '', cat: prod.cat || 'etc', date: new Date().toLocaleDateString('ko-KR') }]);
+      setWorryId(prod.parentId); setScreen('worry-result');
+      return;
+    }
+    if (prod.type === 'worry') {   // 고민 하나 풀이: 질문 기록을 남기고 바로 답 화면으로
+      const wid = prod.worryId || Date.now();
+      const person = savedSaju.find(s => String(s.id) === String(prod.personId));
+      setSavedWorry(prev => prev.some(x => String(x.id) === String(wid)) ? prev : [...prev, { id: wid, personId: prod.personId, personName: person?.name || prod.personName || '', question: prod.question || '', cat: prod.cat || 'etc', date: new Date().toLocaleDateString('ko-KR') }]);
+      setWorryId(wid); setScreen('worry-result');
       return;
     }
     if (prod.type === 'keycard') {
@@ -5162,8 +5204,14 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const go = (scr) => () => { setScreen(scr); window.scrollTo(0,0); };
     const compat = (rel) => () => { setCompatRelation(rel); setScreen('compatibility'); window.scrollTo(0,0); };
     const saju = go(savedSaju.length ? 'saju-list' : 'input');
+    const worry = (c) => () => { setWorryCat(c); setScreen('worry'); window.scrollTo(0,0); };
     const yp = yearlyPrice().stars, yWas = yearlyPromoOn() ? 3 : null;
     const I = {
+      wAny:    { q:'내 고민 하나, 사주로 판정받기', p:'고민 하나 풀이 · 된다/어렵다 + 좋은 달', st:2, on:worry('etc'), tag:'NEW' },
+      wLove:   { q:'헤어진 그 사람, 다시 연락 올까?', p:'고민 하나 풀이 · 판정과 시기', st:2, on:worry('love'), tag:'NEW' },
+      wWork:   { q:'지금 회사, 그만두고 옮겨도 될까?', p:'고민 하나 풀이 · 판정과 시기', st:2, on:worry('work'), tag:'NEW' },
+      wMoney:  { q:'큰돈 쓰는 결정, 내년에 해도 될까?', p:'고민 하나 풀이 · 판정과 시기', st:2, on:worry('money'), tag:'NEW' },
+      wPeople: { q:'자꾸 부딪히는 그 사람, 어떻게 해야 할까?', p:'고민 하나 풀이 · 판정과 대처법', st:2, on:worry('people'), tag:'NEW' },
       cLove:   { q:'그 사람과 나, 오래 갈 수 있을까?', p:'궁합 · 연인/배우자', st:2, on:compat('couple') },
       yLove:   { q:'올해 연애운, 몇 월에 열릴까?', p:`${FORTUNE_YEAR} 신년운세 · 13개월 월별 흐름`, st:yp, was:yWas, on:go('yearly') },
       sLove:   { q:'나는 어떤 사람과 잘 맞을까?', p:'상세 사주 · 연애·배우자 성향', st:3, on:saju },
@@ -5179,25 +5227,27 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       sMe:     { q:'나는 어떤 사람으로 태어났을까?', p:'상세 사주 · 성격·재물·연애·대운 8가지', st:3, on:saju },
       rPeak:   { q:'내 인생의 전성기는 언제 올까?', p:'대운 인생 지도 · 전성기와 조심할 시기', st:3, on:go('roadmap') },
       fIlju:   { q:'내 일주는 어떤 성격일까?', p:'60일주 성격', free:true, href:'/ilju/' },
+      fSinsal: { q:'내 사주에 도화살·역마살 있을까?', p:'신살 조회 · 로그인 없이 바로', free:true, on:go('sinsal') },
+      fRank:   { q:`친구들과 ${FORTUNE_YEAR} 운 점수 겨루기`, p:`${FORTUNE_YEAR} 운 랭킹 · 링크로 순위 공유`, free:true, on:go('rank') },
       fSaju:   { q:'내 사주팔자, 먼저 무료로 보기', p:'무료 사주 · 만세력·오행·신살', free:true, on:go(savedSaju.length ? 'saju-list' : 'input') },
       cParent: { q:'부모님·아이와 나, 잘 맞을까?', p:'궁합 · 부모-자녀', st:2, on:compat('parent_child') },
       cSib:    { q:'형제·자매와 자꾸 부딪히는 이유는?', p:'궁합 · 형제/자매', st:2, on:compat('sibling') },
       cFriend: { q:'이 친구, 오래 갈 인연일까?', p:'궁합 · 친구', st:2, on:compat('friend') },
     };
     const TABS = [
-      ['pick','추천', [I.yYear, I.cLove, I.yWork, I.sMe, I.rPeak]],
-      ['love','연애·궁합', [I.cLove, I.yLove, I.sLove, I.fLove]],
-      ['work','돈·일', [I.yWork, I.sWork, I.rMoney, I.cBiz]],
-      ['year','올해 운세', [I.yYear, I.kYear, I.dToday, I.fDdi]],
+      ['pick','추천', [I.wAny, I.yYear, I.cLove, I.fRank, I.sMe, I.fSinsal]],
+      ['love','연애·궁합', [I.wLove, I.cLove, I.yLove, I.sLove, I.fSinsal, I.fLove]],
+      ['work','돈·일', [I.wWork, I.wMoney, I.yWork, I.sWork, I.rMoney, I.cBiz]],
+      ['year','올해 운세', [I.yYear, I.fRank, I.kYear, I.dToday, I.fDdi]],
       ['me','나라는 사람', [I.sMe, I.rPeak, I.fIlju, I.fSaju]],
-      ['family','가족·친구', [I.cParent, I.cSib, I.cFriend]],
-      ['free','무료', [I.fSaju, I.dToday, I.fDdi, I.fIlju, I.fLove]],
+      ['family','가족·친구', [I.wPeople, I.cParent, I.cSib, I.cFriend]],
+      ['free','무료', [I.fRank, I.fSinsal, I.fSaju, I.dToday, I.fDdi, I.fIlju, I.fLove]],
     ];
     const cur = TABS.find(t => t[0] === tab) || TABS[0];
     const row = (it, i) => {
       const inner = [
         _h('div', { key:'t', style:{flex:1,minWidth:0} },
-          _h('p', { style:{fontFamily:SERIF,color:HJ.ink,fontWeight:800,fontSize:'15px',lineHeight:1.4,margin:'0 0 3px',wordBreak:'keep-all'} }, it.q),
+          _h('p', { style:{fontFamily:SERIF,color:HJ.ink,fontWeight:800,fontSize:'15px',lineHeight:1.4,margin:'0 0 3px',wordBreak:'keep-all'} }, it.tag && _h('span', { style:{fontFamily:'inherit',fontSize:'10px',fontWeight:800,color:'#FFF6EE',background:HJ.red,borderRadius:'6px',padding:'1px 6px',marginRight:'6px',verticalAlign:'2px'} }, it.tag), it.q),
           _h('p', { style:{color:HJ.faint,fontSize:'11.5px',margin:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'} }, it.p)),
         it.was && _h('span', { key:'w', style:{color:HJ.faint,fontSize:'12px',textDecoration:'line-through',flexShrink:0} }, `⭐${it.was}`),
         it.free ? _h('span', { key:'f', style:{fontSize:'11px',fontWeight:700,color:HJ.teal,background:'rgba(45,90,92,0.08)',border:'1px solid rgba(45,90,92,0.2)',borderRadius:'8px',padding:'2px 8px',flexShrink:0} }, '무료')
@@ -5215,6 +5265,456 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
       _h('div', { key:cur[0], className:'hj-fade', style:{background:HJ.card,borderRadius:'18px',border:`1px solid ${HJ.line}`,overflow:'hidden'} },
         cur[2].map(row))
     );
+  };
+
+  // ===== 무료 장치 공통: 로그인 없이 쓰는 간단 입력 =====
+  const MiniBirthForm = ({ cta, onDone, nameLabel = '이름 또는 별명', namePh = '예) 지원' }) => {
+    const [f, setF] = React.useState({ name:'', gender:'여성', calendar:'양력', birth:'', hour:'' });
+    const shown = f.birth.length > 4 ? f.birth.slice(0,4) + '.' + f.birth.slice(4,6) + (f.birth.length > 6 ? '.' + f.birth.slice(6) : '') : f.birth;
+    const seg = (opts, val, onPick) => _h('div', { style:{display:'flex',background:'rgba(35,31,28,0.05)',borderRadius:'12px',padding:'3px'} },
+      opts.map(v => _h('button', { key:v, onClick:()=>onPick(v), style:{flex:1,padding:'9px 0',borderRadius:'10px',border:'none',cursor:'pointer',fontSize:'13px',fontWeight:700,
+        background: val===v ? HJ.card : 'transparent', color: val===v ? HJ.ink : HJ.faint, boxShadow: val===v ? '0 1px 3px rgba(35,31,28,0.12)' : 'none'} }, v)));
+    const inp = { width:'100%',boxSizing:'border-box',padding:'13px 14px',borderRadius:'12px',border:`1px solid ${HJ.line}`,background:'#FFFFFF',color:HJ.ink,fontSize:'16px',outline:'none',marginBottom:'14px' };
+    const lab = (t) => _h('p', { style:{color:HJ.sub,fontSize:'12px',fontWeight:600,margin:'0 0 6px'} }, t);
+    const hours = [['','모름'], ...Array.from({length:24}, (_,h) => [String(h), `${String(h).padStart(2,'0')}시 (${BRANCHES.korean[Math.floor(((h+1)%24)/2)]}시)`])];
+    const valid = f.name.trim() && f.birth.length === 8;
+    const run = () => {
+      if (!valid) { alert('이름(별명)과 생년월일 8자리를 입력해주세요.'); return; }
+      const y = +f.birth.slice(0,4), m = +f.birth.slice(4,6), d = +f.birth.slice(6,8);
+      if (y < 1900 || y > new Date().getFullYear() || m < 1 || m > 12 || d < 1 || d > 31) { alert('생년월일을 다시 확인해주세요.'); return; }
+      const hour = f.hour === '' ? null : +f.hour;
+      try { onDone({ name:f.name.trim().slice(0,10), gender:f.gender, calendar:f.calendar, year:y, month:m, day:d, hour, minute:null,
+        result: analyzeSaju(y, m, d, hour, null, f.calendar === '음력', false) }); }
+      catch (e) { alert('계산 중 오류가 났어요. 생년월일을 확인해주세요.'); }
+    };
+    return _h('div', { style:hjCard({padding:'18px 16px'}) },
+      savedSaju.length > 0 && _h('div', { style:{marginBottom:'14px'} }, lab('저장된 사주로 바로 보기'),
+        _h('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap'} }, savedSaju.map(s => _h('button', { key:s.id, onClick:()=>{
+          const r = s.result || analyzeSaju(+s.year, +s.month, +s.day, (s.hour===''||s.hour==null||s.hour==='unknown') ? null : +s.hour, s.minute ? +s.minute : null, s.calendar === '음력' || s.isLunar === true, s.isLeapMonth || false);
+          onDone({ ...s, result: r }); }, style:{padding:'7px 13px',borderRadius:'20px',cursor:'pointer',fontSize:'13px',fontWeight:700,border:`1px solid ${HJ.line}`,background:HJ.card,color:HJ.ink} }, s.name)))),
+      lab(nameLabel),
+      _h('input', { value:f.name, onChange:e=>setF({...f, name:e.target.value}), placeholder:namePh, maxLength:10, style:inp }),
+      _h('div', { style:{display:'flex',gap:'8px',marginBottom:'14px'} },
+        _h('div', { style:{flex:1} }, lab('성별'), seg(['여성','남성'], f.gender, v=>setF({...f, gender:v}))),
+        _h('div', { style:{flex:1} }, lab('달력'), seg(['양력','음력'], f.calendar, v=>setF({...f, calendar:v})))),
+      lab('생년월일 8자리'),
+      _h('input', { value:shown, onChange:e=>setF({...f, birth:e.target.value.replace(/[^0-9]/g,'').slice(0,8)}), inputMode:'numeric', placeholder:'예) 19950714', style:{...inp, letterSpacing:'1px'} }),
+      lab('태어난 시간 (모르면 그대로)'),
+      _h('select', { value:f.hour, onChange:e=>setF({...f, hour:e.target.value}), style:{...inp, appearance:'auto', marginBottom:'16px'} }, hours.map(([v,l]) => _h('option', { key:v, value:v }, l))),
+      _h('button', { onClick:run, className:'hj-cta', style:{width:'100%',padding:'16px',borderRadius:'14px',border:'none',cursor:'pointer',fontSize:'16px',fontWeight:800,fontFamily:SERIF,
+        background: valid ? HJ.ink : 'rgba(35,31,28,0.25)', color:'#FBF6EC'} }, cta),
+      _h('p', { style:{color:HJ.faint,fontSize:'11px',textAlign:'center',margin:'10px 0 0'} }, '로그인 없이 바로 나와요 · 입력한 정보는 저장되지 않아요'));
+  };
+  const LightHeader = ({ label, title, back = 'home' }) => _h('div', { style:{display:'flex',alignItems:'center',gap:'12px',padding:'18px 0 14px'} },
+    _h('button', { onClick:()=>{ setScreen(back); window.scrollTo(0,0); }, 'aria-label':'뒤로', style:{width:'38px',height:'38px',borderRadius:'12px',border:`1px solid ${HJ.line}`,background:HJ.card,cursor:'pointer',fontSize:'16px',color:HJ.ink} }, '←'),
+    _h('div', null, _h('p', { style:{color:HJ.faint,fontSize:'11px',letterSpacing:'3px',margin:'0 0 2px'} }, label),
+      _h('h1', { style:{fontFamily:SERIF,fontWeight:900,fontSize:'21px',margin:0,color:HJ.ink} }, title)));
+  const lightPage = (...kids) => _h('div', { style:{minHeight:'100vh',background:HJ.bg,color:HJ.ink,paddingBottom:'110px'} }, _h('div', { style:{padding:'0 16px'} }, ...kids));
+  const shareLink = async (title, text, url) => {
+    track('share_' + (url.includes('rank') ? 'rank' : 'sinsal'));
+    if (navigator.share) { try { await navigator.share({ title, text, url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+    try { await navigator.clipboard.writeText(`${text}\n${url}`); alert('링크를 복사했어요. 카톡이나 메시지에 붙여넣어 보내세요.'); }
+    catch (e) { prompt('아래 링크를 복사해 보내세요', url); }
+  };
+  const SITE_URL = (location.hostname.endsWith('sajuon.kr') ? 'https://sajuon.kr' : location.origin + location.pathname.replace(/[^/]*$/, ''));
+
+  // ===== 무료: 내 사주 신살 조회 =====
+  const FAMOUS_SINSAL = [
+    ['도화살', '사람을 끄는 매력과 이성운이에요. 잘 쓰면 인기·영업·방송처럼 사람 앞에 서는 일에서 빛나고, 넘치면 구설과 감정 소모로 이어지기 쉬워요.'],
+    ['홍염살', '도화보다 진하고 은근한 끌림이에요. 첫인상보다 가까워질수록 매력이 커지는 타입이라 연애에서 주도권을 쥐기 쉬워요.'],
+    ['역마살', '움직여야 풀리는 기운이에요. 이사·출장·해외·이직처럼 자리를 옮길 때 기회가 오고, 한곳에 묶이면 답답함을 크게 느껴요.'],
+    ['화개살', '혼자 깊이 파고드는 힘이에요. 예술·학문·종교·연구처럼 몰입이 필요한 분야와 잘 맞고, 겉으로는 담담해도 속이 깊어요.'],
+    ['백호살', '강하고 빠른 에너지예요. 결단력과 추진력이 뛰어난 대신 사고·수술·돌발 상황에 대비하는 습관이 중요해요.'],
+    ['괴강살', '굽히지 않는 카리스마예요. 위기 때 리더로 나서는 힘이 있지만, 고집으로 보이지 않도록 말의 온도를 조절하면 더 크게 쓰여요.'],
+    ['양인살', '칼처럼 날카로운 의지예요. 경쟁·전문직·승부가 걸린 일에서 강하고, 감정이 앞설 때 충돌이 커지기 쉬워요.'],
+    ['귀문관살', '예민한 직관과 영감이에요. 남이 못 보는 걸 먼저 알아채는 대신, 피로하면 생각이 많아지고 잠이 얕아지기 쉬워요.'],
+    ['현침살', '바늘처럼 정밀한 감각이에요. 의료·기술·디자인·글처럼 손끝과 디테일이 중요한 일에 강하고, 말이 날카로워지지 않게 주의하면 좋아요.'],
+    ['천을귀인', '가장 대표적인 길신이에요. 막힐 때 도와주는 사람이 나타나고, 어려운 상황에서도 빠져나갈 길이 생기는 복이에요.'],
+  ];
+  const SinsalCheckScreen = () => {
+    const [p, setP] = React.useState(null);
+    const PK = [['year','연주'],['month','월주'],['day','일주'],['hour','시주']];
+    if (!p) return lightPage(
+      _h(LightHeader, { label:'FREE · 신살 조회', title:'내 사주 신살 조회' }),
+      _h('p', { style:{color:HJ.sub,fontSize:'14px',lineHeight:1.7,margin:'0 0 14px',wordBreak:'keep-all'} }, '도화살·역마살·백호살·귀문관살·천을귀인까지, 내 사주 네 기둥 중 어디에 있는지 바로 확인해요.'),
+      _h(MiniBirthForm, { cta:'무료로 신살 확인하기', onDone:(x)=>{ track('free_sinsal'); setP(x); window.scrollTo(0,0); } }));
+    const r = p.result, noHour = !r.pillars.hour;
+    const where = (name) => PK.filter(([k]) => (r.pillarSinsal?.[k] || []).includes(name)).map(([,l]) => l);
+    const extra = r.extraSinsal || [];
+    const famous = FAMOUS_SINSAL.map(([n, d]) => { const w = where(n); const has = w.length > 0 || extra.includes(n); return { n, d, w, has }; });
+    const hasList = famous.filter(x => x.has), noList = famous.filter(x => !x.has);
+    const famousNames = new Set(FAMOUS_SINSAL.map(x => x[0]));
+    const others = [...new Set([...PK.flatMap(([k]) => r.pillarSinsal?.[k] || []), ...extra])].filter(n => !famousNames.has(n));
+    return lightPage(
+      _h(LightHeader, { label:'FREE · 신살 조회', title:`${p.name}님의 신살` }),
+      _h('div', { className:'hj-rise', style:hjCard({}) },
+        hjLabel('한눈에'),
+        _h('p', { style:{fontFamily:SERIF,fontSize:'18px',fontWeight:800,lineHeight:1.5,margin:'0 0 8px',wordBreak:'keep-all'} },
+          hasList.length ? `대표 신살 10가지 중 ${hasList.length}개가 있어요` : '대표 신살 10가지는 하나도 없어요'),
+        _h('div', null, hasList.map((x,i) => hjChip(x.n, x.n === '천을귀인' ? 'good' : 'bad', i))),
+        _h('p', { style:{color:HJ.faint,fontSize:'12px',lineHeight:1.6,margin:'8px 0 0'} }, '신살은 타고난 기질의 방향일 뿐, 좋고 나쁨이 정해진 운명이 아니에요. 어떻게 쓰느냐에 따라 장점이 됩니다.'),
+        noHour && _h('p', { style:{color:HJ.red,fontSize:'12px',margin:'6px 0 0'} }, '태어난 시간을 몰라 시주 신살은 빠져 있어요.')),
+      hasList.map((x,i) => _h('div', { key:x.n, className:'hj-rise', style:hjCard({animationDelay:`${0.08*(i+1)}s`}) },
+        _h('div', { style:{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:'8px',marginBottom:'6px'} },
+          _h('p', { style:{fontFamily:SERIF,fontSize:'18px',fontWeight:900,margin:0} }, x.n),
+          _h('span', { style:{fontSize:'12px',fontWeight:700,color:HJ.gold} }, x.w.length ? x.w.join('·') + '에 있음' : '네 기둥 사이에 있음')),
+        _h('p', { style:{color:HJ.sub,fontSize:'14px',lineHeight:1.75,margin:0,wordBreak:'keep-all'} }, x.d))),
+      _h('div', { style:hjCard({}) },
+        hjLabel('없는 대표 신살', HJ.faint),
+        _h('p', { style:{color:HJ.sub,fontSize:'13px',lineHeight:1.7,margin:0} }, noList.map(x => x.n).join(' · ') || '-')),
+      others.length > 0 && _h('div', { style:hjCard({}) },
+        hjLabel('그 밖의 신살', HJ.teal),
+        others.map((n,i) => _h('p', { key:i, style:{fontSize:'13px',lineHeight:1.6,margin:'0 0 4px',color:HJ.ink} }, _h('b', null, n), _h('span', { style:{color:HJ.faint} }, ' — ' + (SINSAL_INFO[n] || ''))))),
+      _h('div', { style:hjCard({background:'#231F1C',border:'none'}) },
+        _h('p', { style:{fontFamily:SERIF,color:'#FBF6EC',fontSize:'17px',fontWeight:800,margin:'0 0 6px',wordBreak:'keep-all'} }, '이 신살이 내 연애·일·돈에서 실제로 어떻게 작동할까요?'),
+        _h('p', { style:{color:'rgba(251,246,236,0.7)',fontSize:'13px',lineHeight:1.6,margin:'0 0 12px'} }, '상세 사주는 신살을 오행·십성·대운과 함께 묶어 8가지 주제로 판정해 드려요.'),
+        _h('button', { onClick:()=>{ track('sinsal_to_paid'); setScreen(savedSaju.length ? 'saju-list' : 'input'); window.scrollTo(0,0); }, style:{width:'100%',padding:'14px',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:800,fontSize:'15px',background:'#FBF6EC',color:'#231F1C'} }, '상세 사주 보기 ⭐3')),
+      _h('div', { style:{display:'flex',gap:'8px'} },
+        _h('button', { onClick:()=>shareLink('내 사주 신살 조회', '내 사주에 도화살·역마살 있을까? 30초 무료 확인', SITE_URL + '#sinsal'), style:{flex:1,padding:'13px',borderRadius:'12px',border:`1px solid ${HJ.line}`,background:HJ.card,cursor:'pointer',fontWeight:700,color:HJ.ink} }, '친구에게 공유'),
+        _h('button', { onClick:()=>{ setP(null); window.scrollTo(0,0); }, style:{flex:1,padding:'13px',borderRadius:'12px',border:`1px solid ${HJ.line}`,background:HJ.card,cursor:'pointer',fontWeight:700,color:HJ.ink} }, '다른 사람 보기')));
+  };
+
+  // ===== 무료: 2027 운 랭킹 (친구끼리 링크로 겨루기 — 링크에는 별명과 점수만) =====
+  const rankEncode = (list) => { const b = new TextEncoder().encode(JSON.stringify(list.map(x => [x.n, x.s]))); let s = ''; b.forEach(c => s += String.fromCharCode(c)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+  const rankDecode = (str) => { try { const s = atob(str.replace(/-/g,'+').replace(/_/g,'/')); const a = JSON.parse(new TextDecoder().decode(Uint8Array.from(s, c => c.charCodeAt(0))));
+    return Array.isArray(a) ? a.filter(x => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(x[1])).slice(0, 30).map(([n, s]) => ({ n: String(n).slice(0,10), s: Math.max(0, Math.min(100, Math.round(s))) })) : []; } catch (e) { return []; } };
+  const yearLuckScore = (r) => {
+    const b = buildYearlyBasis(r, FORTUNE_YEAR), sw = b.sewoon;
+    const base = scoreDaewoons([{ si:sw.si, bi:sw.bi, twelve:sw.twelve }], r)[0].score;
+    const ms = b.months.filter(m => !m.isPre); const avg = ms.reduce((a, m) => a + m.score, 0) / (ms.length || 1);
+    const score = Math.max(40, Math.min(99, Math.round(68 + (base + avg * 2.5 - 46) * 0.6)));   // 표본 1,500명 기준 중앙값 68 · 상위 10% 80점 안팎
+    const best = [...ms].sort((a, c) => c.score - a.score).slice(0, 2).map(m => `${m.calMonth}월`);
+    return { score, best, sw };
+  };
+  const rankGrade = (s) => s >= 84 ? ['크게 열리는 해', HJ.red] : s >= 76 ? ['상승 흐름', HJ.gold] : s >= 66 ? ['무난하게 쌓는 해', HJ.teal] : s >= 57 ? ['다지고 준비하는 해', HJ.sub] : ['버티며 내실 다지는 해', HJ.faint];
+  const RankScreen = () => {
+    const LS = 'sajuon::rank_' + FORTUNE_YEAR;
+    const [list, setList] = React.useState(() => {
+      const fromUrl = rankDecode(new URLSearchParams(location.search).get('rk') || '');
+      let saved = []; try { saved = JSON.parse(localStorage.getItem(LS) || '[]'); } catch (e) {}
+      const map = new Map(); [...saved, ...fromUrl].forEach(x => { if (x && x.n) map.set(x.n + '|' + x.s, { n:x.n, s:x.s, me:!!x.me }); });
+      return [...map.values()];
+    });
+    const [mine, setMine] = React.useState(null);
+    const meEntry = list.find(x => x.me);
+    const save = (l) => { setList(l); try { localStorage.setItem(LS, JSON.stringify(l)); } catch (e) {} };
+    const sorted = [...list].sort((a, b) => b.s - a.s);
+    const myRank = meEntry ? sorted.findIndex(x => x === meEntry) + 1 : 0;
+    const url = SITE_URL + '?rk=' + rankEncode(sorted.slice(0, 30)) + '#rank';
+    const join = (x) => {
+      const res = yearLuckScore(x.result); track('free_rank');
+      const me = { n: x.name, s: res.score, me: true };
+      save([...list.filter(y => !y.me), me]); setMine({ ...res, name: x.name }); window.scrollTo(0,0);
+    };
+    const board = list.length > 0 && _h('div', { className:'hj-rise', style:hjCard({padding:'6px 0'}) },
+      _h('div', { style:{padding:'12px 18px 4px'} }, hjLabel(`${FORTUNE_YEAR} 운 랭킹 · ${list.length}명`)),
+      sorted.map((x, i) => _h('div', { key:x.n + i, style:{display:'flex',alignItems:'center',gap:'12px',padding:'11px 18px',borderTop:`1px solid ${HJ.line}`,background: x.me ? 'rgba(156,118,49,0.08)' : 'transparent'} },
+        _h('span', { style:{width:'26px',fontFamily:SERIF,fontWeight:900,fontSize:'16px',color: i < 3 ? HJ.red : HJ.faint} }, i + 1),
+        _h('span', { style:{flex:1,fontWeight: x.me ? 800 : 600,fontSize:'14px'} }, x.n + (x.me ? ' (나)' : '')),
+        _h('span', { style:{fontSize:'11px',color:rankGrade(x.s)[1]} }, rankGrade(x.s)[0]),
+        _h('span', { style:{fontFamily:SERIF,fontWeight:900,fontSize:'17px',width:'34px',textAlign:'right'} }, x.s))));
+    const shareBtn = meEntry && _h('button', { onClick:()=>shareLink(`${FORTUNE_YEAR} 운 랭킹`, list.length > 1 ? `${FORTUNE_YEAR}년 운 점수, 나는 ${meEntry.s}점! 지금 ${list.length}명 중 ${myRank}등이야. 너도 해보고 순위 확인해봐` : `${FORTUNE_YEAR}년 운 점수, 나는 ${meEntry.s}점! 너는 몇 점일까? 해보고 순위 겨뤄보자`, url), className:'hj-cta',
+      style:{width:'100%',padding:'16px',borderRadius:'14px',border:'none',cursor:'pointer',fontSize:'16px',fontWeight:800,fontFamily:SERIF,background:HJ.ink,color:'#FBF6EC',marginBottom:'12px'} }, '친구에게 랭킹 보내기');
+    return lightPage(
+      _h(LightHeader, { label:'FREE · 운 랭킹', title:`${FORTUNE_YEAR} 운 랭킹` }),
+      mine && _h('div', { className:'hj-rise', style:hjCard({textAlign:'center',padding:'24px 18px'}) },
+        _h('div', { style:{display:'flex',justifyContent:'center',marginBottom:'8px'} }, _h(YearIcon, { size:56 })),
+        _h('p', { style:{color:HJ.sub,fontSize:'13px',margin:'0 0 4px'} }, `${mine.name}님의 ${FORTUNE_YEAR} ${FORTUNE_GANJI.kr}년`),
+        _h('p', { style:{fontFamily:SERIF,fontSize:'52px',fontWeight:900,margin:'0',color:rankGrade(mine.score)[1]} }, mine.score, _h('span', { style:{fontSize:'18px',color:HJ.faint} }, '점')),
+        _h('p', { style:{fontFamily:SERIF,fontSize:'18px',fontWeight:800,margin:'2px 0 10px'} }, rankGrade(mine.score)[0]),
+        _h('p', { style:{color:HJ.sub,fontSize:'13px',lineHeight:1.7,margin:0,wordBreak:'keep-all'} }, `올해는 나에게 ${mine.sw.stemGod}·${mine.sw.branchGod}의 해 · 흐름이 가장 좋은 달은 ${mine.best.join(', ')}`),
+        list.length > 1 && _h('p', { style:{fontWeight:800,fontSize:'15px',margin:'12px 0 0',color:HJ.ink} }, `${list.length}명 중 ${myRank}등`)),
+      !mine && !meEntry && _h('p', { style:{color:HJ.sub,fontSize:'14px',lineHeight:1.7,margin:'0 0 14px',wordBreak:'keep-all'} },
+        list.length ? `친구 ${list.length}명이 먼저 참여했어요. 생년월일을 넣으면 내 점수와 순위가 바로 나와요.` : `내 사주와 ${FORTUNE_YEAR} ${FORTUNE_GANJI.kr}년 기운이 얼마나 잘 맞는지 점수로 보고, 친구들과 링크로 순위를 겨뤄보세요.`),
+      shareBtn,
+      board,
+      !mine && _h('div', null,
+        meEntry && _h('p', { style:{color:HJ.faint,fontSize:'12px',margin:'0 0 8px'} }, '다시 참여하면 내 점수가 새로 바뀌어요.'),
+        _h(MiniBirthForm, { cta: meEntry ? '다시 계산하기' : '내 점수 확인하고 참여하기', nameLabel:'랭킹에 보일 이름 (별명 추천)', onDone: join })),
+      _h('p', { style:{color:HJ.faint,fontSize:'11px',lineHeight:1.6,margin:'4px 0 14px',wordBreak:'keep-all'} }, `점수는 내 사주의 용신·합충과 ${FORTUNE_YEAR}년·월별 기운을 비교한 상대 지표예요. 공유 링크에는 이름(별명)과 점수만 담기고 생년월일은 들어가지 않아요.`),
+      _h('div', { style:hjCard({background:'#231F1C',border:'none'}) },
+        _h('p', { style:{fontFamily:SERIF,color:'#FBF6EC',fontSize:'17px',fontWeight:800,margin:'0 0 6px'} }, '점수 뒤에 숨은 이유가 궁금하다면'),
+        _h('p', { style:{color:'rgba(251,246,236,0.7)',fontSize:'13px',lineHeight:1.6,margin:'0 0 12px'} }, `${FORTUNE_YEAR}년 1월부터 ${FORTUNE_YEAR+1}년 1월까지 13개월, 일·돈·연애·건강을 달마다 판정해 드려요.`),
+        _h('button', { onClick:()=>{ track('rank_to_yearly'); setScreen('yearly'); window.scrollTo(0,0); }, style:{width:'100%',padding:'14px',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:800,fontSize:'15px',background:'#FBF6EC',color:'#231F1C'} }, `${FORTUNE_YEAR} 신년운세 보기 ⭐${yearlyPrice().stars}${yearlyPromoOn() ? ' (할인)' : ''}`)));
+  };
+
+  // ===== 고민 하나 풀이 (⭐3) — 질문 하나에 판정 + 시기 + 근거 =====
+  const WORRY_CATS = [
+    ['love','연애·재회', ['헤어진 그 사람, 다시 연락이 올까요?','지금 썸 타는 사람과 잘될 수 있을까요?','올해 안에 새로운 인연이 생길까요?']],
+    ['marry','결혼', ['지금 만나는 사람과 결혼해도 괜찮을까요?','결혼은 언제쯤 하게 될까요?','결혼 시기를 내년으로 미뤄도 될까요?']],
+    ['work','일·이직', ['지금 회사를 그만두고 이직해도 될까요?','올해 승진이나 연봉 인상 가능성이 있을까요?','지금 하는 일이 저와 맞는 일일까요?']],
+    ['money','돈·재물', ['내년에는 돈이 모이는 흐름일까요?','큰 지출(집·차)을 내년에 해도 될까요?','부업을 시작하면 수입이 늘까요?']],
+    ['exam','시험·합격', ['이번 시험에 합격할 수 있을까요?','공부를 계속할지 취업할지 고민이에요','자격증 준비, 언제 시작하는 게 좋을까요?']],
+    ['biz','사업·창업', ['내년에 창업해도 괜찮을까요?','지금 사업을 확장해도 될까요?','동업을 해도 괜찮을까요?']],
+    ['people','인간관계', ['직장 상사와의 갈등, 어떻게 풀어야 할까요?','가족과 자꾸 부딪히는 이유가 뭘까요?','이 친구와 계속 관계를 이어가도 될까요?']],
+    ['etc','기타', ['이사를 내년에 가도 괜찮을까요?','요즘 무기력한데 언제쯤 나아질까요?','유학이나 해외 생활을 해도 될까요?']],
+  ];
+  const WORRY_CAT_LABEL = Object.fromEntries(WORRY_CATS.map(([k,l]) => [k, l]));
+  const WORRY_PRODUCT = { name: '고민 하나 풀이', price: 2000, stars: 2, type: 'worry' };
+  const WORRY_MORE_PRODUCT = { name: '고민 이어서 묻기', price: 1000, stars: 1, type: 'worry-more' };
+  const WORRY_VERDICT = {
+    '가능성 높아요': { c:HJ.teal, lv:5 }, '조건부로 가능해요': { c:HJ.gold, lv:4 }, '흐름을 더 지켜보세요': { c:HJ.sub, lv:3 }, '지금은 어려워요': { c:HJ.red, lv:2 },
+  };
+
+  const WorryScreen = () => {
+    const firstPid = (yearlyPerson && savedSaju.some(s => String(s.id) === String(yearlyPerson))) ? String(yearlyPerson) : (savedSaju[0] ? String(savedSaju[0].id) : '');
+    const [pid, setPid] = React.useState(firstPid);
+    const [cat, setCat] = React.useState(worryCat || 'love');
+    const [q, setQ] = React.useState('');
+    const catRow = WORRY_CATS.find(c => c[0] === cat) || WORRY_CATS[0];
+    const mine = savedWorry.filter(x => !x.parentId).sort((a,b) => (Number(b.id)||0) - (Number(a.id)||0));
+    const qLen = q.trim().length, ok = pid && qLen >= 8 && qLen <= 200;
+    const start = () => {
+      if (!pid) { alert('누구의 사주로 볼지 먼저 골라주세요.'); return; }
+      if (qLen < 8) { alert('고민을 조금 더 구체적으로 적어주세요. (8자 이상)'); return; }
+      const p = savedSaju.find(s => String(s.id) === String(pid));
+      setYearlyPerson(pid);
+      openPayment({ ...WORRY_PRODUCT, personId: pid, personName: p?.name || '', question: q.trim().slice(0, 200), cat, worryId: Date.now() });
+    };
+    const chip = (on, label, onClick, key) => _h('button', { key, onClick, style:{flex:'0 0 auto',padding:'7px 13px',borderRadius:'20px',cursor:'pointer',fontSize:'13px',fontWeight:700,
+      border:`1px solid ${on ? HJ.ink : HJ.line}`, background: on ? HJ.ink : HJ.card, color: on ? '#FBF6EC' : HJ.sub} }, label);
+    return lightPage(
+      _h(LightHeader, { label:'ONE QUESTION', title:'고민 하나 풀이' }),
+      _h('div', { className:'hj-rise', style:hjCard({}) },
+        _h('p', { style:{fontFamily:SERIF,fontSize:'19px',fontWeight:900,lineHeight:1.45,margin:'0 0 8px',wordBreak:'keep-all'} }, '지금 가장 궁금한 것 하나,\n사주로 판정해 드려요'.split('\n').reduce((a,t,i)=>i?[...a,_h('br',{key:i}),t]:[t],[])),
+        _h('p', { style:{color:HJ.sub,fontSize:'13px',lineHeight:1.7,margin:0,wordBreak:'keep-all'} }, '된다·어렵다를 먼저 말하고, 언제가 좋은지(월 단위)와 그렇게 보는 근거까지 알려드려요. 답을 본 뒤 궁금한 점은 ⭐1로 이어서 물을 수 있어요.')),
+      !isLoggedIn ? _h('button', { onClick:()=>setShowLogin(true), style:{width:'100%',padding:'16px',borderRadius:'14px',border:'none',background:HJ.ink,color:'#FBF6EC',fontWeight:800,fontSize:'15px',cursor:'pointer',marginBottom:'12px'} }, '로그인하고 고민 물어보기')
+      : savedSaju.length === 0 ? _h('button', { onClick:()=>{ setForm({name:'',gender:'여성',calendar:'양력',year:'',month:'',day:'',hour:'',minute:''}); setReturnScreen('worry'); setScreen('input'); }, style:{width:'100%',padding:'16px',borderRadius:'14px',border:'none',background:HJ.ink,color:'#FBF6EC',fontWeight:800,fontSize:'15px',cursor:'pointer',marginBottom:'12px'} }, '먼저 내 사주 입력하기')
+      : _h('div', { style:hjCard({}) },
+          hjLabel('누구의 사주로 볼까요'),
+          _h('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'16px'} }, savedSaju.map(s => chip(String(s.id) === String(pid), s.name, ()=>setPid(String(s.id)), s.id))),
+          hjLabel('어떤 고민인가요'),
+          _h('div', { style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'14px'} }, WORRY_CATS.map(([k,l]) => chip(k === cat, l, ()=>setCat(k), k))),
+          _h('textarea', { value:q, onChange:e=>setQ(e.target.value.slice(0, 200)), rows:4, placeholder:'예) ' + catRow[2][0],
+            style:{width:'100%',boxSizing:'border-box',padding:'13px 14px',borderRadius:'12px',border:`1px solid ${HJ.line}`,background:'#FFFFFF',color:HJ.ink,fontSize:'15px',lineHeight:1.6,outline:'none',resize:'vertical',fontFamily:'inherit'} }),
+          _h('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',margin:'6px 0 10px'} },
+            _h('span', { style:{color:HJ.faint,fontSize:'11px'} }, '상황을 덧붙이면 더 정확해요 · 다른 사람 실명·연락처는 빼주세요'),
+            _h('span', { style:{color: qLen > 190 ? HJ.red : HJ.faint,fontSize:'11px'} }, `${qLen}/200`)),
+          _h('div', { style:{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'16px'} },
+            catRow[2].map((ex,i) => _h('button', { key:i, onClick:()=>setQ(ex), style:{textAlign:'left',padding:'9px 12px',borderRadius:'10px',border:`1px dashed ${HJ.line}`,background:'transparent',color:HJ.sub,fontSize:'13px',cursor:'pointer'} }, '“' + ex + '”'))),
+          _h('button', { onClick:start, className:'hj-cta', style:{width:'100%',padding:'16px',borderRadius:'14px',border:'none',cursor:'pointer',fontSize:'16px',fontWeight:800,fontFamily:SERIF,
+            background: ok ? HJ.ink : 'rgba(35,31,28,0.25)', color:'#FBF6EC'} }, '⭐2별로 답 받기'),
+          _h('p', { style:{color:HJ.faint,fontSize:'11px',lineHeight:1.6,textAlign:'center',margin:'10px 0 0',wordBreak:'keep-all'} }, '사주 계산값을 바탕으로 생성형 AI가 작성하는 참고용 풀이예요. 의료·법률·투자 판단은 전문가와 상의하세요.')),
+      mine.length > 0 && _h('div', { style:hjCard({padding:'6px 0'}) },
+        _h('div', { style:{padding:'12px 18px 4px'} }, hjLabel(`내 질문 기록 · ${mine.length}`)),
+        mine.map(w => _h('div', { key:w.id, role:'button', onClick:()=>{ setWorryId(w.id); setScreen('worry-result'); window.scrollTo(0,0); },
+          style:{display:'flex',alignItems:'center',gap:'10px',padding:'12px 18px',borderTop:`1px solid ${HJ.line}`,cursor:'pointer'} },
+          _h('div', { style:{flex:1,minWidth:0} },
+            _h('p', { style:{margin:'0 0 2px',fontSize:'14px',fontWeight:700,color:HJ.ink,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'} }, w.question),
+            _h('p', { style:{margin:0,fontSize:'11px',color:HJ.faint} }, `${w.personName} · ${WORRY_CAT_LABEL[w.cat] || '기타'} · ${w.date}${(() => { const n = savedWorry.filter(x => String(x.parentId) === String(w.id)).length; return n ? ` · 이어서 묻기 ${n}` : ''; })()}`)),
+          _h('span', { style:{color:HJ.faint} }, '›')))));
+  };
+
+  const WorryFollowItem = ({ f, w, person, ans, prev, ctx }) => {
+    const key = `ai_worry_v1_${w.id}_f${f.id}`;
+    const read = (k) => { try { return JSON.parse(localStorage.getItem(k || key) || 'null'); } catch (e) { return null; } };
+    const [a, setA] = React.useState(() => read());
+    const [loading, setLoading] = React.useState(!read());
+    const [err, setErr] = React.useState(false);
+    const [retry, setRetry] = React.useState(0);
+    const ref = React.useRef(null);
+    React.useEffect(() => {
+      let dead = false; const ctrl = new AbortController();
+      aiCloudPrime([key]).then(async () => {
+        if (dead) return;
+        const c = read(); if (c) { setA(c); setLoading(false); return; }
+        setLoading(true); setErr(false);
+        try { ref.current && ref.current.scrollIntoView({ behavior:'smooth', block:'start' }); } catch (e) {}
+        const { DATA } = ctx();
+        const clip = (t, n) => { t = String(t || ''); return t.length > n ? t.slice(0, n) + '…' : t; };
+        const history = prev.map((p, i) => { const pa = read(`ai_worry_v1_${w.id}_f${p.id}`); return `[이어 묻기 ${i+1}] ${p.question}\n→ ${clip(pa?.answer, 350)}`; }).join('\n\n');
+        const prompt = `당신은 정통 명리학자입니다. ${person.name}님이 앞서 받은 고민 풀이에 이어서 묻습니다. 같은 사주 데이터와 앞선 답을 바탕으로 새 질문에 답하세요.
+
+▌처음 고민 (분야: ${WORRY_CAT_LABEL[w.cat] || '기타'})
+"${w.question}"
+
+▌앞선 답 요약
+판정: ${ans?.verdict || ''} / ${ans?.headline || ''}
+${clip(ans?.answer, 700)}
+좋은 시기: ${(ans?.timing || []).map(t => t.when + '(' + clip(t.why, 60) + ')').join(', ')}${ans?.caution?.when ? ` / 조심: ${ans.caution.when}` : ''}
+${history ? '\n▌앞선 이어 묻기\n' + history + '\n' : ''}
+▌새 질문
+"${f.question}"
+
+${DATA}
+▌작성 원칙
+- 앞선 답과 모순되지 않게, 새 질문에만 집중해 구체적으로 답하세요. 앞선 내용을 길게 되풀이하지 마세요.
+- 시기를 말할 때는 위 월운 목록에 있는 달만 쓰고 근거(십성·합충·용신)를 밝히세요. 데이터에 없는 것을 지어내지 마세요.
+- 친근한 존댓말, 400~700자, 문단은 빈 줄로 나누기. 상대방 마음 단정, 질병·법률·투자 수익 확언은 하지 마세요.
+- 처음 고민과 전혀 다른 주제라면 짧게 답하고, 새 고민으로 물어보면 더 자세히 볼 수 있다고 안내하세요.
+
+▌출력 (JSON만)
+{"point":"핵심 한 문장","answer":"본문"}`;
+        try {
+          const data = await callAI({ t:'4', prompt, max_tokens: 3000 }, ctrl.signal);
+          const parsed = parseAIJson((data.content||[]).map(x=>x.text||'').join(''));
+          if (!parsed?.answer) throw new Error('empty');
+          localStorage.setItem(key, JSON.stringify(parsed)); aiCloudPut(key);
+          if (!dead) setA(parsed);
+        } catch (e) { console.error('[고민 이어 묻기] 실패:', e.message); if (e.name !== 'AbortError' && !dead) setErr(true); }
+        finally { if (!dead) setLoading(false); }
+      });
+      return () => { dead = true; ctrl.abort(); };
+    }, [key, retry]);
+    return _h('div', { ref, style:{marginBottom:'12px'} },
+      _h('div', { style:{display:'flex',justifyContent:'flex-end',marginBottom:'8px'} },
+        _h('p', { style:{maxWidth:'85%',margin:0,padding:'10px 14px',borderRadius:'16px 16px 4px 16px',background:HJ.ink,color:'#FBF6EC',fontSize:'14px',lineHeight:1.6,wordBreak:'keep-all'} }, f.question)),
+      loading && _h('div', { style:hjCard({textAlign:'center',color:HJ.sub,fontSize:'13px'}) }, _h('span', { className:'hj-breath' }, '사주 데이터로 이어서 답을 쓰고 있어요…')),
+      err && !loading && _h('div', { style:hjCard({textAlign:'center'}) },
+        _h('p', { style:{color:HJ.red,fontWeight:700,fontSize:'13px',margin:'0 0 8px'} }, '답을 쓰는 중 문제가 생겼어요 (별은 다시 차감되지 않아요)'),
+        _h('button', { onClick:()=>setRetry(n=>n+1), style:{padding:'9px 20px',borderRadius:'10px',border:'none',background:HJ.ink,color:'#FBF6EC',fontWeight:800,cursor:'pointer'} }, '다시 받기')),
+      a && _h('div', { className:'hj-rise', style:hjCard({borderRadius:'16px 16px 16px 4px'}) },
+        a.point && _h('p', { style:{fontFamily:SERIF,fontSize:'16px',fontWeight:800,lineHeight:1.5,margin:'0 0 10px',wordBreak:'keep-all'} }, a.point),
+        String(a.answer).split(/\n\s*\n/).map((t,i) => _h('p', { key:i, style:{fontSize:'14.5px',lineHeight:1.8,margin:'0 0 12px',color:HJ.ink,wordBreak:'keep-all',whiteSpace:'pre-line'} }, t.trim()))));
+  };
+
+  const WorryResultScreen = () => {
+    const w = savedWorry.find(x => String(x.id) === String(worryId));
+    const person = w && savedSaju.find(s => String(s.id) === String(w.personId));
+    if (!w || !person) return lightPage(_h(LightHeader, { label:'ONE QUESTION', title:'고민 하나 풀이', back:'worry' }),
+      _h('p', { style:{color:HJ.sub,textAlign:'center',padding:'40px 0'} }, w ? '이 질문에 연결된 사주를 찾을 수 없어요. 사주 목록을 확인해주세요.' : '질문 기록을 찾을 수 없어요.'));
+    return _h(S('WorryResultBody', WorryResultBody), { key: w.id, w, person });
+  };
+  const WorryResultBody = ({ w, person }) => {
+    const r = React.useMemo(() => person.result || analyzeSaju(+person.year, +person.month, +person.day, (person.hour===''||person.hour==null||person.hour==='unknown') ? null : +person.hour, person.minute ? +person.minute : null, (person.calendar==='음력'||person.isLunar===true), person.isLeapMonth||false), [person.id]);
+    const key = `ai_worry_v1_${w.id}`;
+    const read = () => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } };
+    const [ans, setAns] = React.useState(read);
+    const [loading, setLoading] = React.useState(!read());
+    const [err, setErr] = React.useState(false);
+    const [retry, setRetry] = React.useState(0);
+    const buildCtx = () => {
+      const now = new Date(), ny = now.getFullYear(), nm = now.getMonth() + 1;
+      const pillars = ['year','month','day','hour'].map(k => { const pl = r.pillars[k]; if (!pl) return `${PILLAR_LABEL[k]}: 미상`;
+        return `${PILLAR_LABEL[k]} ${pl.stem}${pl.branch}(${STEMS.korean[pl.si]}${BRANCHES.korean[pl.bi]})${k==='day' ? ' 일간' : ' 십성 '+getTenGod(r.dsi, pl.si)} / 12운성 ${getTwelve(STEMS.names[r.dsi], pl.bi)} / 신살 ${(r.pillarSinsal?.[k]||[]).join('·')||'없음'}`; }).join('\n');
+      const fe = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${v}%`).join(', ');
+      const relText = (l) => l && l.length ? l.map(x => x.text).join(', ') : '특별한 합충 없음';
+      let dwText = '';
+      try {
+        const d = calcDaewoon(+person.year, +person.month, +person.day, (person.hour===null||person.hour===''||person.hour==='unknown') ? 12 : +person.hour, person.minute ? +person.minute : 0,
+          person.gender, (person.calendar==='음력'||person.isLunar===true), person.isLeapMonth||false, r.pillars);
+        const age = ny - (+person.year);
+        dwText = d.daewoons.map((x,i) => { const nx = d.daewoons[i+1]; const cur = age >= x.age && (!nx || age < nx.age);
+          return `${cur ? '▶현재 ' : ''}${x.age}~${x.endAge}세 ${x.stem}${x.branch}(${x.stemKr}${x.branchKr}) 천간 ${x.tenGod}, 12운성 ${x.twelve}`; }).filter((_,i,a) => true).join('\n');
+      } catch (e) { dwText = '(대운 계산 불가)'; }
+      const seen = new Set(); const lines = []; const swLines = [];
+      [ny, FORTUNE_YEAR, FORTUNE_YEAR + 1].filter((y,i,a) => a.indexOf(y) === i).forEach(y => {
+        let b; try { b = buildYearlyBasis(r, y); } catch (e) { return; }
+        swLines.push(`${y}년 ${b.sewoon.ganji}(${b.sewoon.kr}): 천간 ${b.sewoon.stemGod}, 지지 ${b.sewoon.branchGod}, 12운성 ${b.sewoon.twelve} | ${relText(b.sewoon.rel)} | ${relText(b.sewoon.el)}`);
+        b.months.forEach(m => {
+          if (seen.has(m.key)) return;
+          if (m.calYear < ny || (m.calYear === ny && m.calMonth < nm)) return;
+          if (lines.length >= 20) return;
+          seen.add(m.key);
+          lines.push(`${m.calYear}년 ${m.calMonth}월 ${m.ganji}(${m.kr})월: 천간 ${m.stemGod}, 지지 ${m.branchGod} | ${relText(m.rel)} | ${relText(m.el)} | 흐름 점수 ${m.score > 0 ? '+' : ''}${m.score}`);
+        });
+      });
+      const DATA = `▌원국
+${pillars}
+일간 ${STEMS.korean[r.dsi]}(${STEMS.names[r.dsi]}) ${STEMS.elements[r.dsi]}행 / ${r.fe.strength || ''} / 오행 ${fe}
+용신 ${r.fe.yongshin} / 기신 ${r.fe.gishin}${r.fe.yongReason ? ` (${r.fe.yongReason})` : ''}
+기타 신살: ${(r.extraSinsal||[]).join(', ') || '없음'}${!r.pillars.hour ? '\n(태어난 시간 미상: 시주 없이 판단)' : ''}
+
+▌대운
+${dwText}
+
+▌세운
+${swLines.join('\n')}
+
+▌앞으로의 월운 (오늘은 ${ny}년 ${nm}월, 월은 절기 기준)
+${lines.join('\n')}
+`;
+      return { DATA, ny, nm };
+    };
+    const buildPrompt = () => { const { DATA, ny, nm } = buildCtx();
+      return `당신은 정통 명리학자입니다. 아래 계산된 만세력 데이터만 근거로 ${person.name}님(${person.gender})의 고민 하나에 답하세요.
+
+▌고민 (분야: ${WORRY_CAT_LABEL[w.cat] || '기타'})
+"${w.question}"
+
+${DATA}
+▌작성 원칙
+- 첫 판정을 분명히: verdict는 "가능성 높아요", "조건부로 가능해요", "흐름을 더 지켜보세요", "지금은 어려워요" 중 하나만 고르세요. 좋은 말만 고르지 말고 데이터가 말하는 대로 판단하세요.
+- 고민 분야에 맞는 십성을 중심으로 보세요 (예: 연애·결혼은 재성/관성과 일지, 일·이직은 관성/식상, 돈은 재성과 비겁, 시험은 인성/관성, 사업은 식상/재성).
+- 시기는 위 월운 목록에 있는 달만 쓰고, 왜 그 달인지 합충·십성·용신으로 설명하세요. 데이터에 없는 합충·신살을 지어내지 마세요.
+- 친근한 존댓말, ${person.name}님을 자연스럽게 호명. 본문(answer)은 900~1,300자, 문단은 빈 줄로 나누고 생활 장면이 떠오르게 구체적으로.
+- 상대방 마음을 단정하거나, 질병·법률·투자 수익을 확언하지 마세요. 건강·돈 문제는 생활 관리와 판단 기준 위주로 쓰고 전문가 상담을 권하세요.
+- 사주로 답할 수 없는 질문(로또 번호 등)이면 verdict를 "흐름을 더 지켜보세요"로 두고, 그 질문 뒤의 실제 고민에 답하세요.
+
+▌출력 (JSON만, 다른 글 없이)
+{"verdict":"…","headline":"판정을 한 문장으로","answer":"본문","timing":[{"when":"${ny}년 ${nm}월 같은 형식","why":"근거 한두 문장"}],"caution":{"when":"…","why":"…"},"do":["지금 할 일","…"],"dont":["피할 일","…"],"basis":["근거 키워드","…"]}
+timing은 2~3개, do·dont는 각각 2~3개, basis는 3~5개.`;
+    };
+    React.useEffect(() => {
+      let dead = false; const ctrl = new AbortController();
+      aiCloudPrime([key]).then(async () => {
+        if (dead) return;
+        const c = read(); if (c) { setAns(c); setLoading(false); return; }
+        setLoading(true); setErr(false);
+        try {
+          const data = await callAI({ t:'4', prompt: buildPrompt(), max_tokens: 6000 }, ctrl.signal);
+          const parsed = parseAIJson((data.content||[]).map(x=>x.text||'').join(''));
+          if (!parsed?.answer || !parsed?.verdict) throw new Error('empty');
+          localStorage.setItem(key, JSON.stringify(parsed)); aiCloudPut(key);
+          if (!dead) setAns(parsed);
+        } catch (e) { console.error('[고민 풀이] 실패:', e.message); if (e.name !== 'AbortError' && !dead) setErr(true); }
+        finally { if (!dead) setLoading(false); }
+      });
+      return () => { dead = true; ctrl.abort(); };
+    }, [key, retry]);
+    const follows = savedWorry.filter(x => String(x.parentId) === String(w.id)).sort((a,b) => (Number(a.id)||0) - (Number(b.id)||0));
+    const [fq, setFq] = React.useState('');
+    React.useEffect(() => { setFq(''); }, [follows.length]);   // 이어 묻기 결제 후 입력칸 비우기
+    const askMore = () => {
+      const t = fq.trim();
+      if (t.length < 5) { alert('이어서 물을 내용을 조금 더 적어주세요. (5자 이상)'); return; }
+      openPayment({ ...WORRY_MORE_PRODUCT, parentId: w.id, personId: w.personId, personName: person.name, cat: w.cat, question: t.slice(0, 150), worryId: Date.now() });
+    };
+    const v = ans && (WORRY_VERDICT[ans.verdict] || { c:HJ.sub, lv:3 });
+    const list = (title, items, tone) => items && items.length > 0 && _h('div', { style:{flex:1,minWidth:0} },
+      _h('p', { style:{fontSize:'12px',fontWeight:800,color:tone,margin:'0 0 6px'} }, title),
+      items.map((t,i) => _h('p', { key:i, style:{fontSize:'13px',lineHeight:1.6,margin:'0 0 6px',color:HJ.ink,wordBreak:'keep-all'} }, '· ' + t)));
+    return _h('div', { style:{minHeight:'100vh',background:HJ.bg,color:HJ.ink,paddingBottom:'110px'} },
+      _h(S('DisclaimerBar', DisclaimerBar), { ai:true }),
+      _h('div', { style:{padding:'0 16px'} },
+        _h(LightHeader, { label:'ONE QUESTION', title:`${person.name}님의 고민`, back:'worry' }),
+        _h('div', { style:hjCard({background:'rgba(156,118,49,0.07)'}) },
+          _h('p', { style:{fontSize:'11px',color:HJ.gold,fontWeight:700,margin:'0 0 6px',letterSpacing:'1px'} }, WORRY_CAT_LABEL[w.cat] || '기타'),
+          _h('p', { style:{fontFamily:SERIF,fontSize:'17px',fontWeight:800,lineHeight:1.5,margin:0,wordBreak:'keep-all'} }, `“${w.question}”`)),
+        loading && _h(S('AiLoadingCard', AiLoadingCard), { message:'사주 데이터로 답을 쓰고 있어요' }),
+        err && !loading && _h('div', { style:hjCard({textAlign:'center'}) },
+          _h('p', { style:{color:HJ.red,fontWeight:700,margin:'0 0 6px'} }, '답을 쓰는 중 문제가 생겼어요'),
+          _h('p', { style:{color:HJ.sub,fontSize:'12px',margin:'0 0 12px'} }, '별은 다시 차감되지 않아요. 다시 시도해 주세요.'),
+          _h('button', { onClick:()=>setRetry(n=>n+1), style:{padding:'11px 24px',borderRadius:'12px',border:'none',background:HJ.ink,color:'#FBF6EC',fontWeight:800,cursor:'pointer'} }, '다시 받기')),
+        ans && _h(React.Fragment, null,
+          _h('div', { className:'hj-rise', style:hjCard({}) },
+            _h('div', { style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'} },
+              _h('span', { className:'hj-stamp', style:{fontFamily:SERIF,fontWeight:900,fontSize:'15px',color:'#FFF6EE',background:v.c,padding:'6px 12px',borderRadius:'10px'} }, ans.verdict),
+              _h('div', { style:{display:'flex',gap:'3px'} }, [1,2,3,4,5].map(i => _h('span', { key:i, style:{width:'14px',height:'6px',borderRadius:'3px',background: i <= v.lv ? v.c : 'rgba(35,31,28,0.1)'} })))),
+            _h('p', { style:{fontFamily:SERIF,fontSize:'18px',fontWeight:800,lineHeight:1.5,margin:0,wordBreak:'keep-all'} }, ans.headline)),
+          _h('div', { className:'hj-rise', style:hjCard({animationDelay:'.1s'}) },
+            String(ans.answer).split(/\n\s*\n/).map((t,i) => _h('p', { key:i, style:{fontSize:'15px',lineHeight:1.85,margin:'0 0 14px',color:HJ.ink,wordBreak:'keep-all',whiteSpace:'pre-line'} }, t.trim()))),
+          (ans.timing?.length > 0 || ans.caution) && _h('div', { className:'hj-rise', style:hjCard({animationDelay:'.2s'}) },
+            hjLabel('언제가 좋을까'),
+            (ans.timing || []).map((t,i) => _h('div', { key:i, style:{display:'flex',gap:'12px',padding:'8px 0',borderTop: i ? `1px dashed ${HJ.line}` : 'none'} },
+              _h('span', { style:{fontFamily:SERIF,fontWeight:900,color:HJ.teal,minWidth:'86px',fontSize:'14px'} }, t.when),
+              _h('span', { style:{fontSize:'13px',lineHeight:1.6,color:HJ.sub,wordBreak:'keep-all'} }, t.why))),
+            ans.caution && ans.caution.when && _h('div', { style:{display:'flex',gap:'12px',padding:'10px 12px',marginTop:'8px',borderRadius:'10px',background:'rgba(181,56,42,0.06)'} },
+              _h('span', { style:{fontFamily:SERIF,fontWeight:900,color:HJ.red,minWidth:'74px',fontSize:'14px'} }, '조심 ' + ans.caution.when),
+              _h('span', { style:{fontSize:'13px',lineHeight:1.6,color:HJ.sub,wordBreak:'keep-all'} }, ans.caution.why))),
+          (ans.do?.length || ans.dont?.length) && _h('div', { className:'hj-rise', style:hjCard({animationDelay:'.3s',display:'flex',gap:'14px'}) },
+            list('이렇게 해보세요', ans.do, HJ.teal), list('이건 피하세요', ans.dont, HJ.red)),
+          ans.basis?.length > 0 && _h('div', { style:hjCard({}) }, hjLabel('이렇게 본 근거', HJ.faint), _h('div', null, ans.basis.map((b,i) => hjChip(b, '', i)))),
+          follows.map((f, i) => _h(S('WorryFollowItem', WorryFollowItem), { key: f.id, f, w, person, ans, prev: follows.slice(0, i), ctx: buildCtx })),
+          _h('div', { style:hjCard({border:`1px solid ${HJ.ink}`}) },
+            hjLabel('이어서 묻기', HJ.ink),
+            _h('p', { style:{color:HJ.sub,fontSize:'12px',lineHeight:1.6,margin:'0 0 10px',wordBreak:'keep-all'} }, '이 답을 바탕으로 더 궁금한 점을 물어보세요. 예) 그럼 3월 전에는 뭘 준비하면 좋을까요?'),
+            _h('textarea', { value:fq, onChange:e=>setFq(e.target.value.slice(0,150)), rows:2, placeholder:'궁금한 점을 적어주세요 (150자까지)',
+              style:{width:'100%',boxSizing:'border-box',padding:'12px 13px',borderRadius:'12px',border:`1px solid ${HJ.line}`,background:'#FFFFFF',color:HJ.ink,fontSize:'15px',lineHeight:1.6,outline:'none',resize:'vertical',fontFamily:'inherit',marginBottom:'8px'} }),
+            _h('button', { onClick:askMore, style:{width:'100%',padding:'13px',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:800,fontSize:'15px',background: fq.trim().length >= 5 ? HJ.ink : 'rgba(35,31,28,0.25)',color:'#FBF6EC'} }, '⭐1로 이어서 묻기')),
+          _h('div', { style:{display:'flex',gap:'8px',marginBottom:'12px'} },
+            _h('button', { onClick:()=>{ setScreen('worry'); window.scrollTo(0,0); }, style:{flex:1,padding:'14px',borderRadius:'12px',border:`1px solid ${HJ.line}`,background:HJ.card,color:HJ.ink,fontWeight:800,cursor:'pointer'} }, '새 고민 물어보기'),
+            _h('button', { onClick:()=>{ setYearlyPerson(person.id); setScreen('yearly'); window.scrollTo(0,0); }, style:{flex:1,padding:'14px',borderRadius:'12px',border:`1px solid ${HJ.line}`,background:HJ.card,color:HJ.ink,fontWeight:800,cursor:'pointer'} }, `${FORTUNE_YEAR} 신년운세 ⭐${yearlyPrice().stars}`)))));
   };
 
   // 상품 진열 (현재 선택 사람 기준 구매 여부 표시는 생략, 단순 목록)
@@ -5307,7 +5807,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     _h('div', { style:{display:'flex',justifyContent:'center',gap:'14px',marginBottom:'14px'} },
       [['회사소개','about'],['이용약관','terms'],['개인정보처리방침','privacy']].map(([t,sc]) => _h('span', { key:sc, onClick:()=>setScreen(sc), style:{color:HJ.sub,fontSize:'11px',cursor:'pointer'} }, t))),
     _h('div', { style:{display:'flex',justifyContent:'center',gap:'14px',marginBottom:'14px',flexWrap:'wrap'} },
-      [['2027 띠별 운세','/2027-ddi/'],['60일주 성격','/ilju/'],['띠 궁합','/gunghap/']].map(([t,href]) => _h('a', { key:href, href, style:{color:HJ.ink,fontSize:'12px',fontWeight:700,textDecoration:'none'} }, t))),
+      [['2027 띠별 운세','/2027-ddi/'],['60일주 성격','/ilju/'],['띠 궁합','/gunghap/'],['신살 풀이','/sinsal/']].map(([t,href]) => _h('a', { key:href, href, style:{color:HJ.ink,fontSize:'12px',fontWeight:700,textDecoration:'none'} }, t))),
     _h('div', { style:{color:HJ.faint,fontSize:'11px',lineHeight:1.8,textAlign:'center'} },
       '상호 사주ON · 대표 고승우 · 사업자등록번호 294-18-02476', _h('br'),
       '통신판매업신고 2026-경남진주-0110 · 경상남도 진주시 도동천로 48, 104-1504', _h('br'),
@@ -10778,7 +11278,7 @@ ${dwBlocks}
         // 안내문구
         _h('div', { style:{background:'rgba(255,255,255,0.02)',borderRadius:'14px',padding:'14px 16px',border:'1px solid rgba(255,255,255,0.05)'} },
           _h('p', { style:{color:'rgba(255,255,255,0.2)',fontSize:'11px',lineHeight:'1.8'} },
-            '충전한 별은 사주 심층(⭐3), 신년운세(⭐3), 궁합(⭐2), 대운(⭐3)에 사용됩니다. 결과 화면을 한 번이라도 확인한 경우 콘텐츠를 열람한 것으로 간주하며, 전자상거래법 제17조에 따라 청약철회(환불)가 불가합니다.'
+            '충전한 별은 사주 심층(⭐3), 신년운세(⭐3), 궁합(⭐2), 대운(⭐3), 고민 하나 풀이(⭐2, 이어서 묻기 ⭐1), 키워드 카드(⭐1)에 사용됩니다. 결과 화면을 한 번이라도 확인한 경우 콘텐츠를 열람한 것으로 간주하며, 전자상거래법 제17조에 따라 청약철회(환불)가 불가합니다.'
           )
         )
       )
@@ -11246,6 +11746,7 @@ ${dwBlocks}
           { icon: '📜', label: '사주 분석', screen: 'input', color: '#c4b5fd' },
           { icon: '🗺️', label: '대운 인생 지도', screen: 'roadmap', color: '#c4b5fd' },
           { icon: '💞', label: '궁합 분석', screen: 'compatibility', color: '#f9a8d4' },
+          { icon: '❓', label: '고민 하나 풀이', screen: 'worry', color: '#fcd34d' },
           { icon: _h(YearIcon, { size:20 }), label: `${FORTUNE_YEAR} 운세`, screen: 'yearly', color: '#fcd34d' },
         ].map((item, i) =>
           _h('button', {
@@ -11264,6 +11765,9 @@ ${dwBlocks}
           { icon: _h(YearIcon, { size:20 }), label: `${FORTUNE_YEAR} 띠별 운세`, href: '/2027-ddi/' },
           { icon: '🌗', label: '60일주 성격', href: '/ilju/' },
           { icon: '💕', label: '띠 궁합', href: '/gunghap/' },
+          { icon: '🔍', label: '내 신살 조회', href: '#sinsal' },
+          { icon: '🏆', label: `${FORTUNE_YEAR} 운 랭킹`, href: '#rank' },
+          { icon: '📖', label: '신살 풀이', href: '/sinsal/' },
         ].map((item, i) =>
           _h('a', { key: 'r'+i, href: item.href, onClick: e => e.stopPropagation(),
             style:{width:'100%',display:'flex',alignItems:'center',gap:'14px',padding:'11px 20px',textDecoration:'none',boxSizing:'border-box'} },
@@ -11764,7 +12268,7 @@ ${dwBlocks}
       { title: '제3조 회사 정보 고지', content: '회사는 전자상거래 등에서의 소비자보호에 관한 법률 제13조에 따라 다음 사항을 서비스 내에 공개합니다.\n\n· 상호 및 대표자 성명\n· 사업장 소재지 주소\n· 전화번호 및 전자우편주소\n· 사업자 등록번호\n· 통신판매업 신고번호\n· 개인정보 처리방침 및 이용약관 (서비스 내 상시 열람 가능)' },
       { title: '제4조 약관의 효력 및 개정', content: '① 본 약관은 서비스 화면에 공지함으로써 효력이 발생합니다.\n② 약관 개정 시 적용 일자와 변경 사유를 명시하여 시행일 7일 이전부터 공지합니다.\n단, 이용자에게 불리한 내용을 변경할 경우에는 30일 이전에 공지하며, 이메일 등으로 개별 고지합니다.\n③ 공지 후 이용자가 이의를 제기하지 않으면 개정 약관에 동의한 것으로 봅니다.\n④ 이용자는 개정 약관에 동의하지 않을 경우 회원 탈퇴를 요청할 수 있습니다.' },
       { title: '제5조 이용계약 체결 및 제한', content: '① 이용계약은 이용자가 약관에 동의하고 소셜 로그인(카카오/네이버/구글)으로 회원가입을 완료한 시점에 성립합니다.\n② 다음에 해당하는 경우 가입 신청을 거부하거나 사후 이용계약을 해지할 수 있습니다.\n· 타인의 명의 또는 정보를 도용한 경우\n· 허위 정보를 기재하거나 부정한 방법으로 가입한 경우\n· 서비스 운영을 방해하는 행위를 한 경우\n③ 만 14세 미만의 이용자는 서비스 가입 및 유료 결제가 제한됩니다. 만 14세 이상 만 19세 미만의 미성년자가 유료 서비스를 이용할 경우 법정대리인의 동의가 필요합니다.' },
-      { title: '제6조 서비스의 내용 및 변경', content: '① 회사는 다음 서비스를 제공합니다.\n· 기본 만세력 분석 (무료)\n· AI 기반 상세 사주 분석 (유료)\n· AI 기반 궁합 분석 (유료)\n· AI 기반 신년운세 분석 (유료)\n② 서비스 내용은 AI 모델 업데이트, 기술 변경, 운영 정책 등의 이유로 변경될 수 있으며, 중요 변경 시 사전에 공지합니다.\n③ 회사는 서비스 품질 향상을 위해 기능을 추가하거나 일부를 수정할 수 있습니다.' },
+      { title: '제6조 서비스의 내용 및 변경', content: '① 회사는 다음 서비스를 제공합니다.\n· 기본 만세력 분석, 신살 조회, 운 랭킹 (무료)\n· AI 기반 상세 사주 분석 (유료)\n· AI 기반 궁합 분석 (유료)\n· AI 기반 신년운세 분석 (유료)\n· AI 기반 대운 인생 지도, 키워드 카드, 고민 하나 풀이 (유료)\n② 서비스 내용은 AI 모델 업데이트, 기술 변경, 운영 정책 등의 이유로 변경될 수 있으며, 중요 변경 시 사전에 공지합니다.\n③ 회사는 서비스 품질 향상을 위해 기능을 추가하거나 일부를 수정할 수 있습니다.' },
       { title: '제7조 서비스의 중단 및 종료', content: '① 다음의 경우 서비스를 일시 중단할 수 있습니다.\n· 서버 점검, 설비 보수, AI 모델 교체 등 기술적 사유\n· 사이버 공격, 해킹, 천재지변 등 불가항력적 사유\n② 정기 점검은 사전에, 긴급 점검은 사후에 공지합니다.\n③ 경영상 이유로 서비스를 종료할 경우 서비스 내에 30일 이전 공지하며, 미사용 결제 금액은 관련 법령에 따라 환급합니다.\n④ 불가항력적 사유로 인한 서비스 중단에 대해 회사는 고의 또는 중대한 과실이 없는 한 책임지지 않습니다.' },
       { title: '제8조 이용자의 의무', content: '이용자는 다음 행위를 하여서는 안 됩니다.\n\n① 타인의 정보를 도용하거나 허위 정보를 제공하는 행위\n② 서비스 내 콘텐츠를 무단 복제·배포·판매·재가공하는 행위\n③ 회사 또는 제3자의 지식재산권을 침해하는 행위\n④ 서버에 과부하를 주거나 크롤링·자동화 도구로 콘텐츠를 수집하는 행위\n⑤ 음란·불법·혐오 정보를 게시하거나 전파하는 행위\n⑥ 기타 관련 법령에 위반되거나 공서양속에 반하는 행위\n⑦ 위반 시 서비스 이용이 제한되거나 법적 조치를 받을 수 있습니다.' },
       { title: '제9조 유료 콘텐츠 구매', content: '① 이용자는 서비스 내 유료 콘텐츠를 선택하고 결제할 수 있습니다.\n② 결제 가능 수단: 카카오페이, 토스페이 (별/달 충전 전용 간편결제)\n③ AI 콘텐츠(사주·궁합·운세 분석)는 결제 즉시 생성·제공됩니다. 이용자는 결제 전 이 사실에 동의합니다.\n④ 미성년자가 법정대리인의 동의 없이 결제한 경우, 법정대리인은 청약철회를 요청할 수 있습니다.\n⑤ 콘텐츠는 재미·참고 목적이며, 실제 미래를 예측하거나 보장하지 않습니다.\n⑥ 본 서비스는 전통 명리학을 기반으로 한 참고용 콘텐츠이며, 중요한 인생 결정(취업, 결혼, 투자, 의료 등)은 반드시 해당 분야 전문가(상담사, 의사, 법률가 등)와 직접 상담하시기 바랍니다.' },
@@ -11825,7 +12329,7 @@ ${dwBlocks}
       { title: '제2조 수집하는 개인정보 항목 및 수집 방법', content: '[필수 수집 항목]\n· 소셜 로그인 정보\n  - 카카오: 닉네임, 이메일, 프로필 사진\n  - 네이버: 이메일\n  - 구글: 이메일, 이름\n· 서비스 이용 기록, 접속 로그, 접속 IP, 쿠키\n\n[선택 수집 항목]\n· 이름(또는 별칭), 생년월일시 (사주 분석 이용 시 이용자가 직접 입력)\n· 문의·환불 요청 시: 답변 받을 이메일, 문의 내용, 최근 구매 내역\n· 성별\n· 마케팅 수신 동의 여부\n\n[결제 관련]\n· 결제 수단 정보는 PG사(카카오페이·토스페이먼츠)가 직접 처리하며, 회사는 카드번호 등 민감한 결제 정보를 저장하지 않습니다.\n\n[수집 방법]\n· 이용자가 서비스 가입·이용 시 직접 입력\n· 서비스 이용 과정에서 자동 생성·수집 (쿠키, 로그 등)' },
       { title: '제3조 개인정보 보유 및 이용 기간', content: '회사는 개인정보 수집·이용 목적이 달성된 후 지체 없이 파기합니다.\n단, 관련 법령에 따라 아래 기간 동안 보존합니다.\n\n[회사 내부 방침]\n· 회원 정보: 회원 탈퇴 시까지\n· 부정이용 방지 기록: 탈퇴 후 1년\n\n[법령에 의한 의무 보존]\n· 계약 또는 청약철회에 관한 기록: 5년\n  (전자상거래 등에서의 소비자보호에 관한 법률)\n· 대금결제 및 재화 공급에 관한 기록: 5년\n  (전자상거래 등에서의 소비자보호에 관한 법률)\n· 소비자 불만 또는 분쟁 처리에 관한 기록: 3년\n  (전자상거래 등에서의 소비자보호에 관한 법률)\n· 전기통신 사실 확인자료 (로그): 3개월\n  (통신비밀보호법)\n· 세법이 규정하는 모든 거래에 관한 장부 및 증빙서류: 5년\n  (국세기본법)' },
       { title: '제4조 개인정보의 제3자 제공', content: '회사는 이용자의 개인정보를 원칙적으로 제3자에게 제공하지 않습니다.\n\n단, 다음의 경우에는 예외적으로 제공될 수 있습니다.\n\n① 이용자가 사전에 동의한 경우\n② 법령의 규정에 의거하거나, 적법한 절차에 따른 수사기관의 요청이 있는 경우\n③ 결제 처리를 위해 PG사에 최소한의 정보를 전달하는 경우\n\n제3자 제공 시에는 제공 목적·항목·보유기간·제공 받는 자를 이용자에게 고지하고 동의를 받습니다.' },
-      { title: '제5조 개인정보 처리 위탁 및 국외 이전', content: '회사는 원활한 서비스 제공을 위해 아래와 같이 개인정보 처리 업무를 위탁하며, 일부는 국외로 이전됩니다. 이전은 서비스 이용 시 암호화된 네트워크(HTTPS)로 그때그때 전송되는 방식입니다.\n\n[국외 이전]\n① Google LLC (Firebase / Google Cloud)\n· 이전 국가: 미국 등 / 연락처: https://policies.google.com/privacy\n· 이전 항목: 로그인 이메일·닉네임, 저장한 사주 정보(이름·성별·생년월일시), 구매·이용 기록, 문의 내용\n· 목적: 회원 인증, 데이터 저장, 기기 간 동기화\n· 보유 기간: 회원 탈퇴 또는 위탁 계약 종료 시까지\n\n② Anthropic, PBC (AI 풀이 생성)\n· 이전 국가: 미국 / 연락처: privacy@anthropic.com\n· 이전 항목: 풀이 대상의 이름·성별·생년월일시와 이를 바탕으로 계산한 사주 데이터\n· 목적: 사주·궁합·운세 AI 풀이 문장 생성\n· 보유 기간: Anthropic의 API 데이터 처리 정책에 따라 처리 후 삭제 (회사는 생성된 풀이만 보관)\n\n③ Cloudflare, Inc.\n· 이전 국가: 미국 등 (전 세계 서버) / 연락처: https://www.cloudflare.com/privacypolicy/\n· 이전 항목: 접속 IP, AI 풀이 요청 내용, 결제 확인 정보(주문번호·금액)\n· 목적: AI 요청 중계, 결제 검증 서버 운영\n· 보유 기간: 요청 처리 즉시 (결제 처리 기록은 중복 결제 방지를 위해 보관)\n\n④ Microsoft Corporation (Microsoft Clarity, 이용 행태 분석)\n· 이전 국가: 미국 / 연락처: https://privacy.microsoft.com/\n· 이전 항목: 접속 기기·브라우저 정보, 화면 이용 기록(클릭·스크롤), 쿠키\n· 목적: 서비스 이용 통계 및 화면 개선\n· 보유 기간: 수집일로부터 최대 13개월\n\n[국내 위탁]\n· (주)코리아포트원: 결제 대행 및 결제 정보 중계\n· (주)카카오페이 / 비바리퍼블리카(토스): 결제 처리\n· (주)카카오 / 네이버(주) / Google: 소셜 로그인 인증\n\n[국외 이전을 원하지 않는 경우]\n이용자는 국외 이전을 거부할 수 있으며, 이 경우 회원 가입 및 AI 풀이 등 서비스 이용이 제한될 수 있습니다. 거부 및 문의는 제10조의 개인정보 보호책임자에게 요청해 주세요.\n\n위탁 업체는 위탁받은 업무 목적 외로 개인정보를 이용하지 않으며, 회사는 관련 법령에 따라 위탁 업체를 관리·감독합니다.' },
+      { title: '제5조 개인정보 처리 위탁 및 국외 이전', content: '회사는 원활한 서비스 제공을 위해 아래와 같이 개인정보 처리 업무를 위탁하며, 일부는 국외로 이전됩니다. 이전은 서비스 이용 시 암호화된 네트워크(HTTPS)로 그때그때 전송되는 방식입니다.\n\n[국외 이전]\n① Google LLC (Firebase / Google Cloud)\n· 이전 국가: 미국 등 / 연락처: https://policies.google.com/privacy\n· 이전 항목: 로그인 이메일·닉네임, 저장한 사주 정보(이름·성별·생년월일시), 구매·이용 기록, 문의 내용\n· 목적: 회원 인증, 데이터 저장, 기기 간 동기화\n· 보유 기간: 회원 탈퇴 또는 위탁 계약 종료 시까지\n\n② Anthropic, PBC (AI 풀이 생성)\n· 이전 국가: 미국 / 연락처: privacy@anthropic.com\n· 이전 항목: 풀이 대상의 이름·성별·생년월일시와 이를 바탕으로 계산한 사주 데이터, 고민 하나 풀이에서 이용자가 직접 입력한 질문 내용\n· 목적: 사주·궁합·운세·고민 AI 풀이 문장 생성\n· 보유 기간: Anthropic의 API 데이터 처리 정책에 따라 처리 후 삭제 (회사는 생성된 풀이만 보관)\n\n③ Cloudflare, Inc.\n· 이전 국가: 미국 등 (전 세계 서버) / 연락처: https://www.cloudflare.com/privacypolicy/\n· 이전 항목: 접속 IP, AI 풀이 요청 내용, 결제 확인 정보(주문번호·금액)\n· 목적: AI 요청 중계, 결제 검증 서버 운영\n· 보유 기간: 요청 처리 즉시 (결제 처리 기록은 중복 결제 방지를 위해 보관)\n\n④ Microsoft Corporation (Microsoft Clarity, 이용 행태 분석)\n· 이전 국가: 미국 / 연락처: https://privacy.microsoft.com/\n· 이전 항목: 접속 기기·브라우저 정보, 화면 이용 기록(클릭·스크롤), 쿠키\n· 목적: 서비스 이용 통계 및 화면 개선\n· 보유 기간: 수집일로부터 최대 13개월\n\n[국내 위탁]\n· (주)코리아포트원: 결제 대행 및 결제 정보 중계\n· (주)카카오페이 / 비바리퍼블리카(토스): 결제 처리\n· (주)카카오 / 네이버(주) / Google: 소셜 로그인 인증\n\n[국외 이전을 원하지 않는 경우]\n이용자는 국외 이전을 거부할 수 있으며, 이 경우 회원 가입 및 AI 풀이 등 서비스 이용이 제한될 수 있습니다. 거부 및 문의는 제10조의 개인정보 보호책임자에게 요청해 주세요.\n\n위탁 업체는 위탁받은 업무 목적 외로 개인정보를 이용하지 않으며, 회사는 관련 법령에 따라 위탁 업체를 관리·감독합니다.' },
       { title: '제6조 개인정보의 파기', content: '개인정보 보유 기간이 경과하거나 처리 목적이 달성된 경우 지체 없이 파기합니다.\n\n[파기 절차]\n파기 대상 개인정보를 선정하고, 개인정보 보호책임자의 승인을 받아 파기합니다.\n\n[파기 방법]\n· 전자적 파일: 복구 불가능한 기술적 방법으로 영구 삭제\n  (예: 덮어쓰기, 데이터 와이핑 등)\n· 종이 문서: 분쇄기로 분쇄하거나 소각 처리' },
       { title: '제7조 이용자의 권리 및 행사 방법', content: '이용자(정보주체)는 언제든지 다음 권리를 행사할 수 있습니다.\n\n· 개인정보 열람 요청 (개인정보보호법 제35조)\n· 오류 정정 요청 (제36조)\n· 처리 정지 요청 (제37조)\n· 삭제 요청·동의 철회 (회원 탈퇴)\n\n[행사 방법]\n· 앱 내 [설정 → 계정 관리] 메뉴에서 직접 처리\n· 아래 개인정보 보호책임자에게 이메일로 요청\n\n회사는 요청 접수 후 10일 이내 처리하며, 거부 사유가 있을 경우 사유를 알려드립니다.\n\n만 14세 미만 아동의 법정대리인은 아동의 개인정보에 대해 위 권리를 대신 행사할 수 있습니다.' },
       { title: '제8조 쿠키(Cookie) 운영', content: '회사는 맞춤형 서비스 제공 및 이용 통계 분석을 위해 쿠키를 사용합니다.\n\n[쿠키 사용 목적]\n· 로그인 상태 유지\n· 서비스 이용 패턴 분석 및 통계 (Microsoft Clarity 이용, 제5조 참고)\n· 이용자 맞춤형 서비스 제공\n\n[쿠키 거부 방법]\n이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있습니다.\n예) Chrome: 설정 → 개인정보 및 보안 → 쿠키 및 사이트 데이터\n\n※ 쿠키 거부 시 로그인 유지 등 일부 서비스 기능이 제한될 수 있습니다.' },
@@ -11875,7 +12379,7 @@ ${dwBlocks}
           )
         ),
         _h('div', { style:{background:'rgba(255,255,255,0.04)',borderRadius:'16px',border:'1px solid rgba(255,255,255,0.07)',padding:'16px',marginTop:'16px',display:'flex',flexDirection:'column',gap:'6px'} },
-          _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '📅 시행일: 2026년 11월 3일 (위탁·국외 이전 항목 보완)'),
+          _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '📅 시행일: 2026년 11월 5일 (고민 하나 풀이 질문 내용 국외 이전 항목 추가)'),
           _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '📧 개인정보 문의: godwk15@naver.com'),
           _h('p', { style:{color:'rgba(255,255,255,0.3)',fontSize:'11px'} }, '🏛 침해 신고: 개인정보보호위원회 ☎ 182 / 개인정보침해신고센터 ☎ 118')
         )
@@ -11888,6 +12392,10 @@ ${dwBlocks}
     const renderScreen = () => {
     switch(currentScreen) {
       case 'daily-fortune': return _h(S('DailyFortuneScreen', DailyFortuneScreen));
+      case 'sinsal': return _h(S('SinsalCheckScreen', SinsalCheckScreen));
+      case 'rank': return _h(S('RankScreen', RankScreen));
+      case 'worry': return _h(S('WorryScreen', WorryScreen));
+      case 'worry-result': return _h(S('WorryResultScreen', WorryResultScreen));
       case 'home': return _h(S('HomeScreen', HomeScreen));
       case 'saju-list': return _h(S('SajuListScreen', SajuListScreen));
       case 'input': return _h(S('InputScreen', InputScreen));
