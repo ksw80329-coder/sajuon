@@ -275,19 +275,10 @@
   .ink-mist { animation:inkMist 22s ease-in-out infinite; will-change:transform; }
   .ink-mist2 { animation-duration:30s; animation-direction:reverse; }
   .ink-home div[style*="background: rgb(255, 252, 246)"] { background-color:rgba(255,252,246,0.92) !important; }
-  /* 윈도우 '애니메이션 효과 끄기'·폰 '동작 줄이기' 환경: 등장·스크롤 효과는 끄고, 배경은 아주 느리고 잔잔한 움직임만 유지 */
-  @media (prefers-reduced-motion: reduce) {
-    .ink-l-sun { animation:sunBreath 9s ease-in-out infinite !important; }
-    .ink-l-pine { animation:pineSway 9s ease-in-out infinite !important; }
-    .ink-birds { animation:birdsFly 28s ease-in-out infinite alternate !important; }
-    .ink-flap-a { animation:flapA 1.4s infinite !important; }
-    .ink-flap-b { animation:flapB 1.4s infinite !important; }
-    .ink-mist { animation:inkMist 40s ease-in-out infinite !important; }
-    .ink-cloud1 { animation:inkCloud 60s linear infinite !important; }
-    .ink-cloud2 { animation:inkCloud 80s linear -30s infinite !important; }
-    .ink-l-far, .ink-l-mid, .ink-l-near { animation:none !important; opacity:1 !important; transform:none !important; }
-  }
-  @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+  /* 결제 후 결과 화면(글 읽는 화면)만 등장 애니메이션 없이 차분하게 — 로딩 표시는 그대로 */
+  html[data-calm] .hj-fade, html[data-calm] .hj-rise, html[data-calm] .hj-open, html[data-calm] .hj-pop-c, html[data-calm] .hj-stamp,
+  html[data-calm] .hj-grow, html[data-calm] .hj-ink, html[data-calm] .hj-slide-r, html[data-calm] .hj-screen, html[data-calm] .hj-cta { animation:none !important; }
+  html[data-calm] .hj-cta::after, html[data-calm] .hj-cta::before { animation:none !important; }
 </style>
   <!-- 검색엔진 구조화 데이터 -->
   <meta name="naver-site-verification" content="dcc2fb9ff19f0a1aec486ff5f7b317a562c1cd4c">
@@ -1585,6 +1576,12 @@ function App() {
   // ===== Deno 서버 워밍업 핑 (콜드스타트 방지) =====
   // (Cloudflare Worker는 콜드스타트가 없어 워밍업 요청 불필요)
 
+  // 결제 후 결과 화면은 등장 애니메이션 없이 차분하게 (CSS html[data-calm])
+  React.useEffect(() => {
+    const CALM = ['paid-result','compatibility-result','yearly-result','roadmap-result','keycard-result','worry-result'];
+    if (CALM.includes(currentScreen)) document.documentElement.setAttribute('data-calm', '1');
+    else document.documentElement.removeAttribute('data-calm');
+  }, [currentScreen]);
   React.useEffect(() => {
     const handlePopState = (e) => {
       const screen = e.state?.screen || 'home';
@@ -5114,7 +5111,6 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     const ref = React.useRef(null);
     const [intro] = React.useState(() => { if (window.__inkIntroDone) return false; window.__inkIntroDone = true; return true; });   // 페이지를 열 때(새로고침 포함)마다 한 번
     React.useEffect(() => {
-      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       let raf = 0;
       const els = ref.current ? [...ref.current.querySelectorAll('[data-depth]')] : [];
       const apply = () => { raf = 0; const y = Math.min(window.scrollY || 0, 1200); els.forEach(el => { el.style.transform = `translate3d(0,${(-y * +el.dataset.depth).toFixed(1)}px,0)`; }); };
