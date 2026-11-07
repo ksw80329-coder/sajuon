@@ -238,7 +238,12 @@
   @media (hover:hover) { button:hover:not(:disabled) { filter: brightness(1.04); } }
   ::selection { background: rgba(181,56,42,.18); }
   /* 홈 수묵 배경: 안개가 천천히 흐르고, 카드는 살짝 비쳐 그림이 은은히 보이게 */
-  @keyframes inkMist { 0% { transform:translateX(-6%); } 50% { transform:translateX(6%); } 100% { transform:translateX(-6%); } }
+  @keyframes inkMist { 0% { transform:translateX(-14%); } 50% { transform:translateX(14%); } 100% { transform:translateX(-14%); } }
+  /* 해 앞을 천천히 지나가는 구름 띠 */
+  .ink-cloud { position:absolute; height:34px; border-radius:50%; background:radial-gradient(ellipse at center, rgba(243,236,223,0.95) 0%, rgba(243,236,223,0.6) 45%, rgba(243,236,223,0) 72%); will-change:transform; }
+  .ink-cloud1 { top:19%; width:260px; left:0; animation:inkCloud 34s linear infinite; }
+  .ink-cloud2 { top:25%; width:200px; height:26px; left:0; animation:inkCloud 46s linear -20s infinite; opacity:.8; }
+  @keyframes inkCloud { from { transform:translateX(-300px); } to { transform:translateX(calc(100vw + 40px)); } }
   .ink-set { position:absolute; left:0; right:0; top:0; bottom:64px; opacity:.9; }
   .ink-set-d { display:none; }
   @media (min-width: 700px) { .ink-set-m { display:none; } .ink-set-d { display:block; } }
@@ -254,21 +259,21 @@
   .ink-intro .ink-l-near { animation:inkRise 2s .75s cubic-bezier(.2,.7,.2,1) both; }
   .ink-intro .ink-birds  { animation:inkFade 1.6s 1.6s both; }
   /* 상시 움직임: 해가 숨 쉬듯, 소나무가 바람에, 새가 날갯짓하며 */
-  @keyframes sunBreath { 0%,100% { transform:scale(1); opacity:.92; } 50% { transform:scale(1.06); opacity:1; } }
-  .ink-l-sun { transform-origin:77% 21%; animation:sunBreath 7s ease-in-out infinite; }
-  .ink-intro .ink-l-sun { animation:sunBloom 1.6s .3s cubic-bezier(.2,.7,.2,1) both, sunBreath 7s 1.9s ease-in-out infinite; }
-  @keyframes pineSway { 0%,100% { transform:skewX(0deg); } 50% { transform:skewX(-1.4deg); } }
-  .ink-l-pine { transform-origin:50% 100%; animation:pineSway 7s ease-in-out infinite; }
-  .ink-intro .ink-l-pine { animation:inkRise 1.6s 1.05s cubic-bezier(.2,.7,.2,1) both, pineSway 7s 2.65s ease-in-out infinite; }
-  @keyframes birdsFly { 0%,100% { transform:translate(-16px,6px); } 50% { transform:translate(14px,-8px); } }
-  .ink-birds { animation:birdsFly 22s ease-in-out infinite; }
-  .ink-intro .ink-birds { animation:inkFade 1.6s 1.6s both, birdsFly 22s 3.2s ease-in-out infinite; }
+  @keyframes sunBreath { 0%,100% { transform:scale(1); opacity:.85; } 50% { transform:scale(1.12); opacity:1; } }
+  .ink-l-sun { transform-origin:77% 21%; animation:sunBreath 5s ease-in-out infinite; }
+  .ink-intro .ink-l-sun { animation:sunBloom 1.6s .3s cubic-bezier(.2,.7,.2,1) both, sunBreath 5s 1.9s ease-in-out infinite; }
+  @keyframes pineSway { 0%,100% { transform:skewX(0.6deg); } 50% { transform:skewX(-2.6deg); } }
+  .ink-l-pine { transform-origin:50% 100%; animation:pineSway 5s ease-in-out infinite; }
+  .ink-intro .ink-l-pine { animation:inkRise 1.6s 1.05s cubic-bezier(.2,.7,.2,1) both, pineSway 5s 2.65s ease-in-out infinite; }
+  @keyframes birdsFly { 0% { transform:translate(-70px,18px); } 50% { transform:translate(20px,-14px); } 100% { transform:translate(110px,4px); } }
+  .ink-birds { animation:birdsFly 16s ease-in-out infinite alternate; }
+  .ink-intro .ink-birds { animation:inkFade 1.6s 1.6s both, birdsFly 16s 3.2s ease-in-out infinite alternate; }
   @keyframes flapA { 0%,49% { opacity:1; } 50%,100% { opacity:0; } }
   @keyframes flapB { 0%,49% { opacity:0; } 50%,100% { opacity:1; } }
-  .ink-flap-a { animation:flapA 1.1s infinite; }
-  .ink-flap-b { animation:flapB 1.1s infinite; }
-  .ink-mist { animation:inkMist 38s ease-in-out infinite; will-change:transform; }
-  .ink-mist2 { animation-duration:52s; animation-direction:reverse; }
+  .ink-flap-a { animation:flapA .8s infinite; }
+  .ink-flap-b { animation:flapB .8s infinite; }
+  .ink-mist { animation:inkMist 22s ease-in-out infinite; will-change:transform; }
+  .ink-mist2 { animation-duration:30s; animation-direction:reverse; }
   .ink-home div[style*="background: rgb(255, 252, 246)"] { background-color:rgba(255,252,246,0.92) !important; }
   @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
 </style>
@@ -5095,7 +5100,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
   const INK_DEPTH = { sun:0.02, birds:0.04, far:0.05, mid:0.09, near:0.14, pine:0.15 };
   const InkBackdrop = () => {
     const ref = React.useRef(null);
-    const [intro] = React.useState(() => { try { if (sessionStorage.getItem('sajuon::ink_intro')) return false; sessionStorage.setItem('sajuon::ink_intro', '1'); } catch (e) {} return true; });
+    const [intro] = React.useState(() => { if (window.__inkIntroDone) return false; window.__inkIntroDone = true; return true; });   // 페이지를 열 때(새로고침 포함)마다 한 번
     React.useEffect(() => {
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       let raf = 0;
@@ -5114,6 +5119,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
           _h('div', { className:'ink-l ink-flap-b', style:{backgroundImage:inkUrl(INK_LAYERS[v].birds2)} }))));
     return _h('div', { ref, 'aria-hidden':'true', className: intro ? 'ink-intro' : '', style:{position:'fixed',inset:0,zIndex:0,pointerEvents:'none',overflow:'hidden'} },
       set('m'), set('d'),
+      _h('div', { className:'ink-cloud ink-cloud1' }), _h('div', { className:'ink-cloud ink-cloud2' }),
       _h('div', { className:'ink-mist', style:{position:'absolute',left:'-40%',width:'180%',top:'52%',height:'90px',background:'radial-gradient(ellipse at center, rgba(243,236,223,0.95) 0%, rgba(243,236,223,0) 70%)'} }),
       _h('div', { className:'ink-mist ink-mist2', style:{position:'absolute',left:'-40%',width:'180%',top:'70%',height:'110px',background:'radial-gradient(ellipse at center, rgba(243,236,223,0.9) 0%, rgba(243,236,223,0) 70%)'} }));
   };
