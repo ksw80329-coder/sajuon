@@ -275,6 +275,18 @@
   .ink-mist { animation:inkMist 22s ease-in-out infinite; will-change:transform; }
   .ink-mist2 { animation-duration:30s; animation-direction:reverse; }
   .ink-home div[style*="background: rgb(255, 252, 246)"] { background-color:rgba(255,252,246,0.92) !important; }
+  /* 윈도우 '애니메이션 효과 끄기'·폰 '동작 줄이기' 환경: 등장·스크롤 효과는 끄고, 배경은 아주 느리고 잔잔한 움직임만 유지 */
+  @media (prefers-reduced-motion: reduce) {
+    .ink-l-sun { animation:sunBreath 9s ease-in-out infinite !important; }
+    .ink-l-pine { animation:pineSway 9s ease-in-out infinite !important; }
+    .ink-birds { animation:birdsFly 28s ease-in-out infinite alternate !important; }
+    .ink-flap-a { animation:flapA 1.4s infinite !important; }
+    .ink-flap-b { animation:flapB 1.4s infinite !important; }
+    .ink-mist { animation:inkMist 40s ease-in-out infinite !important; }
+    .ink-cloud1 { animation:inkCloud 60s linear infinite !important; }
+    .ink-cloud2 { animation:inkCloud 80s linear -30s infinite !important; }
+    .ink-l-far, .ink-l-mid, .ink-l-near { animation:none !important; opacity:1 !important; transform:none !important; }
+  }
   @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
 </style>
   <!-- 검색엔진 구조화 데이터 -->
