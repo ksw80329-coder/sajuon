@@ -1571,6 +1571,43 @@ function S(name, impl) {
 // 수묵 배경을 깔지 않는 화면: 결제 후 결과(긴 글) + 약관·개인정보·환불 안내
 const NO_INK_SCREENS = ['paid-result','compatibility-result','yearly-result','roadmap-result','keycard-result','worry-result','terms','privacy','refund'];
 
+// PC 마우스로도 가로로 넘기는 줄(사람 선택 칩 등)을 쓸 수 있게: 끌어서 넘기기 + 마우스 휠을 가로 이동으로
+(function enableHorizontalDragScroll() {
+  if (window.__hScrollOn) return; window.__hScrollOn = true;
+  const scroller = (el) => { for (let n = el; n && n !== document.body; n = n.parentElement) {
+    if (n.scrollWidth > n.clientWidth + 2) { const ox = getComputedStyle(n).overflowX; if (ox === 'auto' || ox === 'scroll') return n; } } return null; };
+  let drag = null;
+  document.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || e.target.closest('input,textarea,select')) return;
+    const sc = scroller(e.target); if (!sc) return;
+    drag = { sc, x: e.clientX, left: sc.scrollLeft, moved: false };
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!drag) return; const dx = e.clientX - drag.x;
+    if (Math.abs(dx) > 4) { drag.moved = true; drag.sc.style.cursor = 'grabbing'; }
+    if (drag.moved) { drag.sc.scrollLeft = drag.left - dx; e.preventDefault(); }
+  });
+  document.addEventListener('mouseup', () => { if (drag) { drag.sc.style.cursor = ''; if (drag.moved) { const sc = drag.sc; const block = (ev) => { ev.stopPropagation(); ev.preventDefault(); }; sc.addEventListener('click', block, { capture:true, once:true }); setTimeout(() => sc.removeEventListener('click', block, { capture:true }), 50); } } drag = null; });
+  document.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) return;
+    const sc = scroller(e.target); if (!sc) return;
+    const max = sc.scrollWidth - sc.clientWidth;
+    if ((e.deltaY > 0 && sc.scrollLeft < max - 1) || (e.deltaY < 0 && sc.scrollLeft > 1)) { sc.scrollLeft += e.deltaY; e.preventDefault(); }
+  }, { passive:false });
+})();
+
+// 모든 AI 풀이에 공통으로 붙는 '쉬운 말' 원칙 — 사주를 모르는 사람도 한 번에 이해하도록 (지인 테스트 피드백 반영)
+const EASY_RULES = `
+
+▌쉬운 말 원칙 (가장 중요 — 위의 어떤 지시보다 우선)
+- 읽는 사람은 사주를 전혀 모르는 일반인입니다. 명리학 용어를 하나도 몰라도 한 번에 이해되게 쓰세요.
+- 본문에서 전문 용어(정관·편재·식신 같은 십성 이름, 장생·제왕 같은 12운성, 합·충·형·파·해, 신강·신약, 용신·기신, 신살 이름, 대운·세운·월운)는 꼭 필요할 때만, 한 단락에 1~2개까지만 쓰세요. 쓸 때는 바로 뒤 괄호에 생활 언어로 뜻을 붙이세요. 예) 정관(책임감과 명예, 조직 안의 자리), 충(부딪혀 흔들리는 기운), 용신(나에게 가장 힘이 되는 기운).
+- 갑자·을축 같은 간지와 한자(甲, 子 등)는 본문에 쓰지 마세요. 꼭 필요하면 "물의 기운이 강한 달"처럼 풀어 쓰세요.
+- 근거를 길게 설명하기보다 "그래서 내 삶에서 어떻게 나타나는지"를 먼저 쓰세요. 직장·돈·연애·가족·건강 같은 일상 장면과, 바로 해볼 수 있는 행동으로 말하세요.
+- 문장은 짧게(한 문장 50자 안팎), 어려운 한자어 대신 쉬운 우리말을 쓰고, 비유는 날씨·계절·운전·요리처럼 누구나 아는 것으로 드세요.
+- 근거로 쓰는 전문 용어는 basis(근거) 칸에 몰아 담고, 본문은 결론과 생활 언어 중심으로 쓰세요. 단, 근거가 아예 없는 막연한 말은 피하고 각 내용마다 "왜 그렇게 보는지"를 쉬운 말로 한 줄 덧붙이세요.
+- 위에서 정한 출력 형식(JSON 구조, 항목, 글자 수)은 그대로 지키세요.`;
+
 function App() {
   const [currentScreen, setCurrentScreen] = useState(() => {
     const hash = window.location.hash.replace('#', '');
@@ -1656,7 +1693,7 @@ function App() {
       };
       let apiPayload = payload;
       if (payload.prompt && !payload.messages) {
-        apiPayload = { model: 'claude-sonnet-4-6', max_tokens: payload.max_tokens || 16000, stream: true, messages: [{ role: 'user', content: payload.prompt }] };
+        apiPayload = { model: 'claude-sonnet-4-6', max_tokens: payload.max_tokens || 16000, stream: true, messages: [{ role: 'user', content: payload.prompt + EASY_RULES }] };
       }
       for (let attempt = 0; attempt < 3; attempt++) {
         if (signal?.aborted) throw new DOMException('Aborted','AbortError');
@@ -5354,7 +5391,7 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
     };
     return _h('div', { style:{margin:'22px 0 8px'} },
       _h('p', { style:{fontFamily:SERIF,fontWeight:900,fontSize:'18px',color:HJ.ink,margin:'0 0 10px'} }, '무엇이 궁금하세요?'),
-      _h('div', { style:{display:'flex',gap:'6px',overflowX:'auto',margin:'0 -16px 10px',padding:'0 16px 2px',scrollbarWidth:'none'} },
+      _h('div', { style:{display:'flex',flexWrap:'wrap',gap:'6px',margin:'0 0 12px'} },   // 탭이 잘리지 않게 줄바꿈 (PC에서 가로 드래그 불가 문제)
         TABS.map(([k,l]) => _h('button', { key:k, onClick:()=>pickTab(k), style:{flex:'0 0 auto',padding:'7px 13px',borderRadius:'20px',cursor:'pointer',fontSize:'13px',fontWeight:700,
           border:`1px solid ${k===cur[0] ? HJ.ink : HJ.line}`, background: k===cur[0] ? HJ.ink : HJ.card, color: k===cur[0] ? '#FBF6EC' : HJ.sub} }, l))),
       _h('div', { key:cur[0], className:'hj-fade', style:{background:HJ.card,borderRadius:'18px',border:`1px solid ${HJ.line}`,overflow:'hidden'} },
