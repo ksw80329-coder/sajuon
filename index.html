@@ -134,7 +134,7 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script>
     window.addEventListener('load', function() {
-      if (!window.firebase) { console.error('❌ Firebase SDK 로드 실패'); return; }
+      if (!window.firebase) { console.error('❌ Firebase SDK 로드 실패'); window._firestoreFailed = true; return; }
       const firebaseConfig = {
         apiKey: "AIzaSyAlSPiSJuZGP_rvMCL9uhpzpWhBYjETs3g",
         authDomain: "sajuon-2b7ba.firebaseapp.com",
@@ -1744,9 +1744,11 @@ function App() {
   // Firestore 초기화(window load 이후)를 기다림 — 앱 재실행 직후 동기화 누락 방지
   const whenFirestore = (timeoutMs = 15000) => new Promise(resolve => {
     if (window._firestore) return resolve(window._firestore);
+    if (window._firestoreFailed) return resolve(null);   // SDK 자체를 못 불러왔으면 기다릴 이유 없음
     const t0 = Date.now();
     const iv = setInterval(() => {
       if (window._firestore) { clearInterval(iv); resolve(window._firestore); }
+      else if (window._firestoreFailed) { clearInterval(iv); resolve(null); }
       else if (Date.now() - t0 > timeoutMs) { clearInterval(iv); resolve(null); }
     }, 200);
   });
@@ -1815,19 +1817,24 @@ function App() {
   const [deleteAsk, setDeleteAsk] = useState(null); // { title, onConfirm }
   const askDelete = (title, onConfirm, notes) => setDeleteAsk({ title, onConfirm, notes });
 
-  // 로컬에 없는 리포트를 클라우드에서 받아 localStorage에 채움 (최대 6초 대기 후 진행)
+  // 로컬에 없는 리포트를 클라우드에서 받아 localStorage에 채움
+  // 휴대폰은 브라우저가 저장소를 자주 비우고(특히 아이폰 7일 규칙) 데이터망에서 Firebase 준비가 늦어,
+  // 예전처럼 6초만 기다리면 이미 산 풀이를 AI로 새로 쓰는 일이 생김 → 충분히 기다리고, 읽기 실패는 재시도
   const aiCloudPrime = (keys) => {
     const uid = _aiUid();
     const missing = keys.filter(k => { try { return !localStorage.getItem(k); } catch (e) { return false; } });
     if (!uid || !missing.length) return Promise.resolve();
-    const work = whenFirestore(6000).then(fs => {
-      if (!fs) return;
-      return Promise.all(missing.map(k => fsAnalyses(uid).doc(_aiDocId(k)).get().then(d => {
-        const v = d.exists && !d.data()?.deleted ? d.data()?.value : null;
-        if (v) { try { localStorage.setItem(k, v); } catch (e) {} }
-      }).catch(() => {})));
+    const getOnce = (k) => fsAnalyses(uid).doc(_aiDocId(k)).get().then(d => {
+      const v = d.exists && !d.data()?.deleted ? d.data()?.value : null;
+      if (v) { try { localStorage.setItem(k, v); } catch (e) {} }
+      return true;
     });
-    return Promise.race([work, new Promise(r => setTimeout(r, 6000))]);
+    const getWithRetry = (k) => getOnce(k).catch(() => new Promise(r => setTimeout(r, 1500)).then(() => getOnce(k)))
+      .catch(() => new Promise(r => setTimeout(r, 3000)).then(() => getOnce(k))).catch(() => {});
+    const work = whenFirestore(20000).then(fs => { if (!fs) return; return Promise.all(missing.map(getWithRetry)); });
+    const bump = (d) => { window.__primeN = Math.max(0, (window.__primeN || 0) + d); window.dispatchEvent(new Event('sajuon-prime')); };
+    bump(1);
+    return Promise.race([work, new Promise(r => setTimeout(r, 25000))]).finally(() => bump(-1));
   };
 
   // 분석결과 하나를 서브컬렉션에 저장
@@ -2876,11 +2883,16 @@ function App() {
   );
 
   // ===== AI 분석 로딩 컴포넌트 =====
-  const AiLoadingCard = ({ message = '사주를 풀이하고 있어요', steps = ['사주 원국을 읽는 중', '대운·세운을 살피는 중', '풀이를 완성하는 중'] }) => {
+  const AiLoadingCard = (props) => {
+    // 저장된 풀이를 클라우드에서 찾는 동안에는 '새로 쓰는 중'이 아니라 '불러오는 중'으로 안내
+    const [priming, setPriming] = React.useState(() => (window.__primeN || 0) > 0);
+    React.useEffect(() => { const on = () => setPriming((window.__primeN || 0) > 0); window.addEventListener('sajuon-prime', on); return () => window.removeEventListener('sajuon-prime', on); }, []);
+    const message = priming ? '저장된 풀이를 불러오는 중이에요' : (props.message || '사주를 풀이하고 있어요');
+    const steps = priming ? ['내 계정에 저장된 풀이를 찾는 중', '휴대폰은 조금 더 걸릴 수 있어요'] : (props.steps || ['사주 원국을 읽는 중', '대운·세운을 살피는 중', '풀이를 완성하는 중']);
     const [stepIdx, setStepIdx] = React.useState(0);
     const [elapsed, setElapsed] = React.useState(0);
     React.useEffect(() => {
-      const s = setInterval(() => setStepIdx(p => (p + 1) % steps.length), 3000);
+      const s = setInterval(() => setStepIdx(p => (p + 1) % 6), 3000);
       const t = setInterval(() => setElapsed(p => p + 1), 1000);
       return () => { clearInterval(s); clearInterval(t); };
     }, []);
@@ -2890,7 +2902,7 @@ function App() {
         _h(InkEnso, { size:88, width:6 }),
         _h('span', { className:'hj-breath', style:{fontFamily:SERIF_FONT,fontWeight:900,fontSize:'24px',color:'#B5382A'} }, '命')),
       _h('p', { style:{fontFamily:SERIF_FONT,color:'#231F1C',fontWeight:800,fontSize:'16px',margin:'0 0 6px',letterSpacing:'-0.3px'} }, message, _h(InkDots)),
-      _h('p', { key:stepIdx, className:'hj-rise', style:{color:'#6B6056',fontSize:'12px',margin:'0 0 16px',minHeight:'18px'} }, steps[stepIdx]),
+      _h('p', { key:stepIdx, className:'hj-rise', style:{color:'#6B6056',fontSize:'12px',margin:'0 0 16px',minHeight:'18px'} }, steps[stepIdx % steps.length]),
       _h('div', { style:{background:'rgba(35,31,28,0.08)',borderRadius:'3px',height:'3px',overflow:'hidden',marginBottom:'10px'} },
         _h('div', { style:{height:'100%',background:'linear-gradient(90deg,rgba(35,31,28,0.45),#231F1C)',borderRadius:'3px',animation:'progress 25s ease-out forwards'} })),
       _h('div', { style:{display:'flex',justifyContent:'space-between',color:'#A39584',fontSize:'11px'} },
@@ -5570,6 +5582,95 @@ ${dayEl === '금' || dayEl === '수' ? '따뜻한 성질의 음식: 생강차, �
         _h('button', { onClick:()=>{ track('rank_to_yearly'); setScreen('yearly'); window.scrollTo(0,0); }, style:{width:'100%',padding:'14px',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:800,fontSize:'15px',background:'#FBF6EC',color:'#231F1C'} }, `${FORTUNE_YEAR} 신년운세 보기 ⭐${yearlyPrice().stars}${yearlyPromoOn() ? ' (할인)' : ''}`)));
   };
 
+  // ===== 매운맛 팩폭 (상세 사주 안의 덤 블록) — 정확한 만세력 위에서 약점만 맵게 =====
+  const SpicyBlock = ({ inp, r }) => {
+    const key = `ai_spicy_v1_${inp.name}_${inp.year}_${inp.month}_${inp.day}_${inp.hour}`;
+    const read = () => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } };
+    const [open, setOpen] = React.useState(() => !!read());
+    const [data, setData] = React.useState(read);
+    const [loading, setLoading] = React.useState(false);
+    const [err, setErr] = React.useState(false);
+    const [retry, setRetry] = React.useState(0);
+    const buildPrompt = () => {
+      const pillars = ['year','month','day','hour'].map(k => { const pl = r.pillars[k]; if (!pl) return `${PILLAR_LABEL[k]}: 시간 미상`;
+        return `${PILLAR_LABEL[k]} ${STEMS.korean[pl.si]}${BRANCHES.korean[pl.bi]}${k==='day' ? '(일간)' : ' 십성 '+getTenGod(r.dsi, pl.si)} / 12운성 ${getTwelve(STEMS.names[r.dsi], pl.bi)} / 신살 ${(r.pillarSinsal?.[k]||[]).join('·')||'없음'}`; }).join('\n');
+      const fe = Object.entries(r.fe.pct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${v}%`).join(', ');
+      let dw = '';
+      try { const hr = (inp.hour===''||inp.hour==null||inp.hour==='unknown') ? 12 : +inp.hour;
+        const d = calcDaewoon(+inp.year, +inp.month, +inp.day, hr, inp.minute ? +inp.minute : 0, inp.gender, (inp.calendar==='음력'||inp.isLunar===true), inp.isLeapMonth||false, r.pillars);
+        const age = new Date().getFullYear() - (+inp.year);
+        const cur = d.daewoons.find((x,i) => age >= x.age && (!d.daewoons[i+1] || age < d.daewoons[i+1].age));
+        if (cur) dw = `현재 대운: ${cur.age}~${cur.endAge}세 ${cur.stemKr}${cur.branchKr} (천간 ${cur.tenGod}, 12운성 ${cur.twelve})`;
+      } catch (e) {}
+      return `당신은 정통 명리학자이자, 사람의 반복되는 행동 패턴을 날카롭게 짚는 냉정한 분석가입니다. 아래 계산된 사주로 ${inp.name}님(${inp.gender})에게 "매운맛 팩폭"을 써주세요.
+
+▌사주 (이미 정확히 계산된 값, 다시 계산하거나 바꾸지 말 것)
+${pillars}
+일간 ${STEMS.korean[r.dsi]}(${STEMS.elements[r.dsi]}) / ${r.fe.strength || ''} / 오행 ${fe}
+용신 ${r.fe.yongshin} / 기신 ${r.fe.gishin}${r.fe.yongReason ? ` (${r.fe.yongReason})` : ''}
+기타 신살: ${(r.extraSinsal||[]).join(', ') || '없음'}${dw ? '\n' + dw : ''}
+
+▌원칙
+- 위로·립서비스·희망 고문 금지. 좋은 말로 포장하지 말고, 이 사주 구조에서 실제로 뒷받침되는 약점만 직설적으로 짚으세요. 말투는 맵고 시원하게, 존댓말('~해요', '~거든요')로.
+- 누구에게나 맞는 말(바넘 효과)은 쓰지 마세요. 반드시 이 사주만의 구조(오행 쏠림, 십성 배치, 신살, 강약)에서 나온 내용만.
+- 근거 없는 인신공격, 억지로 만든 단점 금지. 외모·건강 상태·가족사·과거 상처·성적인 내용·정신질환을 단정하거나 놀리지 마세요.
+- 근거가 약한 내용은 strength를 "약함"으로 두고 "~일 수 있어요"처럼 가능성으로만 말하세요. strength는 명리 체계 안에서 근거가 얼마나 일관된지(강함·보통·약함)를 뜻합니다.
+- 예시 톤: "인정은 받고 싶은데 지적은 듣기 싫다면, 그건 자존심이 아니라 성장에 걸린 브레이크예요."
+
+▌출력 (JSON만)
+{"oneLine":"나를 한 문장으로 뼈 때리는 말 (45자 이내)","top":[{"title":"약점 이름 (12자 이내)","roast":"실제로 어떻게 드러나는지 맵게 2~3문장","why":"사주 근거를 쉬운 말로 한 문장","strength":"강함|보통|약함"}],"habit":"가장 경계할 자기파괴 습관 2~3문장","fix":["바로 할 수 있는 현실 행동","…","…"],"weapon":"그래도 이건 진짜 무기인 점 1~2문장"}
+top은 정확히 5개, fix는 3개.`;
+    };
+    React.useEffect(() => {
+      if (!open) return;
+      let dead = false; const ctrl = new AbortController();
+      aiCloudPrime([key]).then(async () => {
+        if (dead) return;
+        const c = read(); if (c) { setData(c); return; }
+        setLoading(true); setErr(false);
+        try {
+          const res = await callAI({ t:'4', prompt: buildPrompt(), max_tokens: 5000 }, ctrl.signal);
+          const parsed = parseAIJson((res.content||[]).map(x=>x.text||'').join(''));
+          if (!parsed?.oneLine || !Array.isArray(parsed.top) || !parsed.top.length) throw new Error('empty');
+          localStorage.setItem(key, JSON.stringify(parsed)); aiCloudPut(key);
+          if (!dead) setData(parsed);
+        } catch (e) { console.error('[매운맛] 실패:', e.message); if (e.name !== 'AbortError' && !dead) setErr(true); }
+        finally { if (!dead) setLoading(false); }
+      });
+      return () => { dead = true; ctrl.abort(); };
+    }, [open, retry]);
+    const SC = { '강함':HJ.red, '보통':HJ.gold, '약함':HJ.faint };
+    const card = (extra, ...kids) => _h('div', { style:{background:'#FFFCF6',border:`1px solid ${HJ.line}`,borderRadius:'18px',padding:'18px',marginBottom:'12px',...extra} }, ...kids);
+    if (!open) return card({ background:'#231F1C', border:'none', textAlign:'center' },
+      _h('p', { style:{fontSize:'28px',margin:'0 0 4px'} }, '🌶️'),
+      _h('p', { style:{fontFamily:SERIF,color:'#FBF6EC',fontSize:'19px',fontWeight:900,margin:'0 0 6px'} }, '매운맛 팩폭'),
+      _h('p', { style:{color:'rgba(251,246,236,0.7)',fontSize:'13px',lineHeight:1.7,margin:'0 0 14px',wordBreak:'keep-all'} }, '좋은 말은 빼고, 내 사주가 말하는 약점만 맵게.\n상세 사주 구매자에게 덤으로 드려요. 마음의 준비가 됐다면 열어보세요.'.split('\n').reduce((a,t,i)=>i?[...a,_h('br',{key:i}),t]:[t],[])),
+      _h('button', { onClick:()=>{ track('spicy_open'); setOpen(true); }, className:'hj-cta', style:{padding:'13px 26px',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:800,fontSize:'15px',background:'#B5382A',color:'#FFF6EE'} }, '🌶️ 매운맛 열어보기'));
+    if (loading || (!data && !err)) return _h(S('AiLoadingCard', AiLoadingCard), { message:'매운맛 팩폭을 쓰고 있어요', steps:['약점이 될 수 있는 구조를 찾는 중','근거가 있는 것만 고르는 중','맵게 다듬는 중'] });
+    if (err && !data) return card({ textAlign:'center' },
+      _h('p', { style:{color:HJ.red,fontWeight:700,margin:'0 0 8px'} }, '매운맛을 불러오지 못했어요'),
+      _h('button', { onClick:()=>setRetry(n=>n+1), style:{padding:'10px 22px',borderRadius:'10px',border:'none',background:HJ.ink,color:'#FBF6EC',fontWeight:800,cursor:'pointer'} }, '다시 받기'));
+    return _h('div', null,
+      card({ background:'#231F1C', border:'none', textAlign:'center', padding:'24px 18px' },
+        _h('p', { style:{color:'#E7A49A',fontSize:'11px',letterSpacing:'3px',fontWeight:700,margin:'0 0 10px'} }, '🌶️ 매운맛 팩폭 · 한 줄 요약'),
+        _h('p', { style:{fontFamily:SERIF,color:'#FBF6EC',fontSize:'20px',fontWeight:900,lineHeight:1.5,margin:0,wordBreak:'keep-all'} }, `“${data.oneLine}”`)),
+      card({},
+        hjLabel('골치 아픈 구조 TOP 5', HJ.red),
+        (data.top || []).slice(0,5).map((t,i) => _h('div', { key:i, style:{padding:'12px 0',borderTop: i ? `1px dashed ${HJ.line}` : 'none'} },
+          _h('div', { style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'6px'} },
+            _h('span', { style:{fontFamily:SERIF,fontWeight:900,color:HJ.red,fontSize:'16px'} }, i+1),
+            _h('span', { style:{fontFamily:SERIF,fontWeight:800,fontSize:'16px',flex:1} }, t.title),
+            t.strength && _h('span', { style:{fontSize:'10px',fontWeight:800,color:SC[t.strength]||HJ.faint,border:`1px solid ${SC[t.strength]||HJ.line}`,borderRadius:'8px',padding:'1px 7px'} }, '근거 ' + t.strength)),
+          _h('p', { style:{fontSize:'14.5px',lineHeight:1.75,margin:'0 0 4px',wordBreak:'keep-all'} }, t.roast),
+          t.why && _h('p', { style:{fontSize:'12px',color:HJ.faint,lineHeight:1.6,margin:0,wordBreak:'keep-all'} }, '왜? ' + t.why)))),
+      data.habit && card({ background:'rgba(181,56,42,0.06)' }, hjLabel('가장 경계할 자기파괴 습관', HJ.red), _h('p', { style:{fontSize:'14.5px',lineHeight:1.75,margin:0,wordBreak:'keep-all'} }, data.habit)),
+      card({},
+        hjLabel('그래서 이렇게 하세요', HJ.teal),
+        (data.fix || []).map((f,i) => _h('p', { key:i, style:{fontSize:'14px',lineHeight:1.7,margin:'0 0 6px',wordBreak:'keep-all'} }, `${i+1}. ${f}`)),
+        data.weapon && _h('p', { style:{fontSize:'13.5px',lineHeight:1.7,margin:'10px 0 0',padding:'10px 12px',borderRadius:'10px',background:'rgba(45,90,92,0.07)',color:HJ.ink,wordBreak:'keep-all'} }, '💪 그래도 진짜 무기: ' + data.weapon)),
+      _h('button', { onClick:()=>shareLink('내 사주 매운맛 팩폭', `"${data.oneLine}" — 내 사주 매운맛 팩폭 (사주ON AI 풀이). 너도 한번 맞아봐`, SITE_URL), style:{width:'100%',padding:'14px',borderRadius:'12px',border:'none',background:'#B5382A',color:'#FFF6EE',fontWeight:800,fontSize:'15px',cursor:'pointer',marginBottom:'16px'} }, '🌶️ 한 줄 팩폭 친구에게 보내기'));
+  };
+
   // ===== 고민 하나 풀이 (⭐3) — 질문 하나에 판정 + 시기 + 근거 =====
   const WORRY_CATS = [
     ['love','연애·재회', ['헤어진 그 사람, 다시 연락이 올까요?','지금 썸 타는 사람과 잘될 수 있을까요?','올해 안에 새로운 인연이 생길까요?']],
@@ -6510,7 +6611,7 @@ timing은 2~3개, do·dont는 각각 2~3개, basis는 3~5개.`;
               _h('span', null, '🔒'),
               _h('span', { style:{color:'#fbbf24',fontSize:'11px',fontWeight:'800',letterSpacing:'0.5px'} }, '여기까지만 무료 · 지금부터 진짜 핵심')
             ),
-            _h('h3', { style:{color:'white',fontWeight:'900',fontSize:'19px',marginBottom:'8px',letterSpacing:'-0.5px'} }, '용신 · 직업 · 재물 · 연애 · 지금 대운까지'),
+            _h('h3', { style:{color:'white',fontWeight:'900',fontSize:'19px',marginBottom:'8px',letterSpacing:'-0.5px'} }, '용신 · 직업 · 재물 · 연애 · 지금 대운 + 🌶️ 매운맛 팩폭'),
             _h('p', { style:{color:'rgba(255,255,255,0.5)',fontSize:'12px',lineHeight:'1.7',marginBottom:'16px'} }, '지금 보신 것 너머 — 8가지 주제마다\n한 줄 결론 · 근거 · 실천법을 분명하게 풀어드려요'),
             _h('div', { style:{display:'flex',flexWrap:'wrap',gap:'6px',marginBottom:'16px'} },
               ['📜 타고난 나','💼 일·직업','💰 재물','💞 연애·결혼','🧭 지금 대운 전략'].map((tag, i) =>
@@ -7039,6 +7140,8 @@ timing은 2~3개, do·dont는 각각 2~3개, basis는 3~5개.`;
                   )
                 : _h('div', { style:{padding:'32px',textAlign:'center',color:'rgba(255,255,255,0.3)',fontSize:'13px'} }, '해설을 불러오는 중...')
         ),
+
+        displaySections && !aiLoading && _h(S('SpicyBlock', SpicyBlock), { inp, r }),
 
         /* ── 공유 배너 ── */
         _h('div', { style:{background:'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.1))',border:'1px solid rgba(168,85,247,0.2)',borderRadius:'20px',padding:'20px',textAlign:'center',marginBottom:'12px'} },
